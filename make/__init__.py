@@ -1,5 +1,5 @@
 """
-PC-BASIC - packagig
+PC-BASIC - packaging
 Windows, MacOS, Linux packaging
 
 (c) 2015--2022 Rob Hagemans

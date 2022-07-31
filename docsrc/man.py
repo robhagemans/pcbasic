@@ -24,8 +24,8 @@ DOC_PATH = os.path.join(BASEPATH, '..', 'doc')
 MAN_FILE = os.path.join(BASEPATH, '..', 'doc', 'pcbasic.1.gz')
 
 # setup metadata
-with open(os.path.join(BASEPATH, '..', 'setup.json'), encoding='utf-8') as setup_data:
-    SETUP_DATA = json.load(setup_data)
+with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
+    DESC_STRS = json.load(desc_json)
 
 
 TROFF_ESCAPES = [
@@ -83,8 +83,8 @@ def _html_to_man(html):
 
 def makeman():
     """Convert HTML sources to manfile."""
-    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % SETUP_DATA['description']
-    desc_html = '<h3>Description</h2><p>%s</p>\n' % SETUP_DATA['long_description']
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESC_STRS['description']
+    desc_html = '<h3>Description</h2><p>%s</p>\n' % DESC_STRS['long_description']
     options_html = open(OPTIONS_HTML).read()
     examples_html = open(EXAMPLE_HTML).read()
     more_html = open(MORE_HTML).read()

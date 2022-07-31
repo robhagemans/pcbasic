@@ -51,63 +51,30 @@ BLANK_ICON = ((0,) * 16) * 16
 # locate and load SDL libraries
 
 if False:
-    # packagers take note
+    # packagers take note, we need these imports to be bundled
+    from . import sdl2loader
     from . import sdl2
 
 sdl2 = None
-sdlgfx = None
-_smooth_zoom = None
 
-# platform-specific dll location
-LIB_DIR = os.path.join(BASE_DIR, 'lib', PLATFORM)
-# possible names of sdl_gfx library
-GFX_NAMES = ('SDL2_gfx', 'SDL2_gfx-1.0')
-
-
-def _bind_gfx_zoomsurface():
-    """Bind smooth-zoom function."""
-    global sdlgfx
-    # look for SDL2_gfx.dll:
-    # first in SDL2.dll location
-    # if not found, in LIB_DIR; then in standard search path
-    try:
-        sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, os.path.dirname(sdl2.dll.libfile))
-    except Exception:
-        try:
-            sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES, LIB_DIR)
-        except Exception:
-            try:
-                sdlgfx = sdl2.DLL('SDL2_gfx', GFX_NAMES)
-            except Exception:
-                sdlgfx = None
-    if sdlgfx:
-        return sdlgfx.bind_function(
-            'zoomSurface',
-            [ctypes.POINTER(sdl2.SDL_Surface), ctypes.c_double, ctypes.c_double, ctypes.c_int],
-            ctypes.POINTER(sdl2.SDL_Surface)
-        )
-    return None
+# custom dll location
+LIB_DIR = os.path.join(BASE_DIR, 'lib')
 
 
 def _import_sdl2():
     """Import the sdl2 bindings and define constants."""
-    global sdl2, _smooth_zoom
+    global sdl2
     global SCAN_TO_SCAN, ALT_SCAN_TO_EASCII, MOD_TO_SCAN
     global KEY_TO_EASCII, SHIFT_KEY_TO_EASCII, CTRL_KEY_TO_EASCII
 
-    with EnvironmentCache() as _sdl_env:
+    # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
+    # first in LIB_DIR, then in pysdl2dll module, then the standard search path
+    # this means that user should not have dll in LIB_DIR if they want to use another one
+    from . import sdl2loader
+    sdl2loader.load_dlls(LIB_DIR)
 
-        # look for SDL2.dll / libSDL2.dylib / libSDL2.so:
-        # first in LIB_DIR, then in the standard search path
-        # user should remove dll from LIB_DIR they want to use another one
-        _sdl_env.set('PYSDL2_DLL_PATH', LIB_DIR)
-        try:
-            from . import sdl2
-        except ImportError:
-            _sdl_env.set('PYSDL2_DLL_PATH', '')
-            # last try, do not catch ImportError
-            from . import sdl2
-        _smooth_zoom = _bind_gfx_zoomsurface()
+    # this raises ImportError if no library has been found
+    from . import sdl2
 
 
     ###############################################################################
@@ -465,7 +432,7 @@ class VideoSDL2(VideoPlugin):
                     'Smooth scaling not available: need 32-bit colour, have %d-bit.', bpp
                 )
                 self._smooth = False
-            if not _smooth_zoom:
+            if not hasattr(sdl2, 'sdlgfx') or not sdl2.sdlgfx.zoomSurface:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
         # enable IME
@@ -533,6 +500,9 @@ class VideoSDL2(VideoPlugin):
 
     def _reset_display_caches(self):
         """Reset caches and references to display object."""
+        # this is needed on macOS, we get a null pointer result if not set
+        # and SDL_GetError gives a confusing "No hardware accelerated renderers available"
+        sdl2.SDL_SetHint(b'SDL_FRAMEBUFFER_ACCELERATION', b'opengl')
         self._display_surface = sdl2.SDL_GetWindowSurface(self._display)
         # reset cache sizes
         for surface in self._display_cache:
@@ -894,7 +864,7 @@ class VideoSDL2(VideoPlugin):
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self._zoomed_surface)
             # SMOOTHING_ON = 1
-            self._zoomed_surface = _smooth_zoom(conv, scalex, scaley, 1)
+            self._zoomed_surface = sdl2.sdlgfx.zoomSurface(conv, scalex, scaley, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # save in display cache for this blink state

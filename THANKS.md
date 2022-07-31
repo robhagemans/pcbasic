@@ -43,6 +43,7 @@ PC-BASIC depends on the following open-source projects:
   * [Setuptools](https://pypi.python.org/pypi/setuptools)
   * [Simple DirectMedia Layer (SDL)](http://www.libsdl.org)
   * [SDL2_gfx](http://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/)
+  * [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll)
   * [PySerial](https://github.com/pyserial/pyserial)
   * [PyParallel](https://github.com/pyserial/pyparallel)
   * [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)

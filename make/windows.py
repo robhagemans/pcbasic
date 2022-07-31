@@ -13,17 +13,18 @@ import msilib
 import cx_Freeze
 from cx_Freeze import Executable
 
-from .common import wash, build_icon, build_docs, build_manifest, prune, remove
-from .common import COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .common import NAME, AUTHOR, VERSION, SHORT_VERSION, COPYRIGHT
-
+from .common import NAME, VERSION, AUTHOR, COPYRIGHT
+from .common import make_clean, build_icon, make_docs, prune, remove, mkdir
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import build_manifest
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
 PRODUCT_CODE = msilib.gen_uuid()
 
 
-def package(**setup_options):
+def package():
     """Build a Windows .MSI package."""
+    setup_options = SETUP_OPTIONS
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
@@ -31,7 +32,7 @@ def package(**setup_options):
         def run(self):
             """Run build_exe command."""
             build_icon()
-            build_docs()
+            make_docs()
             # only include 32-bit DLLs
             build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
@@ -45,7 +46,7 @@ def package(**setup_options):
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            fname.lower() == 'python27.dll' or fname.lower() == 'msvcr90.dll'
+                            fname.lower() == 'python37.dll' or fname.lower() == 'msvcr90.dll'
                             # remove tests and examples
                             or testing
                             # we're only producing packages for win32_x86
@@ -62,8 +63,20 @@ def package(**setup_options):
             # chunky libs on python3.7 that I don't think we use
             remove(build_dir + 'lib/libcrypto-1_1.dll')
             remove(build_dir + 'lib/libssl-1_1.dll')
+            # unneeded sdl2 bits
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_image.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_mixer.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/SDL2_ttf.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libwebp-7.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libtiff-5.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libopus-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
             # remove modules that can be left out
-            for module in ('distutils', 'setuptools', 'pydoc_data'):
+            for module in (
+                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
+                    'wheel', 'lxml',
+                    'multiprocessing', 'asyncio'
+                ):
                 prune(build_dir + 'lib/%s' % module)
 
 
@@ -78,9 +91,9 @@ def package(**setup_options):
             # close the database file so we can rename the file
             del self.db
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
-            wash()
+            make_clean()
 
-        def add_config(self, fullname):
+        def add_config(self):
             """Override cx_Freeze add_config."""
             # mostly copy-paste from cxfreeze source, wich some changes
             if self.directories:
@@ -153,7 +166,7 @@ def package(**setup_options):
             """Per-user or per-machine install dialog."""
             # based on dialog from cpython 2.7 source code
             # https://svn.python.org/projects/python/trunk/Tools/msi/msi.py
-            whichusers = distutils.command.bdist_msi.PyDialog(
+            whichusers = cx_Freeze.command.bdist_msi.PyDialog(
                 self.db, "WhichUsersDlg", self.x, self.y, self.width, self.height,
                 self.modal, self.title, "AdminInstall", "Next", "Cancel"
             )
@@ -168,9 +181,9 @@ def package(**setup_options):
             radio.add("ALL", 0, 5, 150, 20, "Install for all users")
             radio.add("JUSTME", 0, 25, 235, 20, "Install just for me")
 
-            whichusers.back("Back", None, active=0)
+            whichusers.backbutton("Back", None, active=0)
 
-            button = whichusers.next("Next >", "Cancel")
+            button = whichusers.nextbutton("Next >", "Cancel")
             # SetProperty events
             # https://docs.microsoft.com/en-us/windows/desktop/Msi/setproperty-controlevent
             button.event("[MSIINSTALLPERUSER]", "{}", 'WhichUsers="ALL"', 1)
@@ -183,7 +196,7 @@ def package(**setup_options):
             )
             button.event("EndDialog", "Return", 3)
 
-            button = whichusers.cancel("Cancel", "AdminInstall")
+            button = whichusers.cancelbutton("Cancel", "AdminInstall")
             button.event("SpawnDialog", "CancelDlg")
 
         def add_ui(self):

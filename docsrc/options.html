@@ -843,31 +843,32 @@
         </dd>
 
         <dt id="--sound">
-            <code><b>--sound=</b>[<b>none</b>|<b>beep</b>|<b>portaudio</b>|<b>interface</b>]</code>
+            <code><b>--sound</b>[<b>=True</b>|<b>=False</b>]</code>
         </dt>
         <dd>
-            Choose the sound engine to use.
-            Not all sound engines will be available on all systems.
             <dl class="compact">
-                <dt><code><b>false</b></code></dt>
+                <dt><code><b>False</b></code></dt>
                 <dd>Suppress sound output.</dd>
-                <dt><code><b>true</b></code></dt>
-                <dd>Output sound, if a sound driver is available for the interface.</dd>
+                <dt><code><b>True</b></code></dt>
+                <dd>Output sound, if a sound driver is available (default).</dd>
             </dl>
 
-            Default is <code><b>interface</b></code>.
+            If sound is on, PC-BASIC will
+            try to use the SDL2 library first; if it is not available, it will try PortAudio. If neither is available,
+            sound will be disabled.
 
-            The following values for this option are deprecated; PortAudio will be used by default
-            in the text-based interfaces:
+            The following values for this option are deprecated:
             <dl class="compact">
                 <dt><code><b>none</b></code></dt>
-                <dd>Suppress sound output. <em>(Use <code><b>false</b></code> instead)</em></dd>
-                <dt><code><b>interface</b></code>  <em>(Use <code><b>true</b></code> instead</dt>
-                <dd>Use the native sound engine of the interface, if available.</dd>
-                <dt><code><b>beep</b></code></dt>
-                <dd>Use the built-in speaker.</dd>
+                <dd>Suppress sound output. Use <code><b>False</b></code> instead.</dd>
+                <dt><code><b>interface</b></code></dt>
+                <dd>Use the native sound engine of the interface. Use <code><b>True</b></code> instead.</dd>
+                <dt><code><b>sdl2</b></code></dt>
+                <dd>Use the SDL2 sound generator.</dd>
                 <dt><code><b>portaudio</b></code></dt>
                 <dd>Use the PortAudio sound generator.</dd>
+                <dt><code><b>beep</b></code></dt>
+                <dd>Use the built-in speaker.</dd>
             </dl>
 
         </dd>
