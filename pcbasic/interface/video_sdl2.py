@@ -432,7 +432,7 @@ class VideoSDL2(VideoPlugin):
                     'Smooth scaling not available: need 32-bit colour, have %d-bit.', bpp
                 )
                 self._smooth = False
-            if not sdl2.SDL_gfx_zoomSurface:
+            if not hasattr(sdl2, 'sdlgfx') or not sdl2.sdlgfx.zoomSurface:
                 logging.warning('Smooth scaling not available: `sdlgfx` extension not found.')
                 self._smooth = False
         # enable IME
@@ -861,7 +861,7 @@ class VideoSDL2(VideoPlugin):
             # this seems to avoid unpredictable delays
             sdl2.SDL_FreeSurface(self._zoomed_surface)
             # SMOOTHING_ON = 1
-            self._zoomed_surface = sdl2.SDL_gfx_zoomSurface(conv, scalex, scaley, 1)
+            self._zoomed_surface = sdl2.sdlgfx.zoomSurface(conv, scalex, scaley, 1)
             # blit onto display
             sdl2.SDL_BlitSurface(self._zoomed_surface, None, self._display_surface, target_rect)
         # save in display cache for this blink state

@@ -959,11 +959,14 @@ SDL_HINT_GRAB_KEYBOARD = b"SDL_GRAB_KEYBOARD"
 
 # gfx smooth zoom
 
+# for compatibility with pysdl2 api
+class sdlgfx: pass
+
 if gfx_lib:
-    SDL_gfx_zoomSurface = gfx_lib.bind_function(
+    sdlgfx.zoomSurface = gfx_lib.bind_function(
         'zoomSurface',
         [POINTER(SDL_Surface), c_double, c_double, c_int],
         POINTER(SDL_Surface)
     )
 else:
-    SDL_gfx_zoomSurface = None
+    sdlgfx.zoomSurface = None
