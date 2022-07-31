@@ -20,14 +20,15 @@ class StatementTest(TestCase):
 
     def test_llist(self):
         """Test LLIST to stream."""
-        with NamedTemporaryFile() as output:
+        with NamedTemporaryFile(delete=False) as output:
             with Session(devices={'lpt1': 'FILE:'+output.name}) as s:
                 s.execute("""
                     10 rem program
                     20?1
                 """)
                 s.execute('LLIST')
-            assert output.read() == b'10 REM program\r\n20 PRINT 1\r\n'
+            outstr = output.read()
+            assert outstr == b'10 REM program\r\n20 PRINT 1\r\n', outstr
 
     def test_cls_pcjr(self):
         """Test CLS syntax on pcjr."""

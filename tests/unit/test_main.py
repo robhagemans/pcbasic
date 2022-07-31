@@ -147,18 +147,19 @@ class ConvertTest(TestCase):
 
     def test_ascii_to_tokenised(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'10 ? 1\r\n\x1a')
                 infile.seek(0)
                 run('--convert=b', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a'
+            outstr = outfile.read()
+            assert outstr == b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a', outstr
 
     def test_ascii_to_protected(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'10 ? 1\r\n\x1a')
                 infile.seek(0)
                 run('--convert=p', infile.name, outfile.name)
@@ -167,8 +168,8 @@ class ConvertTest(TestCase):
 
     def test_tokenised_to_ascii(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a')
                 infile.seek(0)
                 run('--convert=a', infile.name, outfile.name)
@@ -177,8 +178,8 @@ class ConvertTest(TestCase):
 
     def test_protected_to_ascii(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x1a')
                 infile.seek(0)
                 run('--convert=a', infile.name, outfile.name)
@@ -187,8 +188,8 @@ class ConvertTest(TestCase):
 
     def test_tokenised_to_protected(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a')
                 infile.seek(0)
                 run('--convert=p', infile.name, outfile.name)
@@ -198,8 +199,8 @@ class ConvertTest(TestCase):
 
     def test_protected_to_tokenised(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x1a')
                 infile.seek(0)
                 run('--convert=b', infile.name, outfile.name)
@@ -208,8 +209,8 @@ class ConvertTest(TestCase):
 
     def test_default(self):
         """Test converter run."""
-        with NamedTemporaryFile('w+b') as outfile:
-            with NamedTemporaryFile('w+b') as infile:
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x1a')
                 infile.seek(0)
                 run('--convert', infile.name, outfile.name)
