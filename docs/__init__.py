@@ -1,5 +1,5 @@
 """
-PC-BASIC - docsrc
+PC-BASIC - docs
 Documentation builder and source
 
 (c) 2013--2022 Rob Hagemans

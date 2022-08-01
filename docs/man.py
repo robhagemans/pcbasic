@@ -1,5 +1,5 @@
 """
-PC-BASIC - docsrc.man
+PC-BASIC - docs.man
 Manfile builder
 
 (c) 2013--2022 Rob Hagemans

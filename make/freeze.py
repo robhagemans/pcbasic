@@ -35,7 +35,7 @@ INCLUDE_FILES = (
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'tests/', 'make/', 'docsrc/',
+    'tests/', 'make/', 'docs/',
 )
 EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
@@ -46,7 +46,7 @@ SETUP_OPTIONS = dict(
     version=VERSION,
     author=AUTHOR,
     # contents
-    # only include subpackages of pcbasic: exclude tests, docsrc, packaging etc
+    # only include subpackages of pcbasic: exclude tests, docs, make etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
     packages=find_packages(exclude=EXCLUDE_PACKAGES),
     ext_modules=[],

@@ -1,5 +1,5 @@
 """
-PC-BASIC - docsrc.usage
+PC-BASIC - docs.usage
 Usage textfile builder
 
 (c) 2013--2022 Rob Hagemans

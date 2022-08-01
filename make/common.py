@@ -20,7 +20,7 @@ from PIL import Image
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 from pcbasic.basic.data import ICON
-from docsrc import make_all_docs
+from docs import make_all_docs
 
 
 # paths

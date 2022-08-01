@@ -1,5 +1,5 @@
 """
-PC-BASIC - docsrc.doc
+PC-BASIC - docs.doc
 HTML documentation builder
 
 (c) 2013--2022 Rob Hagemans
