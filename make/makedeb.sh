@@ -29,6 +29,8 @@ cp ./pc-basic $DEBDIR/usr/local/bin/pcbasic
 for PYVER in $(seq $LOWEST $HIGHEST); do
     mkdir -p $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages
 done
+
+echo "unpacking wheel"
 wheel unpack dist/pcbasic-$VERSION-py2.py3-none-any.whl -d build/
 mv build/pcbasic-$VERSION/* $DEBDIR/usr/local/lib/python3.$LOWEST/dist-packages
 
@@ -39,6 +41,8 @@ for PYVER in $(seq $(($LOWEST+1)) $HIGHEST); do
     ln -s ../../python3.$LOWEST/dist-packages/pcbasic .
     popd > /dev/null
 done
+
+echo "copying resources"
 
 # desktop file
 mkdir -p $DEBDIR/usr/local/share/applications
@@ -56,10 +60,11 @@ cp build/doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
 #mkdir -p $DEBDIR/usr/local/share/doc/pcbasic
 #cp build/doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc/pcbasic
 
-# package files
+# hashes for package files
+echo "calculating hashes"
 mkdir -p $DEBDIR/DEBIAN
 pushd $DEBDIR > /dev/null
-find usr/ -exec md5sum '{}' \; >> DEBIAN/md5sums
+find usr/ -exec md5sum '{}' \; >> DEBIAN/md5sums 2> /dev/null
 popd > /dev/null
 
 # DEBIAN/control file
@@ -70,11 +75,13 @@ echo -n "Installed-Size: " >> $DEBDIR/DEBIAN/control
 du -s build/python3-pcbasic_2.0.5_all/usr/ | awk '{print $1 }' >> $DEBDIR/DEBIAN/control
 
 # build the deb
+echo "building the .deb package"
 dpkg-deb --root-owner-group -b $DEBDIR
 mkdir dist
 mv $DEBDIR.deb dist/
 
 # build the rpm
+echo "building the .rpm package"
 cd dist
 # claims to need sudo but seem s to get root owner correct without
 alien --to-rpm --keep-version python3-pcbasic_"$VERSION"_all.deb
