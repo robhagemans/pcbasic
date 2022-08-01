@@ -41,6 +41,12 @@ EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
 ]
 
+EXCLUDE_EXTERNAL_PACKAGES == [
+    'pygame',
+    'pip', 'wheel', 'unittest', 'pydoc_data',
+    'email', 'xml',
+]
+
 SETUP_OPTIONS = dict(
     name="pcbasic",
     version=VERSION,

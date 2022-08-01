@@ -16,7 +16,7 @@ from cx_Freeze import Executable
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, prune, remove, mkdir
 from .common import RESOURCE_PATH
-from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
 
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
@@ -304,11 +304,7 @@ def package():
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'excludes': [
-                'pygame',
-                'pip', 'wheel', 'unittest', 'pydoc_data',
-                'email', 'xml',
-            ],
+            'excludes': EXCLUDE_EXTERNAL_PACKAGES,
             'include_files': ['build/doc/PC-BASIC_documentation.html'],
             # optimize removes:
             # - asserts (which we don't have as only in th eomitted tests package)

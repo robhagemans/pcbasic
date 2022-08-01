@@ -17,6 +17,7 @@ from cx_Freeze import Executable
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, make_docs, prune, remove, mkdir
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
+from .freeze import EXCLUDE_EXTERNAL_PACKAGES
 from .freeze import build_manifest
 
 
@@ -125,11 +126,7 @@ def package():
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'excludes': [
-                #'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy',
-                'pygame',
-                #'test',
-            ],
+            'excludes': EXCLUDE_EXTERNAL_PACKAGES,
             #'optimize': 2,
         },
         'bdist_mac': {
