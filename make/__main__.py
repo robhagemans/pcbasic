@@ -15,7 +15,7 @@ import os
 import json
 import subprocess
 
-from .common import prepare, make_docs, make_clean
+from .common import prepare, make_docs, make_clean, make_local
 
 
 if sys.platform == 'win32':
@@ -35,6 +35,8 @@ elif not sys.argv[2:]:
         subprocess.run([sys.executable, '-m', 'build'])
     elif sys.argv[1] == 'docs':
         make_docs()
+    elif sys.argv[1] == 'local':
+        make_local()
     elif sys.argv[1] == 'clean':
         make_clean()
     elif sys.argv[1] == 'ready':
@@ -50,6 +52,9 @@ else:
 
    python3 -m make docs
    - compile the documentation
+
+   python3 -m make local
+   - prepare for running from local directory
 
    python3 -m make ready
    - only prepare for a build

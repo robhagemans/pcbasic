@@ -6,13 +6,6 @@ Documentation builder and source
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .usage import makeusage
-from .man import makeman
-from .doc import makedoc
-
-
-def make_all_docs(output_dir):
-    """Build all documentation files."""
-    makeusage()
-    makeman(output_dir)
-    makedoc(output_dir, 'PC-BASIC_documentation.html')
+from .usage import make_usage
+from .man import make_man
+from .htmldoc import make_htmldoc

@@ -81,7 +81,7 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 
 2. Make pcbasic/data/USAGE.txt
 
-        python3.7 -m make docs
+        python3.7 -m make local
 
 3. Run pcbasic directly from the source directory
 

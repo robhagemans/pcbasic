@@ -10,7 +10,7 @@ import os
 import re
 import json
 import gzip
-from io import StringIO, open
+from io import StringIO
 
 from lxml import etree
 
@@ -20,23 +20,34 @@ BASEPATH = os.path.dirname(os.path.realpath(__file__))
 OPTIONS_HTML = os.path.join(BASEPATH, 'options.html')
 EXAMPLE_HTML = os.path.join(BASEPATH, 'examples.html')
 MORE_HTML = os.path.join(BASEPATH, 'moreman.html')
-MAN_NAME = 'pcbasic.1.gz'
 
 # long and short descriptions
 with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
     DESC_STRS = json.load(desc_json)
 
 
-TROFF_ESCAPES = [
-    (u'\\', u'\\[rs]'), (u'-', u'\\-'), (u'|', u'\\||'),
-    (u'.', u'\\|.'), (u'"', u'\\[dq]'), (u"'", u"\\|'"),
-]
+def make_man(man_path, man_name):
+    """Convert HTML sources to manfile."""
+    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESC_STRS['description']
+    desc_html = '<h3>Description</h2><p>%s</p>\n' % DESC_STRS['long_description']
+    options_html = open(OPTIONS_HTML).read()
+    examples_html = open(EXAMPLE_HTML).read()
+    more_html = open(MORE_HTML).read()
+    man_html = ''.join((title_html, desc_html, options_html, examples_html, more_html))
+    # output manfile
+    man_file = os.path.join(man_path, man_name)
+    with gzip.open(man_file, 'w') as man:
+        man.write(_html_to_man(man_html).encode('utf-8'))
 
 
 def _text_to_man(text):
     """Convert plain text to troff."""
     # escape special characters
-    for key, value in TROFF_ESCAPES:
+    troff_escapes = [
+        (u'\\', u'\\[rs]'), (u'-', u'\\-'), (u'|', u'\\||'),
+        (u'.', u'\\|.'), (u'"', u'\\[dq]'), (u"'", u"\\|'"),
+    ]
+    for key, value in troff_escapes:
         text = text.replace(key, value)
     # replace line feeds with spaces
     text = text.replace(u'\n', u' ')
@@ -78,21 +89,3 @@ def _html_to_man(html):
     manpage = '\'\\" t\n.pc\n.TH PCBASIC 1\n' + _convert_element(docroot)
     # replace two starting spaces (not sure where from)
     return re.sub('\t +', '\t', re.sub('\n +', '\n', manpage))
-
-
-def makeman(docpath):
-    """Convert HTML sources to manfile."""
-    title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESC_STRS['description']
-    desc_html = '<h3>Description</h2><p>%s</p>\n' % DESC_STRS['long_description']
-    options_html = open(OPTIONS_HTML).read()
-    examples_html = open(EXAMPLE_HTML).read()
-    more_html = open(MORE_HTML).read()
-    man_html = ''.join((title_html, desc_html, options_html, examples_html, more_html))
-    try:
-        os.mkdir(docpath)
-    except EnvironmentError:
-        # already there, ignore
-        pass
-    # output manfile
-    with gzip.open(os.path.join(docpath, MAN_NAME), 'w') as manfile:
-        manfile.write(_html_to_man(man_html).encode('utf-8'))

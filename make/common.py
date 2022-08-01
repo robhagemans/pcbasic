@@ -20,7 +20,7 @@ from PIL import Image
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
 from pcbasic.basic.data import ICON
-from docs import make_all_docs
+from docs import make_htmldoc, make_usage, make_man
 
 
 # paths
@@ -31,11 +31,16 @@ HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 BUILD_PATH = os.path.join(HERE, 'build')
 RESOURCE_PATH = os.path.join(BUILD_PATH, 'resources')
 DOC_PATH = os.path.join(BUILD_PATH, 'doc')
+USAGE_PATH = os.path.join(HERE, 'pcbasic', 'data')
 
 ICON_PATTERN = os.path.join(RESOURCE_PATH, 'pcbasic.{format}')
 
 STAMP_FILE = os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json')
 MANIFEST_FILE = os.path.join(HERE, 'MANIFEST.in')
+
+USAGE_NAME = 'USAGE.txt'
+MAN_NAME = 'pcbasic.1.gz'
+HTMLDOC_NAME = 'PC-BASIC_documentation.html'
 
 
 ###############################################################################
@@ -70,7 +75,13 @@ def prepare():
 def make_docs():
     """Build manfile, usage, html and pdf documentation."""
     mkdir(DOC_PATH)
-    make_all_docs(DOC_PATH)
+    make_man(DOC_PATH, MAN_NAME)
+    make_htmldoc(DOC_PATH, HTMLDOC_NAME)
+    make_usage(USAGE_PATH, USAGE_NAME)
+
+def make_local():
+    """Build manfile, usage, html and pdf documentation."""
+    make_usage(USAGE_PATH, USAGE_NAME)
 
 
 ###############################################################################

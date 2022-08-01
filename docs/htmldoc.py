@@ -1,5 +1,5 @@
 """
-PC-BASIC - docs.doc
+PC-BASIC - docs.htmldoc
 HTML documentation builder
 
 (c) 2013--2022 Rob Hagemans
@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import json
 from datetime import datetime
-from io import StringIO, open
+from io import StringIO
 
 from lxml import etree
 import markdown
@@ -126,15 +126,10 @@ def _embed_options(html_file):
     with open(html_file, 'w', encoding='utf-8') as htmlf:
         htmlf.write(etree.tostring(doc, method='html').decode('utf-8'))
 
-def makedoc(output_path, output_filename, *, header=None, embedded_style=True):
+def make_htmldoc(output_path, output_filename, *, header=None, embedded_style=True):
     """Build HTML documentation from sources."""
     header = header or BASEPATH + '/header.html'
     output = os.path.join(output_path, output_filename)
-    try:
-        os.mkdir(output_path)
-    except OSError:
-        # already there, ignore
-        pass
     basic_license_stream = StringIO()
     doc_license_stream = StringIO()
     readme_stream = StringIO()

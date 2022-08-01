@@ -9,26 +9,22 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import re
 import textwrap
-from io import StringIO, open
+from io import StringIO
 
 from lxml import etree
-
-
-# python 2-3 compatibility
-if str != bytes:
-    unicode = str
 
 
 # file locations
 BASEPATH = os.path.dirname(os.path.realpath(__file__))
 INPUT_HTML = os.path.join(BASEPATH, 'options.html')
-OUTPUT_TXT = os.path.join(BASEPATH, '..', 'pcbasic', 'data', 'USAGE.txt')
 
-# html tags to plaintext formatting
-INDENT_TAGS = u'DD',
-BLOCK_TAGS = u'P', u'H1', u'H2', u'H3', u'DT'
-BREAK_AFTER_TAGS = u'DD', u'P', u'H1', u'H2', u'H3'
-UPPER_TAGS = u'H1', u'H2', u'H3'
+
+def make_usage(output_path, output_name):
+    """Build USAGE.txt file."""
+    output_file = os.path.join(output_path, output_name)
+    with open(INPUT_HTML, mode='r', encoding='utf-8') as html_file:
+        with open(output_file, 'w', encoding='utf-8') as textfile:
+            textfile.write(_html_to_text(html_file.read()))
 
 
 class TextBlock(object):
@@ -48,6 +44,13 @@ class TextBlock(object):
             + ('\n' + '\t'*self.indent).join(textwrap.wrap(content, replace_whitespace=False))
         )
         return block + '\n' * self.break_after
+
+
+# html tags to plaintext formatting
+INDENT_TAGS = u'DD',
+BLOCK_TAGS = u'P', u'H1', u'H2', u'H3', u'DT'
+BREAK_AFTER_TAGS = u'DD', u'P', u'H1', u'H2', u'H3'
+UPPER_TAGS = u'H1', u'H2', u'H3'
 
 
 def _parse_element(element, blocklist=None):
@@ -79,10 +82,4 @@ def _html_to_text(html):
     """Extract plain text from HTML."""
     doc = etree.parse(StringIO(html), etree.HTMLParser(encoding='utf-8'))
     blocklist = _parse_element(doc.getroot())
-    return u'\n'.join(unicode(block) for block in blocklist[1:] if unicode(block).strip())
-
-def makeusage():
-    """Build USAGE.txt file."""
-    with open(INPUT_HTML, mode='r', encoding='utf-8') as html_file:
-        with open(OUTPUT_TXT, 'w', encoding='utf-8') as textfile:
-            textfile.write(_html_to_text(html_file.read()))
+    return u'\n'.join(str(block) for block in blocklist[1:] if str(block).strip())
