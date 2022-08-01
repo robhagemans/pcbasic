@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# PC-BASIC - makedeb.sh
+# Linux packaging script
+#
+# (c) 2022 Rob Hagemans
+# This file is released under the GNU GPL version 3 or later.
+
+
 # pc-basic version number
 VERSION=$1
 if [ -z $VERSION ]; then
@@ -27,36 +34,35 @@ mv build/pcbasic-$VERSION/* $DEBDIR/usr/local/lib/python3.$LOWEST/dist-packages
 
 # link from other suported python versions
 for PYVER in $(seq $(($LOWEST+1)) $HIGHEST); do
-    pushd $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages
+    echo "linking $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages/pcbasic"
+    pushd $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages > /dev/null
     ln -s ../../python3.$LOWEST/dist-packages/pcbasic .
-    popd #cd ../../../../../..
+    popd > /dev/null
 done
 
 # desktop file
 mkdir -p $DEBDIR/usr/local/share/applications
-cp resources/pcbasic.desktop $DEBDIR/usr/local/share/applications
+cp build/resources/pcbasic.desktop $DEBDIR/usr/local/share/applications
 
 # icon
 mkdir -p $DEBDIR/usr/local/share/icons
-cp resources/pcbasic.png $DEBDIR/usr/local/share/icons
+cp build/resources/pcbasic.png $DEBDIR/usr/local/share/icons
 
 # manpage
 mkdir -p $DEBDIR/usr/local/share/man
-cp doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
+cp build/doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
 
 # documentation
 #mkdir -p $DEBDIR/usr/local/share/doc/pcbasic
-#cp doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc/pcbasic
+#cp build/doc/PC-BASIC_documentation.html $DEBDIR/usr/local/share/doc/pcbasic
 
 # package files
 mkdir -p $DEBDIR/DEBIAN
 
-pushd $DEBDIR
 find usr/ -exec md5sum '{}' \; >> DEBIAN/md5sums
-popd
 
 # DEBIAN/control file
-cp resources/control $DEBDIR/DEBIAN/control
+cp build/resources/control $DEBDIR/DEBIAN/control
 
 # calculate installed size
 echo -n "Installed-Size: " >> $DEBDIR/DEBIAN/control

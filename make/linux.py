@@ -7,16 +7,21 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import sys
 import subprocess
 
 import toml
 
 from .common import make_clean, build_icon, make_docs, mkdir, prepare
-from .common import HERE, VERSION
+from .common import VERSION, HERE, RESOURCE_PATH
 
 
 # project config
 SETUP_DATA = toml.load(os.path.join(HERE, 'pyproject.toml'))['project']
+
+# paths
+CONTROL_FILE = os.path.join(RESOURCE_PATH, 'control')
+DESKTOP_FILE = os.path.join(RESOURCE_PATH, 'pcbasic.desktop')
 
 
 def build_desktop_file():
@@ -31,7 +36,7 @@ Type=Application
 Icon=pcbasic
 Categories=Development;IDE;
 """
-    with open('resources/pcbasic.desktop', 'w') as xdg_file:
+    with open(DESKTOP_FILE, 'w') as xdg_file:
         xdg_file.write(XDG_DESKTOP_ENTRY)
 
 
@@ -50,7 +55,7 @@ Priority: extra
 Homepage: {url}
 Description: {description}
 """
-    with open('resources/control', 'w') as control_file:
+    with open(CONTROL_FILE, 'w') as control_file:
         control_file.write(CONTROL_PATTERN.format(
             license=SETUP_DATA['license']['text'],
             author_email=SETUP_DATA['authors'][0]['email'],
@@ -64,7 +69,7 @@ Description: {description}
 def build_resources():
     """Build desktop and package resources."""
     make_clean()
-    mkdir('resources')
+    mkdir(RESOURCE_PATH)
     build_desktop_file()
     build_deb_control_file()
     build_icon()
@@ -74,6 +79,6 @@ def build_resources():
 def package():
     """Build Linux packages."""
     prepare()
-    subprocess.run(['python3.7', '-m', 'build'])
+    subprocess.run([sys.executable, '-m', 'build'])
     build_resources()
     subprocess.run(f'make/makedeb.sh {VERSION}', shell=True)

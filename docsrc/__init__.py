@@ -10,8 +10,9 @@ from .usage import makeusage
 from .man import makeman
 from .doc import makedoc
 
-def build_docs():
+
+def make_all_docs(output_dir):
     """Build all documentation files."""
     makeusage()
-    makeman()
-    makedoc()
+    makeman(output_dir)
+    makedoc(output_dir, 'PC-BASIC_documentation.html')

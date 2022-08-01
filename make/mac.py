@@ -1,5 +1,5 @@
 """
-PC-BASIC - packaging.mac
+PC-BASIC - make.mac
 MacOS packaging
 
 (c) 2015--2022 Rob Hagemans
@@ -15,7 +15,7 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import make_clean, build_icon, make_docs,  prune, remove, mkdir
+from .common import prepare, build_icon, make_docs,  prune, remove, mkdir
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import build_manifest
 
@@ -29,6 +29,7 @@ def package():
 
         def run(self):
             """Run build_exe command."""
+            prepare()
             # include dylibs
             build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
@@ -106,7 +107,7 @@ def package():
             mkdir('build/dmg')
             shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
             # include the docs at them top level in the dmg
-            shutil.copy('doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
+            shutil.copy('build/doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
             # removed application shortcuts logic as I'm not using it anyway
             # Create the dmg
             createargs = [
@@ -126,14 +127,14 @@ def package():
     setup_options['options'] = {
         'build_exe': {
             'excludes': [
-                #'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 
+                #'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy',
                 'pygame',
                 #'test',
             ],
             #'optimize': 2,
         },
         'bdist_mac': {
-            'iconfile': 'resources/pcbasic.icns',
+            'iconfile': 'build/resources/pcbasic.icns',
             'bundle_name': '%s-%s' % (NAME, SHORT_VERSION),
             #'codesign_identity': '-',
             #'codesign_deep': True,
@@ -147,7 +148,7 @@ def package():
     setup_options['executables'] = [
         Executable(
             'pc-basic', base='Console', targetName='pcbasic',
-            icon='resources/pcbasic.icns', copyright=COPYRIGHT
+            icon='build/resources/pcbasic.icns', copyright=COPYRIGHT
         ),
     ]
 

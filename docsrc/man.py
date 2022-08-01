@@ -20,10 +20,9 @@ BASEPATH = os.path.dirname(os.path.realpath(__file__))
 OPTIONS_HTML = os.path.join(BASEPATH, 'options.html')
 EXAMPLE_HTML = os.path.join(BASEPATH, 'examples.html')
 MORE_HTML = os.path.join(BASEPATH, 'moreman.html')
-DOC_PATH = os.path.join(BASEPATH, '..', 'doc')
-MAN_FILE = os.path.join(BASEPATH, '..', 'doc', 'pcbasic.1.gz')
+MAN_NAME = 'pcbasic.1.gz'
 
-# setup metadata
+# long and short descriptions
 with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
     DESC_STRS = json.load(desc_json)
 
@@ -81,7 +80,7 @@ def _html_to_man(html):
     return re.sub('\t +', '\t', re.sub('\n +', '\n', manpage))
 
 
-def makeman():
+def makeman(docpath):
     """Convert HTML sources to manfile."""
     title_html = '<h1>pcbasic</h1><p>%s</p>\n' % DESC_STRS['description']
     desc_html = '<h3>Description</h2><p>%s</p>\n' % DESC_STRS['long_description']
@@ -90,10 +89,10 @@ def makeman():
     more_html = open(MORE_HTML).read()
     man_html = ''.join((title_html, desc_html, options_html, examples_html, more_html))
     try:
-        os.mkdir(DOC_PATH)
+        os.mkdir(docpath)
     except EnvironmentError:
         # already there, ignore
         pass
     # output manfile
-    with gzip.open(MAN_FILE, 'w') as manfile:
+    with gzip.open(os.path.join(docpath, MAN_NAME), 'w') as manfile:
         manfile.write(_html_to_man(man_html).encode('utf-8'))

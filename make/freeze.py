@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PC-BASIC make.freeze
 common definitions for cx_Freeze packaging utilities
@@ -14,7 +13,8 @@ from distutils.util import get_platform
 from setuptools import find_packages
 from setuptools.command import sdist, build_py
 
-from .common import VERSION, AUTHOR, HERE
+from .common import VERSION, AUTHOR
+from .common import HERE, MANIFEST_FILE
 from .common import make_clean, make_docs, stamp_release
 
 
@@ -29,14 +29,13 @@ PLATFORM_TAG = '{}-{}.{}'.format(
 INCLUDE_FILES = (
     '*.md',
     '*.txt',
-    'doc/*.html',
     'pcbasic/data/',
     'pcbasic/basic/data/',
 )
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'tests/', 'make/', 'docsrc/', 'fontsrc/',
+    'tests/', 'make/', 'docsrc/',
 )
 EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
@@ -70,7 +69,7 @@ def build_manifest(includes, excludes):
     ) + u''.join(
         u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
     )
-    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
+    with open(MANIFEST_FILE, 'w') as manifest_file:
         manifest_file.write(manifest)
 
 

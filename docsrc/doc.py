@@ -126,12 +126,12 @@ def _embed_options(html_file):
     with open(html_file, 'w', encoding='utf-8') as htmlf:
         htmlf.write(etree.tostring(doc, method='html').decode('utf-8'))
 
-def makedoc(header=None, output=None, embedded_style=True):
+def makedoc(output_path, output_filename, *, header=None, embedded_style=True):
     """Build HTML documentation from sources."""
     header = header or BASEPATH + '/header.html'
-    output = output or BASEPATH + '/../doc/PC-BASIC_documentation.html'
+    output = os.path.join(output_path, output_filename)
     try:
-        os.mkdir(BASEPATH + '/../doc')
+        os.mkdir(output_path)
     except OSError:
         # already there, ignore
         pass

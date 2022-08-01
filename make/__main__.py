@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import sys
+
 assert sys.version_info >= (3, 7), 'Packaging requires Python >= 3.7'
 
 import os
@@ -28,10 +29,10 @@ else:
 if not sys.argv[1:]:
     package()
 elif not sys.argv[2:]:
-    if sys.argv[1] in ('wheel', 'bdist_wheel', 'sdist', 'build'):
+    if sys.argv[1] in ('build'):
         prepare()
         # universal wheel: same code works in py2 and py3, no C extensions
-        subprocess.run(['python3.7', '-m', 'build'])
+        subprocess.run([sys.executable, '-m', 'build'])
     elif sys.argv[1] == 'docs':
         make_docs()
     elif sys.argv[1] == 'clean':
@@ -44,11 +45,8 @@ else:
    python3 -m make
    - build a distribution in this platform's native package format
 
-   python3 -m make sdist
-   - build a source distribution
-
-   python3 -m make bdist_wheel
-   - build a wheel
+   python3 -m make build
+   - build a source distribution and a wheel
 
    python3 -m make docs
    - compile the documentation
