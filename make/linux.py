@@ -68,12 +68,10 @@ Description: {description}
 
 def build_resources():
     """Build desktop and package resources."""
-    make_clean()
     mkdir(RESOURCE_PATH)
     build_desktop_file()
     build_deb_control_file()
     build_icon()
-    make_docs()
 
 
 def package():

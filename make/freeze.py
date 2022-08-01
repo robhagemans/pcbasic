@@ -15,7 +15,7 @@ from setuptools.command import sdist, build_py
 
 from .common import VERSION, AUTHOR
 from .common import HERE, MANIFEST_FILE
-from .common import make_clean, make_docs, stamp_release
+from .common import prepare, stamp_release
 
 
 SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
@@ -104,8 +104,8 @@ def extend_command(parent, function):
 
 def build_py_ext(obj):
     """Run custom build_py command."""
-    stamp_release()
-    build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
+    prepare()
+    #build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
     build_py.build_py.run(obj)
 
 

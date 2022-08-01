@@ -34,7 +34,7 @@ mv build/pcbasic-$VERSION/* $DEBDIR/usr/local/lib/python3.$LOWEST/dist-packages
 
 # link from other suported python versions
 for PYVER in $(seq $(($LOWEST+1)) $HIGHEST); do
-    echo "linking $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages/pcbasic"
+    echo "linking $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages"
     pushd $DEBDIR/usr/local/lib/python3.$PYVER/dist-packages > /dev/null
     ln -s ../../python3.$LOWEST/dist-packages/pcbasic .
     popd > /dev/null
@@ -58,8 +58,9 @@ cp build/doc/pcbasic.1.gz $DEBDIR/usr/local/share/man
 
 # package files
 mkdir -p $DEBDIR/DEBIAN
-
+pushd $DEBDIR > /dev/null
 find usr/ -exec md5sum '{}' \; >> DEBIAN/md5sums
+popd > /dev/null
 
 # DEBIAN/control file
 cp build/resources/control $DEBDIR/DEBIAN/control

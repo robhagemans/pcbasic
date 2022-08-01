@@ -14,7 +14,7 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import prepare, build_icon, make_docs, prune, remove, mkdir
+from .common import build_icon, prune, remove, mkdir
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import build_manifest
 
@@ -32,10 +32,10 @@ def package():
 
         def run(self):
             """Run build_exe command."""
-            prepare()
+            mkdir(RESOURCE_PATH)
             build_icon()
             # only include 32-bit DLLs
-            #build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
+            build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
