@@ -143,7 +143,7 @@ def package():
     }
     setup_options['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic',
+            'run-pcbasic.py', base='Console', targetName='pcbasic',
             icon='build/resources/pcbasic.icns', copyright=COPYRIGHT
         ),
     ]

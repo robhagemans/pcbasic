@@ -23,7 +23,7 @@ DEBDIR=build/python3-pcbasic_"$VERSION"_all
 
 # entry point
 mkdir -p $DEBDIR/usr/local/bin
-cp ./pc-basic $DEBDIR/usr/local/bin/pcbasic
+cp ./run-pcbasic.py $DEBDIR/usr/local/bin/pcbasic
 
 # wheel distribution
 for PYVER in $(seq $LOWEST $HIGHEST); do

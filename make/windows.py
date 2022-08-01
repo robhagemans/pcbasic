@@ -324,10 +324,10 @@ def package():
 
     setup_options['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic.exe', icon='build/resources/pcbasic.ico',
+            'run-pcbasic.py', base='Console', targetName='pcbasic.exe', icon='build/resources/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='build/resources/pcbasic.ico',
+            'run-pcbasic.py', base='Win32GUI', targetName='pcbasicw.exe', icon='build/resources/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]
