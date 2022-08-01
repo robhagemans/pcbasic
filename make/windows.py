@@ -15,8 +15,8 @@ from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, prune, remove, mkdir
+from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .freeze import build_manifest
 
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
@@ -35,7 +35,6 @@ def package():
             mkdir(RESOURCE_PATH)
             build_icon()
             # only include 32-bit DLLs
-            build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
