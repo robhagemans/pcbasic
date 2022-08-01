@@ -14,9 +14,6 @@ NAME, VERSION, AUTHOR, COPYRIGHT = (_METADATA[_key] for _key in (
     'name', 'version', 'author', 'copyright'
 ))
 
-# icon
-ICON = tuple(json.loads(resources.read_binary(__package__, 'icon.json')))
-
 # release metadata, if available
 try:
     _RELEASE_ID = json.loads(resources.read_binary(__package__, 'release.json'))

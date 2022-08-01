@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from PIL import Image
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
-from pcbasic.basic.data import ICON
+from pcbasic.data import ICON
 from docs import make_htmldoc, make_usage, make_man
 
 

@@ -24,8 +24,8 @@ from .compat import split_quoted, split_pair
 from .compat import console, IS_CONSOLE_APP, stdio
 from .compat import TemporaryDirectory
 
-from .data import CODEPAGES, FONTS, PROGRAMS
-from .basic import VERSION, NAME, ICON
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .basic import VERSION, NAME
 from . import data
 
 
