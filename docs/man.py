@@ -16,13 +16,13 @@ from lxml import etree
 
 
 # file locations
-BASEPATH = os.path.dirname(os.path.realpath(__file__))
-OPTIONS_HTML = os.path.join(BASEPATH, 'options.html')
-EXAMPLE_HTML = os.path.join(BASEPATH, 'examples.html')
-MORE_HTML = os.path.join(BASEPATH, 'moreman.html')
+SOURCE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'source')
+OPTIONS_HTML = os.path.join(SOURCE_PATH, 'options.html')
+EXAMPLE_HTML = os.path.join(SOURCE_PATH, 'examples.html')
+MORE_HTML = os.path.join(SOURCE_PATH, 'moreman.html')
 
 # long and short descriptions
-with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
+with open(os.path.join(SOURCE_PATH, 'description.json'), encoding='utf-8') as desc_json:
     DESC_STRS = json.load(desc_json)
 
 

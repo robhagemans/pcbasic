@@ -15,8 +15,8 @@ from lxml import etree
 
 
 # file locations
-BASEPATH = os.path.dirname(os.path.realpath(__file__))
-INPUT_HTML = os.path.join(BASEPATH, 'options.html')
+SOURCE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'source')
+INPUT_HTML = os.path.join(SOURCE_PATH, 'options.html')
 
 
 def make_usage(output_path, output_name):

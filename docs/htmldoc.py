@@ -19,8 +19,10 @@ from pcbasic.basic import VERSION
 
 
 BASEPATH = os.path.dirname(os.path.realpath(__file__))
+SOURCE_PATH = os.path.join(BASEPATH, 'source')
 
-with open(os.path.join(BASEPATH, 'description.json'), encoding='utf-8') as desc_json:
+
+with open(os.path.join(SOURCE_PATH, 'description.json'), encoding='utf-8') as desc_json:
     DESCR_STRS = json.load(desc_json)
 
 
@@ -86,7 +88,7 @@ def _embed_style(html_file):
     doc = etree.parse(html_file, parser)
     for node in doc.xpath('//link[@rel="stylesheet"]'):
         href = node.get('href')
-        css = os.path.join(BASEPATH, href)
+        css = os.path.join(SOURCE_PATH, href)
         node.tag = 'style'
         node.text = '\n' + read_file(css) + '\n    '
         node.attrib.clear()
@@ -128,14 +130,14 @@ def _embed_options(html_file):
 
 def make_htmldoc(output_path, output_filename, *, header=None, embedded_style=True):
     """Build HTML documentation from sources."""
-    header = header or BASEPATH + '/header.html'
+    header = header or SOURCE_PATH + '/header.html'
     output = os.path.join(output_path, output_filename)
     basic_license_stream = StringIO()
     doc_license_stream = StringIO()
     readme_stream = StringIO()
     ack_stream = StringIO()
     _md_to_html(BASEPATH + '/../LICENSE.md', basic_license_stream)
-    _md_to_html(BASEPATH + '/LICENSE.md', doc_license_stream)
+    _md_to_html(SOURCE_PATH + '/LICENSE.md', doc_license_stream)
     _md_to_html(BASEPATH + '/../README.md', readme_stream, baselevel=0)
     _md_to_html(BASEPATH + '/../THANKS.md', ack_stream, 'acks_')
 
@@ -151,21 +153,21 @@ def make_htmldoc(output_path, output_filename, *, header=None, embedded_style=Tr
     major_version = '.'.join(VERSION.split('.')[:2])
     settings_html = (
         '<article>\n'
-        + read_file(BASEPATH + '/settings.html').replace('0.0', major_version)
-        + '<hr />\n' + read_file(BASEPATH + '/options.html')
-        + read_file(BASEPATH + '/examples.html') + '</article>\n'
+        + read_file(SOURCE_PATH + '/settings.html').replace('0.0', major_version)
+        + '<hr />\n' + read_file(SOURCE_PATH + '/options.html')
+        + read_file(SOURCE_PATH + '/examples.html') + '</article>\n'
     )
     predoc = StringIO()
     predoc.write(quickstart_html)
-    predoc.write(read_file(BASEPATH + '/documentation.html'))
+    predoc.write(read_file(SOURCE_PATH + '/documentation.html'))
     predoc.write(settings_html)
-    predoc.write(read_file(BASEPATH + '/guide.html'))
-    predoc.write(read_file(BASEPATH + '/reference.html'))
-    predoc.write(read_file(BASEPATH + '/techref.html'))
-    predoc.write(read_file(BASEPATH + '/devguide.html'))
+    predoc.write(read_file(SOURCE_PATH + '/guide.html'))
+    predoc.write(read_file(SOURCE_PATH + '/reference.html'))
+    predoc.write(read_file(SOURCE_PATH + '/techref.html'))
+    predoc.write(read_file(SOURCE_PATH + '/devguide.html'))
     predoc.write('<article>\n' + ack_stream.getvalue()  + '</article>\n')
     predoc.write(licenses_html)
-    predoc.write(read_file(BASEPATH + '/footer.html'))
+    predoc.write(read_file(SOURCE_PATH + '/footer.html'))
     predoc.seek(0)
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     if embedded_style:
