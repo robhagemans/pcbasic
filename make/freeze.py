@@ -41,7 +41,7 @@ EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
 ]
 
-EXCLUDE_EXTERNAL_PACKAGES == [
+EXCLUDE_EXTERNAL_PACKAGES = [
     'pygame',
     'pip', 'wheel', 'unittest', 'pydoc_data',
     'email', 'xml',
