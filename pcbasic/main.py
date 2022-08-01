@@ -32,6 +32,9 @@ def main(*arguments): # pragma: no cover
         # without this except clause we seem to be dropping exceptions
         # probably due to the sys.stdout.close() hack below
         logging.error('Unhandled exception\n%s', traceback.format_exc())
+        return 1
+    else:
+        return 0
     finally:
         # avoid sys.excepthook errors when piping output
         # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
