@@ -12,6 +12,10 @@ import os
 import struct
 
 
+def make__path__absolute(path):
+    """Not needed in Python 3."""
+    return path
+
 # strings
 
 int2byte = struct.Struct(">B").pack

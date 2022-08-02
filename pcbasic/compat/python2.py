@@ -27,6 +27,13 @@ import copy_reg as copyreg
 
 _FS_ENCODING = sys.getfilesystemencoding()
 
+def make__path__absolute(path):
+    """
+    __path__ hack for __init__ to ensure os.chdir does not break intra-package imports
+    which they do because the package __path__ is given relative to cwd
+    at least if run with python -m package
+    """
+    return [os.path.abspath(_e) for _e in path]
 
 # strings
 

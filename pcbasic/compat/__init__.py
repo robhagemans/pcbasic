@@ -25,6 +25,7 @@ except ImportError:
 
 
 if PY2: # pragma: no cover
+    from .python2 import make__path__absolute
     from .python2 import add_str, iterchar
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
@@ -42,6 +43,7 @@ else:
     from shutil import which
     from types import SimpleNamespace
     from tempfile import TemporaryDirectory
+    from .python3 import make__path__absolute
     from .python3 import int2byte, add_str, iterchar, iterbytes
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
