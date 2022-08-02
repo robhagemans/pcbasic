@@ -44,9 +44,6 @@ def main(*arguments):
             # start an interpreter session with standard i/o
             _run_session(**settings.launch_params)
 
-# api backward compatibility
-run = main
-
 
 def _show_usage():
     """Show usage description."""
