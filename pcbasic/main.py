@@ -15,11 +15,11 @@ import traceback
 from . import basic
 from . import state
 from . import config
-from .guard import ExceptionGuard, NOGUARD
+from .guard import ExceptionGuard
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
-from .compat import stdio, resources
+from .compat import stdio, resources, nullcontext
 
 
 def main(*arguments): # pragma: no cover
@@ -94,14 +94,14 @@ def _convert(settings):
 
 def _launch_session(settings):
     """Start an interactive interpreter session."""
-    guard = ExceptionGuard(**settings.guard_params)
+    exception_guard = ExceptionGuard(**settings.guard_params)
     try:
-        Interface(guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
+        Interface(exception_guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
     except InitFailed as e: # pragma: no cover
         logging.error(e)
 
 def _run_session(
-        interface=None, guard=NOGUARD,
+        interface=None, exception_guard=None,
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
@@ -109,7 +109,11 @@ def _run_session(
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
-            with guard.protect(interface, session):
+            if not exception_guard:
+                protect = nullcontext()
+            else:
+                protect = exception_guard.protect(interface, session)
+            with protect:
                 if greeting:
                     session.greet()
                 if prog:

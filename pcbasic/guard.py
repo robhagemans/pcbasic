@@ -25,16 +25,6 @@ LOG_PATTERN = u'crash-%Y%m%d-'
 PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
 
 
-class NoGuard(object):
-    """Null context manager."""
-
-    @contextmanager
-    def protect(self, *args, **kwargs):
-        yield
-
-NOGUARD = NoGuard()
-
-
 class ExceptionGuard(object):
     """Context manager to handle uncaught exceptions."""
 

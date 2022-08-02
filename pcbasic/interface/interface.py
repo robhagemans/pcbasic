@@ -80,7 +80,7 @@ class Interface(object):
     def _thread_runner(self, target, **kwargs):
         """Session runner."""
         try:
-            target(interface=self, guard=self._guard, **kwargs)
+            target(interface=self, exception_guard=self._guard, **kwargs)
         finally:
             if self._wait:
                 self.pause(WAIT_MESSAGE)
