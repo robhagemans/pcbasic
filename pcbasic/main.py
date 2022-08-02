@@ -74,11 +74,18 @@ def _convert(settings):
 
 def _launch_session(settings):
     """Start an interactive interpreter session."""
-    exception_guard = ExceptionGuard(**settings.guard_params)
     try:
-        Interface(exception_guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
+        interface = Interface(**settings.iface_params)
     except InitFailed as e: # pragma: no cover
         logging.error(e)
+    else:
+        exception_guard = ExceptionGuard(**settings.guard_params)
+        interface.launch(
+            _run_session,
+            interface=interface,
+            exception_guard=exception_guard,
+            **settings.launch_params
+        )
 
 def _run_session(
         interface=None, exception_guard=None,
@@ -86,14 +93,22 @@ def _run_session(
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
     """Run an interactive BASIC session."""
-    Session = basic.DebugSession if debug else basic.Session
-    with Session(interface, **session_params) as s:
-        with state.manage_state(s, state_file, resume) as session:
-            if not exception_guard:
-                protect = nullcontext()
-            else:
-                protect = exception_guard.protect(interface, session)
-            with protect:
+    session = None
+    if resume:
+        session = state.load_session(state_file)
+    if not session:
+        if debug:
+            session = basic.DebugSession(**session_params)
+        else:
+            session = basic.Session(**session_params)
+    if not exception_guard:
+        protect = nullcontext()
+    else:
+        protect = exception_guard.protect(interface, session)
+    with protect:
+        try:
+            with session:
+                session.attach(interface)
                 if greeting:
                     session.greet()
                 if prog:
@@ -103,3 +118,5 @@ def _run_session(
                 for cmd in commands:
                     session.execute(cmd)
                 session.interact()
+        finally:
+            state.save_session(session, state_file)

@@ -25,13 +25,12 @@ DELAY = 12
 class Interface(object):
     """User interface for PC-BASIC session."""
 
-    def __init__(self, guard=None, try_interfaces=(), audio_override=None, wait=False, **kwargs):
+    def __init__(self, try_interfaces=(), audio_override=None, wait=False, **kwargs):
         """Initialise interface."""
         self._input_queue = queue.Queue()
         self._video_queue = queue.Queue()
         self._audio_queue = queue.Queue()
         self._wait = wait
-        self._guard = guard
         self._video, self._audio = None, None
         for video in try_interfaces:
             try:
@@ -62,9 +61,9 @@ class Interface(object):
         """Retrieve interface queues."""
         return self._input_queue, self._video_queue, self._audio_queue
 
-    def launch(self, target, **kwargs):
+    def launch(self, target, *args, **kwargs):
         """Start an interactive interpreter session."""
-        thread = threading.Thread(target=self._thread_runner, args=(target,), kwargs=kwargs)
+        thread = threading.Thread(target=self._thread_runner, args=(target,) + args, kwargs=kwargs)
         try:
             # launch the BASIC thread
             thread.start()
@@ -77,10 +76,10 @@ class Interface(object):
             self.quit_input()
             thread.join()
 
-    def _thread_runner(self, target, **kwargs):
+    def _thread_runner(self, target, *args, **kwargs):
         """Session runner."""
         try:
-            target(interface=self, exception_guard=self._guard, **kwargs)
+            target(*args, **kwargs)
         finally:
             if self._wait:
                 self.pause(WAIT_MESSAGE)

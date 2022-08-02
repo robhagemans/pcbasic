@@ -28,11 +28,14 @@ except ImportError: # pragma: no cover
 try:
     from contextlib import nullcontext
 except ImportError: # pragma: no cover
-    from contextlib import contextmanager as _contextmanager
 
-    @_contextmanager
-    def nullcontext(*args, **kwargs):
-        yield
+    class nullcontext():
+        def __init__(self, enter_result=None):
+            self.enter_result = enter_result
+        def __enter__(self):
+            return self.enter_result
+        def __exit__(self, *excinfo):
+            pass
 
 ##################################################################################################
 

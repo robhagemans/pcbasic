@@ -37,24 +37,25 @@ HEADER = {
     'pcbasic_minor': int(VERSION.split(u'.')[1]),
 }
 
-@contextmanager
-def manage_state(session, state_file, do_resume):
-    """Resume a session if requested; save upon exit"""
-    if do_resume and state_file:
-        try:
-            session = load_session(state_file).attach(session.interface)
-        except Exception as e:
-            # if we were told to resume but can't, give up
-            logging.fatal('Failed to resume session from %s: %s', state_file, e)
-            sys.exit(1)
+def load_session(state_file):
+    """Resume a session."""
+    if not state_file:
+        return None
     try:
-        yield session
-    finally:
-        if state_file:
-            try:
-                save_session(session, state_file)
-            except Exception as e:
-                logging.error('Failed to save session to %s: %s', state_file, e)
+        return _load_session(state_file)
+    except Exception as e:
+        # if we were told to resume but can't, give up
+        logging.fatal('Failed to resume session from %s: %s', state_file, e)
+        sys.exit(1)
+
+def save_session(session, state_file):
+    """Save session to file."""
+    if not state_file:
+        return
+    try:
+        _save_session(session, state_file)
+    except Exception as e:
+        logging.error('Failed to save session to %s: %s', state_file, e)
 
 def unpickle_bytesio(value, pos):
     """Unpickle a file object."""
@@ -132,7 +133,7 @@ if PY2: # pragma: no cover
         streamclass.__setstate__ = patched_setstate
 
 
-def load_session(state_file):
+def _load_session(state_file):
     """Read state from a compressed pickle."""
     with open(state_file, 'rb') as in_file:
         header = in_file.read(struct.calcsize(HEADER_FORMAT))
@@ -160,7 +161,7 @@ def load_session(state_file):
     session = pickle.loads(zlib.decompress(blob))
     return session
 
-def save_session(obj, state_file):
+def _save_session(obj, state_file):
     """Write state to a compressed pickle."""
     blob = zlib.compress(pickle.dumps(obj, pickle.HIGHEST_PROTOCOL))
     checksum = zlib.crc32(blob) & 0xffffffff
