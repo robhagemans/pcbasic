@@ -93,14 +93,13 @@ def _run_session(
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
     """Run an interactive BASIC session."""
-    session = None
     if resume:
-        session = state.load_session(state_file)
-    if not session:
-        if debug:
-            session = basic.DebugSession(**session_params)
-        else:
-            session = basic.Session(**session_params)
+        session_class = state.load_session(state_file)
+    elif debug:
+        session_class = basic.DebugSession
+    else:
+        session_class = basic.Session
+    session = session_class(**session_params)
     if not exception_guard:
         protect = nullcontext()
     else:

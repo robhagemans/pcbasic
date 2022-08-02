@@ -37,16 +37,25 @@ HEADER = {
     'pcbasic_minor': int(VERSION.split(u'.')[1]),
 }
 
+
+
 def load_session(state_file):
     """Resume a session."""
-    if not state_file:
-        return None
     try:
-        return _load_session(state_file)
+        if not state_file:
+            raise ValueError('no state file given')
+        stored_session = _load_session(state_file)
     except Exception as e:
         # if we were told to resume but can't, give up
         logging.fatal('Failed to resume session from %s: %s', state_file, e)
         sys.exit(1)
+
+    def resumed_session(**dummy_session_params):
+        """Stand-in function for Session class. Session parameters are ignored on resume."""
+        return stored_session
+
+    return resumed_session
+
 
 def save_session(session, state_file):
     """Save session to file."""
