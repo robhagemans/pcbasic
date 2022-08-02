@@ -7,8 +7,8 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-import sys
-from pcbasic import main
+from pcbasic import main, script_entry_point_guard
 
 if __name__ == '__main__':
-    sys.exit(main())
+    with script_entry_point_guard():
+        main()

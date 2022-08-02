@@ -12,6 +12,11 @@ import os
 import struct
 
 
+# deal with broken pipes
+
+def is_broken_pipe(e):
+    return isinstance(e, BrokenPipeError)
+
 # strings
 
 int2byte = struct.Struct(">B").pack

@@ -19,6 +19,7 @@ from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
 from .basic import VERSION, LONG_VERSION
+from .compat import BrokenPipeError, is_broken_pipe
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
@@ -39,6 +40,12 @@ class ExceptionGuard(object):
         try:
             yield
         except (error.Exit, error.Reset):
+            raise
+        except BrokenPipeError as e:
+            # may be raised by shell pipes, handled at entry point
+            # see docs.python.org/3/library/signal.html#note-on-sigpipe
+            if is_broken_pipe(e):
+                raise error.Exit()
             raise
         except BaseException:
             if not self._bluescreen(session._impl, interface, *sys.exc_info()):

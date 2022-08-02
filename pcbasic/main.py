@@ -20,34 +20,10 @@ from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
 from .compat import stdio, resources, nullcontext
+from .compat import script_entry_point_guard
 
 
-def main(*arguments): # pragma: no cover
-    """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
-    try:
-        run(*arguments)
-    except KeyboardInterrupt:
-        pass
-    except:
-        # without this except clause we seem to be dropping exceptions
-        # probably due to the sys.stdout.close() hack below
-        logging.error('Unhandled exception\n%s', traceback.format_exc())
-        return 1
-    else:
-        return 0
-    finally:
-        # avoid sys.excepthook errors when piping output
-        # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
-        try:
-            sys.stdout.close()
-        except:
-            pass
-        try:
-            sys.stderr.close()
-        except:
-            pass
-
-def run(*arguments):
+def main(*arguments):
     """Initialise, parse arguments and perform requested operations."""
     with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
         # get settings and prepare logging
@@ -67,6 +43,10 @@ def run(*arguments):
         else:
             # start an interpreter session with standard i/o
             _run_session(**settings.launch_params)
+
+# api backward compatibility
+run = main
+
 
 def _show_usage():
     """Show usage description."""

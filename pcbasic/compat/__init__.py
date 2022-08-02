@@ -42,6 +42,7 @@ if PY2: # pragma: no cover
     from .python2 import getcwdu, getenvu, setenvu, iterenvu
     from .python2 import configparser, queue, copyreg, which
     from .python2 import SimpleNamespace, TemporaryDirectory
+    from .python2 import BrokenPipeError, is_broken_pipe
     unichr, int2byte, text_type = unichr, chr, unicode
 
     if WIN32:
@@ -57,6 +58,8 @@ else:
     from .python3 import int2byte, add_str, iterchar, iterbytes
     from .python3 import xrange, zip, iteritems, itervalues, iterkeys
     from .python3 import getcwdu, getenvu, setenvu, iterenvu
+    from .python3 import is_broken_pipe
+    BrokenPipeError = BrokenPipeError
     unichr, text_type = chr, str
     argv = sys.argv
 
@@ -85,3 +88,39 @@ if MACOS:
     # bit of a hack but I don't know a better way
     if not IS_CONSOLE_APP:
         os.chdir(HOME_DIR)
+
+
+##################################################################################################
+# deal with broken pipes in scripts
+
+from contextlib import contextmanager
+
+@contextmanager
+def script_entry_point_guard():
+    """Wrapper for entry points, to deal with Ctrl-C and sigpipe."""
+    # see docs.python.org/3/library/signal.html#note-on-sigpipe
+    # for cases where shell tools send SIGPIPE
+    # e.g. echo -e "?1\r?2\r" | python3.8 -m pcbasic -n | head --lines=1
+    exit_code = True
+    try:
+        yield
+        exit_code = False
+    except KeyboardInterrupt:
+        exit_code = False
+    except BrokenPipeError as e:
+        # py2 hack
+        if not is_broken_pipe(e):
+            raise
+    # broken pipe usually gets caught above, but flush streams here as a failsafe
+    try:
+        sys.stdout.flush()
+    except Exception:
+        exit_code = True
+    try:
+        sys.stderr.flush()
+    except Exception:
+        exit_code = True
+    if exit_code:
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stderr.fileno())
+    sys.exit(exit_code)
