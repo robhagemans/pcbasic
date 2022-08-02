@@ -39,7 +39,7 @@ def main(*arguments):
             _convert(settings)
         elif settings.interface:
             # start an interpreter session with interface
-            _launch_session(settings)
+            _run_session_with_interface(settings)
         else:
             # start an interpreter session with standard i/o
             _run_session(**settings.launch_params)
@@ -72,7 +72,8 @@ def _convert(settings):
             mode_suffix = b',%s' % (mode.encode('ascii'),) if mode.upper() in ('A', 'P') else b''
             session.execute(b'SAVE "%s"%s' % (outfile, mode_suffix))
 
-def _launch_session(settings):
+
+def _run_session_with_interface(settings):
     """Start an interactive interpreter session."""
     try:
         interface = Interface(**settings.iface_params)
@@ -92,26 +93,33 @@ def _run_session(
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
-    """Run an interactive BASIC session."""
+    session = _initialise_session(resume, debug, state_file, **session_params)
+    with exception_handler(session):
+        try:
+            _operate_session(session, interface, prog, commands, keys, greeting)
+        finally:
+            state.save_session(session, state_file)
+
+def _initialise_session(resume, debug, state_file, **session_params):
+    """Initialise BASIC session."""
     if resume:
         session_class = state.load_session(state_file)
     elif debug:
         session_class = basic.DebugSession
     else:
         session_class = basic.Session
-    session = session_class(**session_params)
-    with exception_handler(session):
-        try:
-            with session:
-                session.attach(interface)
-                if greeting:
-                    session.greet()
-                if prog:
-                    with session.bind_file(prog) as progfile:
-                        session.execute(b'LOAD "%s"' % (progfile,))
-                session.press_keys(keys)
-                for cmd in commands:
-                    session.execute(cmd)
-                session.interact()
-        finally:
-            state.save_session(session, state_file)
+    return session_class(**session_params)
+
+def _operate_session(session, interface, prog, commands, keys, greeting):
+    """Run an interactive BASIC session."""
+    with session:
+        session.attach(interface)
+        if greeting:
+            session.greet()
+        if prog:
+            with session.bind_file(prog) as progfile:
+                session.execute(b'LOAD "%s"' % (progfile,))
+        session.press_keys(keys)
+        for cmd in commands:
+            session.execute(cmd)
+        session.interact()
