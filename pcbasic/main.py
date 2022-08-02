@@ -79,16 +79,16 @@ def _launch_session(settings):
     except InitFailed as e: # pragma: no cover
         logging.error(e)
     else:
-        exception_guard = ExceptionGuard(**settings.guard_params)
+        exception_guard = ExceptionGuard(interface, **settings.guard_params)
         interface.launch(
             _run_session,
             interface=interface,
-            exception_guard=exception_guard,
+            exception_handler=exception_guard.protect,
             **settings.launch_params
         )
 
 def _run_session(
-        interface=None, exception_guard=None,
+        interface=None, exception_handler=nullcontext,
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
@@ -100,11 +100,7 @@ def _run_session(
     else:
         session_class = basic.Session
     session = session_class(**session_params)
-    if not exception_guard:
-        protect = nullcontext()
-    else:
-        protect = exception_guard.protect(interface, session)
-    with protect:
+    with exception_handler(session):
         try:
             with session:
                 session.attach(interface)
