@@ -250,7 +250,7 @@ class Arrays(object):
             if offset >= self._buffer_size(the_arr, dimensions): # pragma: no cover
                 return -1
             byte_array = self._buffers[the_arr]
-            return byte_array[offset]
+            return ord(byte_array[offset:offset+1])
         else:
             offset = address - name_addr - var_current
             if offset < max(3, len(the_arr))+1:
@@ -264,7 +264,7 @@ class Arrays(object):
                 )
                 for d in dimensions:
                     data_rep += struct.pack('<H', d + 1 - self._base)
-                return data_rep[offset]
+                return ord(data_rep[offset:offset+1])
 
     def get_strings(self):
         """Return a list of views of string array elements."""
