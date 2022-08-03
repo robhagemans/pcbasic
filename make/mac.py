@@ -31,11 +31,11 @@ def package():
 
         def run(self):
             """Run build_exe command."""
+            # prepare resources
             mkdir(RESOURCE_PATH)
             build_icon()
             make_docs()
-            # include dylibs
-            build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
+            # build the executable and library
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
@@ -57,15 +57,8 @@ def package():
             cx_Freeze.bdist_mac.run(self)
             build_dir = 'build/PC-BASIC-2.0.app/Contents/MacOS/'
             # remove some files we don't need
-            for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
-                remove(path)
-            # remove modules that can be left out
-            for module in ():
-                #    'distutils', 'setuptools', 'pydoc_data', 'lib2to3',
-                #    'unittest', 'wheel', 'pip', 'lxml',
-                #    'multiprocessing', 'asyncio',
-                #):
-                prune(build_dir + 'lib/%s' % module)
+            #for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
+            #    remove(path)
             # big libs we don't need
             remove(build_dir + 'libcrypto.1.1.dylib')
             remove(build_dir + 'libssl.1.1.dylib')
