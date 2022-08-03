@@ -36,7 +36,6 @@ USAGE_PATH = os.path.join(HERE, 'pcbasic', 'data')
 ICON_PATTERN = os.path.join(RESOURCE_PATH, 'pcbasic.{format}')
 
 STAMP_FILE = os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json')
-MANIFEST_FILE = os.path.join(HERE, 'MANIFEST.in')
 
 USAGE_NAME = 'USAGE.txt'
 MAN_NAME = 'pcbasic.1.gz'
@@ -63,8 +62,6 @@ def make_clean():
                 remove(os.path.join(root, name))
     # remove release stamp
     remove(STAMP_FILE)
-    # remove manifest
-    remove(MANIFEST_FILE)
 
 def prepare():
     """Prepare for sdist and wheel builds."""
