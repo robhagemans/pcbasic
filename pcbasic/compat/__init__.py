@@ -21,7 +21,7 @@ from .base import split_quoted, split_pair, iter_chunks
 # not available in Python <= 3.6
 
 try:
-     import importlib_resources as resources
+    import importlib_resources as resources
 except ImportError: # pragma: no cover
     from importlib import resources
 
@@ -121,6 +121,12 @@ def script_entry_point_guard():
     except Exception:
         exit_code = True
     if exit_code:
-        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
-        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stderr.fileno())
+        try:
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        except Exception:
+            pass
+        try:
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stderr.fileno())
+        except Exception:
+            pass
     sys.exit(exit_code)
