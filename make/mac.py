@@ -16,6 +16,7 @@ from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, make_docs, prune, remove, mkdir
+from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import EXCLUDE_EXTERNAL_PACKAGES
 from .freeze import build_manifest
@@ -30,6 +31,9 @@ def package():
 
         def run(self):
             """Run build_exe command."""
+            mkdir(RESOURCE_PATH)
+            build_icon()
+            make_docs()
             # include dylibs
             build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
@@ -86,8 +90,6 @@ def package():
 
         def run(self):
             """Run bdist_dmg command."""
-            build_icon()
-            make_docs()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
             mkdir('dist/')
