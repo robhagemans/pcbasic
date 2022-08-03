@@ -16,6 +16,14 @@ from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
 from .base import split_quoted, split_pair, iter_chunks
 
+try:
+     import importlib_resources as resources
+except ImportError:
+    # python 2.7, 3.6: not available
+    # python 3.7: fails on Windows
+    from importlib import resources
+
+
 if PY2: # pragma: no cover
     from .python2 import add_str, iterchar
     from .python2 import xrange, zip, iteritems, itervalues, iterkeys, iterbytes

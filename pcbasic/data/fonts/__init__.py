@@ -1,44 +1,34 @@
 """
-PC-BASIC - data package
-HEX font loader
+PC-BASIC - data.fonts
+Font files
 
 (c) 2013--2022 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
+
 import sys
-import pkg_resources
 import logging
 import binascii
 import unicodedata
 
-from ..compat import iteritems, itervalues, unichr, iterchar
-
-from .resources import get_data, ResourceFailed, listdir
+from ...compat import resources, iteritems, itervalues, unichr, iterchar
 
 
-FONT_DIR = u'fonts'
-FONT_PATTERN = u'{path}/{name}_{height:02d}.hex'
-FONTS = sorted(
-    set(name.split(u'_', 1)[0]
-    for name in listdir(FONT_DIR)
-    if name.lower().endswith(u'.hex'))
-)
 _HEIGHTS = (8, 14, 16)
 _DEFAULT_NAME = 'default'
-# (deprecated) aliases for the default font
+_FONT_PATTERN = '{name}_{height:02d}.hex'
+
+# (deprecated) aliases for the default font. should not include 'default'
 _DEFAULT_ALIASES = ('freedos', 'univga', 'unifont')
 
 
-def _get_font(name, height):
-    """Load font from file."""
-    try:
-        return get_data(FONT_PATTERN, path=FONT_DIR, name=name, height=height)
-    except ResourceFailed as e:
-        if name in _DEFAULT_ALIASES:
-            return get_data(FONT_PATTERN, path=FONT_DIR, name=_DEFAULT_NAME, height=height)
-        else:
-            logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
+# list of available fonts - top level names only
+FONTS = tuple(sorted(set(
+    name.split(u'_', 1)[0]
+    for name in resources.contents(__package__)
+    if name.lower().endswith('.hex') and resources.is_resource(__package__, name)
+)))
 
 
 def read_fonts(codepage_dict, font_families):
@@ -54,7 +44,7 @@ def read_fonts(codepage_dict, font_families):
     font_files = {
         _height: [
             _font for _font in
-            (_get_font(_name, _height) for _name in font_families)
+            (_read_font_file(_name, _height) for _name in font_families)
             if _font is not None
         ]
         for _height in _HEIGHTS
@@ -67,6 +57,21 @@ def read_fonts(codepage_dict, font_families):
     }
     return uc_fonts
 
+
+def _read_font_file(name, height):
+    """Get contents of font file."""
+    fontname = _FONT_PATTERN.format(name=name, height=height)
+    try:
+        return resources.read_binary(__package__, fontname)
+    except EnvironmentError as e:
+        if name in _DEFAULT_ALIASES:
+            return _read_font_file(_DEFAULT_NAME, height)
+        else:
+            logging.debug('Failed to load %d-pixel font `%s`: %s', height, name, e)
+
+
+###################################################################################################
+# hex font loader
 
 def load_hex(hex_resources, height, all_needed):
     """Load a set of overlaying unifont .hex files."""

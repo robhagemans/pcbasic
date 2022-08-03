@@ -10,7 +10,6 @@ import os
 import sys
 import locale
 import logging
-import pkg_resources
 import traceback
 
 from . import basic
@@ -20,7 +19,7 @@ from .guard import ExceptionGuard, NOGUARD
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
-from .compat import stdio
+from .compat import stdio, resources
 
 
 def main(*arguments): # pragma: no cover
@@ -68,7 +67,7 @@ def run(*arguments):
 
 def _show_usage():
     """Show usage description."""
-    usage = pkg_resources.resource_string(__name__, 'data/USAGE.txt').decode('utf-8', 'replace')
+    usage = resources.read_text(__package__ + '.' + 'data', 'USAGE.txt', errors='replace')
     stdio.stdout.write(usage)
 
 def _show_version(settings):

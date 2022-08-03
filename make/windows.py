@@ -31,6 +31,7 @@ def package():
 
         def run(self):
             """Run build_exe command."""
+            make_clean()
             build_icon()
             make_docs()
             # only include 32-bit DLLs
@@ -46,20 +47,13 @@ def package():
                     if (
                             # remove superfluous copies of python27.dll in lib/
                             # as there is a copy in the package root already
-                            fname.lower() == 'python37.dll' or fname.lower() == 'msvcr90.dll'
+                            fname.lower() == 'python37.dll'
                             # remove tests and examples
                             or testing
                             # we're only producing packages for win32_x86
                             or 'win32_x64' in name or name.endswith('.dylib')
                         ):
                         remove(name)
-            # remove lib dir altogether to avoid it getting copied into the msi
-            # as everything in there is copied once already
-            prune('build/lib')
-            # remove c++ runtime etc
-            # these were on python 2.7
-            remove(build_dir + 'msvcm90.dll')
-            remove(build_dir + 'msvcp90.dll')
             # chunky libs on python3.7 that I don't think we use
             remove(build_dir + 'lib/libcrypto-1_1.dll')
             remove(build_dir + 'lib/libssl-1_1.dll')
@@ -70,14 +64,9 @@ def package():
             remove(build_dir + 'lib/sdl2dll/dll/libwebp-7.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libtiff-5.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libopus-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libopusfile-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libogg-0.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
-            # remove modules that can be left out
-            for module in (
-                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
-                    'wheel', 'lxml',
-                    'multiprocessing', 'asyncio'
-                ):
-                prune(build_dir + 'lib/%s' % module)
 
 
     class BdistMsiCommand(cx_Freeze.bdist_msi):
@@ -91,7 +80,7 @@ def package():
             # close the database file so we can rename the file
             del self.db
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
-            make_clean()
+            #make_clean()
 
         def add_config(self):
             """Override cx_Freeze add_config."""
@@ -316,13 +305,15 @@ def package():
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'packages': ['pkg_resources._vendor'],
             'excludes': [
-                'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame',
-                'pywin', 'win32com', 'test',
+                'pygame',
+                'pip', 'wheel', 'unittest', 'pydoc_data',
+                'email', 'xml',
             ],
             'include_files': ['doc/PC-BASIC_documentation.html'],
-            'include_msvcr': True,
+            # optimize removes:
+            # - asserts (which we don't have as only in th eomitted tests package)
+            # - docstrings (which we may be using in error messages)
             #'optimize': 2,
         },
         'bdist_msi': {

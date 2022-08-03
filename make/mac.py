@@ -55,11 +55,11 @@ def package():
             for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
                 remove(path)
             # remove modules that can be left out
-            for module in (
-                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3',
-                    'unittest', 'wheel', 'pip', 'lxml', 
-                    'multiprocessing', 'asyncio',
-                ):
+            for module in ():
+                #    'distutils', 'setuptools', 'pydoc_data', 'lib2to3',
+                #    'unittest', 'wheel', 'pip', 'lxml',
+                #    'multiprocessing', 'asyncio',
+                #):
                 prune(build_dir + 'lib/%s' % module)
             # big libs we don't need
             remove(build_dir + 'libcrypto.1.1.dylib')
@@ -125,9 +125,10 @@ def package():
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'packages': ['pkg_resources._vendor'],
             'excludes': [
-                'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame', 'test',
+                #'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 
+                'pygame',
+                #'test',
             ],
             #'optimize': 2,
         },

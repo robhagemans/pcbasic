@@ -1,32 +1,30 @@
 """
-PC-BASIC - data package
-UCP codepage loader
+PC-BASIC - data.codepages
+Codepage definition files
 
 (c) 2013--2022 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
-import pkg_resources
 import logging
 import binascii
 
-from ..compat import unichr
+from ...compat import resources, unichr
 
-from .resources import get_data, listdir
 
-CODEPAGE_DIR = u'codepages'
-CODEPAGE_PATTERN = u'{path}/{name}.ucp'
-CODEPAGES = [
+# list of available codepages
+CODEPAGES = tuple(
     name.split(u'.', 1)[0]
-    for name in listdir(CODEPAGE_DIR)
-    if name.lower().endswith(u'.ucp')
-]
+    for name in resources.contents(__package__)
+    if name.lower().endswith('.ucp') and resources.is_resource(__package__, name)
+)
 
 
 def read_codepage(codepage_name):
     """Read a codepage file and convert to codepage dict."""
+    codepage_name += '.ucp'
     codepage = {}
-    for line in get_data(CODEPAGE_PATTERN, path=CODEPAGE_DIR, name=codepage_name).splitlines():
+    for line in resources.read_binary(__package__, codepage_name).splitlines():
         # ignore empty lines and comment lines (first char is #)
         if (not line) or (line[0] == b'#'):
             continue
