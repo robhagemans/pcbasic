@@ -34,7 +34,7 @@ FONTS = tuple(sorted(set(
 def read_fonts(codepage_dict, font_families):
     """Load font typefaces."""
     # default font is fallback
-    font_families = list(font_families) + [_DEFAULT_NAME]
+    font_families = (_DEFAULT_NAME,) + tuple(font_families)
     # load the graphics fonts, including the 8-pixel RAM font
     # use set() for speed - lookup is O(1) rather than O(n) for list
     unicode_needed = set(itervalues(codepage_dict))
