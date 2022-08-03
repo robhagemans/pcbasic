@@ -41,12 +41,14 @@ def package():
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
             for root, _, files in os.walk(build_dir + 'lib'):
-                testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
+                exclude = set(root.split(os.sep)) & set(
+                    ('Headers', 'test', 'tests', 'testing', 'examples')
+                )
                 for fname in files:
                     name = os.path.join(root, fname)
                     # remove tests and examples
                     # remove windows DLLs and PYDs
-                    if (testing or 'win32_' in name or name.endswith('.dll')):
+                    if (exclude or 'win32_' in name or name.endswith('.dll')):
                         remove(name)
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
@@ -71,14 +73,14 @@ def package():
             os.chdir('..')
             os.symlink('Versions/Current/SDL2', 'SDL2')
             os.symlink('Versions/Current/Resources', 'Resources')
-            os.symlink('Versions/Current/Headers', 'Headers')
+            #os.symlink('Versions/Current/Headers', 'Headers')
             os.chdir(cwd)
             os.chdir(build_dir + 'lib/sdl2dll/dll/SDL2_gfx.framework/Versions/')
             os.symlink('A', 'Current')
             os.chdir('..')
             os.symlink('Versions/Current/SDL2_gfx', 'SDL2_gfx')
             os.symlink('Versions/Current/Resources', 'Resources')
-            os.symlink('Versions/Current/Headers', 'Headers')
+            #os.symlink('Versions/Current/Headers', 'Headers')
             os.chdir(cwd)
             # codesign the app
             print('>>> ad hoc code signing ', self.bundle_dir)
