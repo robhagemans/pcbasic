@@ -19,7 +19,6 @@ from .common import build_icon, make_docs, prune, remove, mkdir
 from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import EXCLUDE_EXTERNAL_PACKAGES
-from .freeze import build_manifest
 
 
 def package():
