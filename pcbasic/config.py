@@ -14,7 +14,6 @@ import zipfile
 import locale
 import shutil
 import codecs
-import pkg_resources
 from collections import deque
 
 from .compat import iteritems, text_type, iterchar
@@ -25,8 +24,8 @@ from .compat import split_quoted, split_pair
 from .compat import console, IS_CONSOLE_APP, stdio
 from .compat import TemporaryDirectory
 
-from .data import CODEPAGES, FONTS, PROGRAMS
-from .basic import VERSION, NAME, ICON
+from .data import CODEPAGES, FONTS, PROGRAMS, ICON
+from .basic import VERSION, NAME
 from . import data
 
 
@@ -1101,7 +1100,7 @@ class ArgumentParser(object):
             # use utf_8_sig to ignore a BOM if it's at the start of the file
             # (e.g. created by Notepad)
             with io.open(config_file, 'r', encoding='utf_8_sig', errors='replace') as f:
-                if PY2:
+                if PY2: # pragma: no cover
                     config.readfp(WhitespaceStripper(f))
                 else:
                     config.read_file(WhitespaceStripper(f))

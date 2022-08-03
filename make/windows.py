@@ -1,5 +1,5 @@
 """
-PC-BASIC - packaging.windows
+PC-BASIC - make.windows
 Windows packaging
 
 (c) 2015--2022 Rob Hagemans
@@ -14,9 +14,10 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import make_clean, build_icon, make_docs, prune, remove, mkdir
-from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .freeze import build_manifest
+from .common import build_icon, prune, remove, mkdir, prepare
+from .common import RESOURCE_PATH
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
+
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
 PRODUCT_CODE = msilib.gen_uuid()
@@ -25,16 +26,16 @@ PRODUCT_CODE = msilib.gen_uuid()
 def package():
     """Build a Windows .MSI package."""
     setup_options = SETUP_OPTIONS
+    prepare()
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
 
         def run(self):
             """Run build_exe command."""
+            mkdir(RESOURCE_PATH)
             build_icon()
-            make_docs()
             # only include 32-bit DLLs
-            build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
@@ -44,22 +45,15 @@ def package():
                 for fname in files:
                     name = os.path.join(root, fname)
                     if (
-                            # remove superfluous copies of python27.dll in lib/
+                            # remove superfluous copies of python dll in lib/
                             # as there is a copy in the package root already
-                            fname.lower() == 'python37.dll' or fname.lower() == 'msvcr90.dll'
+                            fname.lower() == 'python37.dll'
                             # remove tests and examples
                             or testing
                             # we're only producing packages for win32_x86
                             or 'win32_x64' in name or name.endswith('.dylib')
                         ):
                         remove(name)
-            # remove lib dir altogether to avoid it getting copied into the msi
-            # as everything in there is copied once already
-            prune('build/lib')
-            # remove c++ runtime etc
-            # these were on python 2.7
-            remove(build_dir + 'msvcm90.dll')
-            remove(build_dir + 'msvcp90.dll')
             # chunky libs on python3.7 that I don't think we use
             remove(build_dir + 'lib/libcrypto-1_1.dll')
             remove(build_dir + 'lib/libssl-1_1.dll')
@@ -70,14 +64,9 @@ def package():
             remove(build_dir + 'lib/sdl2dll/dll/libwebp-7.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libtiff-5.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libopus-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libopusfile-0.dll')
+            remove(build_dir + 'lib/sdl2dll/dll/libogg-0.dll')
             remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
-            # remove modules that can be left out
-            for module in (
-                    'distutils', 'setuptools', 'pydoc_data', 'lib2to3', 'pip', 'unittest',
-                    'wheel', 'lxml',
-                    'multiprocessing', 'asyncio'
-                ):
-                prune(build_dir + 'lib/%s' % module)
 
 
     class BdistMsiCommand(cx_Freeze.bdist_msi):
@@ -91,7 +80,7 @@ def package():
             # close the database file so we can rename the file
             del self.db
             os.rename('dist/{}-win32.msi'.format(name), 'dist/{}.msi'.format(name))
-            make_clean()
+            #make_clean()
 
         def add_config(self):
             """Override cx_Freeze add_config."""
@@ -309,20 +298,18 @@ def package():
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
-        'Icon': [('PC-BASIC-Icon', msilib.Binary('./resources/pcbasic.ico')),],
+        'Icon': [('PC-BASIC-Icon', msilib.Binary('./build/resources/pcbasic.ico')),],
         'Property': [('ARPPRODUCTICON', 'PC-BASIC-Icon'),],
     }
 
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'packages': ['pkg_resources._vendor'],
-            'excludes': [
-                'Tkinter', '_tkinter', 'PIL', 'PyQt4', 'scipy', 'pygame',
-                'pywin', 'win32com', 'test',
-            ],
-            'include_files': ['doc/PC-BASIC_documentation.html'],
-            'include_msvcr': True,
+            'excludes': EXCLUDE_EXTERNAL_PACKAGES,
+            'include_files': ['build/doc/PC-BASIC_documentation.html'],
+            # optimize removes:
+            # - asserts (which we don't have as only in th eomitted tests package)
+            # - docstrings (which we may be using in error messages)
             #'optimize': 2,
         },
         'bdist_msi': {
@@ -338,10 +325,10 @@ def package():
 
     setup_options['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic.exe', icon='resources/pcbasic.ico',
+            'run-pcbasic.py', base='Console', targetName='pcbasic.exe', icon='build/resources/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='resources/pcbasic.ico',
+            'run-pcbasic.py', base='Win32GUI', targetName='pcbasicw.exe', icon='build/resources/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]

@@ -27,7 +27,7 @@ except locale.Error as e:
 
 from .base import PY2, HOME_DIR, MACOS
 
-if PY2:
+if PY2: # pragma: no cover
     from .python2 import which
 else:
     from shutil import which
@@ -42,6 +42,7 @@ EOL = u'\n'
 # shell conventions
 # console encoding
 SHELL_ENCODING = sys.stdin.encoding or locale.getpreferredencoding()
+OEM_ENCODING = SHELL_ENCODING
 FS_ENCODING = sys.getfilesystemencoding()
 # window suppression not needed on Unix
 HIDE_WINDOW = None
@@ -70,7 +71,7 @@ def get_short_pathname(native_path):
     """Return Windows short path name or None if not available."""
     return None
 
-if PY2:
+if PY2: # pragma: no cover
     # the official parameter should be LC_CTYPE but that's None in my locale
     # on Windows, this would only work if the mbcs CP_ACP includes the characters we need;
     argv = [_arg.decode(FS_ENCODING, errors='replace') for _arg in sys.argv]

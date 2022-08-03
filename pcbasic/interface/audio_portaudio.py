@@ -56,7 +56,7 @@ else:
 
 @audio_plugins.register('portaudio')
 class AudioPortAudio(AudioPlugin):
-    """SDL2-based audio plugin."""
+    """PortAudio-based audio plugin."""
 
     def __init__(self, audio_queue, **kwargs):
         """Initialise sound system."""

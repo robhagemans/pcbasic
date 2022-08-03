@@ -19,21 +19,11 @@ from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
 from .basic import VERSION, LONG_VERSION
-from .data import get_data, ResourceFailed
+from .compat import BrokenPipeError, is_broken_pipe
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
 PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
-
-
-class NoGuard(object):
-    """Null context manager."""
-
-    @contextmanager
-    def protect(self, *args, **kwargs):
-        yield
-
-NOGUARD = NoGuard()
 
 
 class ExceptionGuard(object):
@@ -50,6 +40,12 @@ class ExceptionGuard(object):
         try:
             yield
         except (error.Exit, error.Reset):
+            raise
+        except BrokenPipeError as e:
+            # may be raised by shell pipes, handled at entry point
+            # see docs.python.org/3/library/signal.html#note-on-sigpipe
+            if is_broken_pipe(e):
+                raise error.Exit()
             raise
         except BaseException:
             if not self._bluescreen(session._impl, interface, *sys.exc_info()):
@@ -75,7 +71,7 @@ class ExceptionGuard(object):
             from_line = impl.program.get_line_number(bytepos)
             try:
                 codestream.seek(impl.program.line_numbers[from_line]+1)
-                _, output, textpos = impl.lister.detokenise_line(codestream, bytepos)
+                _, output, _ = impl.lister.detokenise_line(codestream)
                 code_line = bytes(output)
             except KeyError:
                 code_line = b'<could not retrieve line number %d>' % from_line

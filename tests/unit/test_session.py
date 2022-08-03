@@ -126,8 +126,11 @@ class SessionTest(TestCase):
             s.set_variable(b'A$', u'\xc2\xa3')
             # bytes output, in cp437
             assert s.get_variable(b'A$') == b'\x9C'
-            # unset array
+            # undefined array
             assert s.get_variable('A%()') == []
+            # can't set array to empty
+            with self.assertRaises(ValueError):
+                s.set_variable('ARR2!()', [])
 
     def test_session_evaluate(self):
         """Test Session.set_variable and Session.get_variable."""
@@ -137,17 +140,6 @@ class SessionTest(TestCase):
             assert s.evaluate(u'A') == 1
             # syntax error
             assert s.evaluate(b'LOG+1') is None
-
-    def test_resume(self):
-        """Test resume."""
-        run(
-            "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
-            '--mount=z:%s' % self.output_path(), '-b'
-        )
-        run('--resume', '--keys=?#1,A:close:system\\r', '-b')
-        with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
-            output = outfile.read()
-        assert output == b' 1 \r\n\x1a', repr(output)
 
     def test_session_bind_file(self):
         """test Session.bind_file."""
@@ -268,6 +260,14 @@ class SessionTest(TestCase):
             s.execute(b'a=1')
             s.execute(b'print a')
         assert bi.getvalue() == b' 1 \r\n'
+
+
+    def test_session_bad_type_iostreams(self):
+        """Test Session with iostreams of incorrect type."""
+        with self.assertRaises(TypeError):
+            Session(input_streams=1).start()
+        with self.assertRaises(TypeError):
+            Session(output_streams=2).start()
 
     def test_session_printcopy(self):
         """Test Session with ctrl print-screen copy."""

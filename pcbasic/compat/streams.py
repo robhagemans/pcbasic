@@ -80,7 +80,7 @@ class StdIOBase(object):
         return wrapped
 
     @contextmanager
-    def _muffle_one(self, stream_name, preserve):
+    def _muffle_one(self, stream_name, preserve, redirect):
         """Silence stdout or stderr. On Python 2, also silences external writes."""
         std_stream = getattr(sys, '__%s__' % (stream_name,))
         if not PY2:
@@ -89,7 +89,7 @@ class StdIOBase(object):
         try:
             if not PY2:
                 save_buffer = std_stream.buffer
-            else:
+            else: # pragma: no cover
                 try:
                     # save the file descriptor for the target stream
                     save = os.dup(std_stream.fileno())
@@ -98,7 +98,7 @@ class StdIOBase(object):
                     logging.error(e)
                     yield
                     return
-            if preserve:
+            if preserve or redirect:
                 temp_file = tempfile.TemporaryFile('w+b')
             else:
                 temp_file = io.open(os.devnull, 'wb')
@@ -108,7 +108,7 @@ class StdIOBase(object):
                     # replace the underlying buffer in the TextIOWrapper
                     # since we're mutating the object, affects all stored references.
                     std_stream.__init__(temp_file, encoding=encoding) # errors='replace'
-                else:
+                else: # pragma: no cover
                     # the old unix way, doesn't work on python3.6+/windows
                     # put /dev/null fds on 1 (stdout) or 2 (stderr)
                     os.dup2(temp.fileno(), std_stream.fileno())
@@ -123,41 +123,48 @@ class StdIOBase(object):
                     # restore file descriptors
                     if not PY2:
                         std_stream.__init__(save_buffer, encoding=encoding)
-                    else:
+                    else: # pragma: no cover
                         os.dup2(save, std_stream.fileno())
                     self._attach_output_stream(stream_name, redirected=False)
                     if preserve:
-                        # write contents of temporary file back into stream
+                        if PY2: # pragma: no cover
+                            redirect = std_stream
+                        else:
+                            redirect = std_stream.buffer
+                    if redirect:
+                        # write contents of temporary file into redirect or back into standard io
                         temp.flush()
                         temp.seek(0)
-                        if PY2:
-                            std_stream.write(temp.read())
-                        else:
-                            std_stream.buffer.write(temp.read())
-
+                        redirect.write(temp.read())
         finally:
             if save is not None:
                 os.close(save)
 
     @contextmanager
-    def _muffle(self, stream_name, preserve):
+    def _muffle(self, stream_name, **kwargs):
         """Silence stdout, stderr, or both."""
         if not stream_name:
-            with self._muffle_one('stdout', preserve=preserve):
-                with self._muffle_one('stderr', preserve=preserve):
+            with self._muffle_one('stdout', **kwargs):
+                with self._muffle_one('stderr', **kwargs):
                     yield
         else:
-            with self._muffle_one(stream_name, preserve=preserve):
+            with self._muffle_one(stream_name, **kwargs):
                 yield
 
     @contextmanager
     def pause(self, stream_name=None):
         """Pause stdout or stderr or both, preserving output."""
-        with self._muffle(stream_name, preserve=True):
+        with self._muffle(stream_name, preserve=True, redirect=None):
             yield
 
     @contextmanager
     def quiet(self, stream_name=None):
-        """Pause stdout or stderr or both, preserving output."""
-        with self._muffle(stream_name, preserve=False):
+        """Pause stdout or stderr or both, not preserving output."""
+        with self._muffle(stream_name, preserve=False, redirect=None):
+            yield
+
+    @contextmanager
+    def redirect_output(self, output=None, stream_name=None):
+        """Pause stdout or stderr or both, redirecting output."""
+        with self._muffle(stream_name, preserve=False, redirect=output):
             yield

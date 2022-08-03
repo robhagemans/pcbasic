@@ -227,7 +227,7 @@ class Implementation(object):
         # reopen keyboard, in case we quit because it was closed
         self.keyboard._input_closed = False
         # suppress double prompt
-        if not self.interpreter._parse_mode:
+        if not self.interpreter.parse_mode:
             self._prompt = False
 
     def attach_interface(self, interface=None):
@@ -403,7 +403,7 @@ class Implementation(object):
         except error.Break as e:
             # ctrl-break stops foreground and background sound
             self.sound.stop_all_sound()
-            if not self.interpreter.run_mode and not e.stop:
+            if not self.interpreter.parse_mode:
                 self._prompt = False
             else:
                 self.interpreter.set_pointer(False)
@@ -422,6 +422,9 @@ class Implementation(object):
         # not handled by ON ERROR, stop execution
         self.console.start_line()
         self.console.write(e.get_message(self.program.get_line_number(e.pos)))
+        if not self.interpreter.input_mode:
+            self.console.write(b'\xFF')
+        self.console.write(b'\r')
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
         self._prompt = True
@@ -592,12 +595,12 @@ class Implementation(object):
         """LOAD: load program from file."""
         name = values.next_string(args)
         comma_r, = args
+        # clear variables, stacks & pointers
+        self._clear_all()
         with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
             self.program.load(f)
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
-        # clear variables
-        self._clear_all()
         if comma_r:
             # in ,R mode, don't close files; run the program
             self.interpreter.set_pointer(True, 0)
@@ -612,7 +615,7 @@ class Implementation(object):
         jumpnum = next(args)
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
-        common_all, delete_lines = next(args), next(args)
+        preserve_all, delete_lines = next(args), next(args)
         from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
@@ -620,14 +623,14 @@ class Implementation(object):
         if self.program.protected and merge:
             raise error.BASICError(error.IFC)
         # gather COMMON declarations
-        commons = self.interpreter.gather_commons()
-        with self.memory.preserve_commons(commons, common_all):
+        common_scalars, common_arrays = self.interpreter.gather_commons()
+        with self.memory.preserve_commons(common_scalars, common_arrays, preserve_all):
             # preserve DEFtype on MERGE
             # functions are cleared except when CHAIN ... ALL is specified
             # OPTION BASE is preserved when there are common variables
             self._clear_all(
-                    preserve_functions=common_all,
-                    preserve_base=(commons or common_all),
+                    preserve_functions=preserve_all,
+                    preserve_base=(common_scalars or common_arrays or preserve_all),
                     preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
@@ -712,6 +715,9 @@ class Implementation(object):
     def end_(self, args):
         """END: end program execution and return to interpreter."""
         list(args)
+        # enable CONT
+        self.program.bytecode.skip_to(tk.END_STATEMENT)
+        self.interpreter.stop_pos = self.program.bytecode.tell()
         # jump to end of direct line so execution stops
         self.interpreter.set_pointer(False)
         # avoid NO RESUME

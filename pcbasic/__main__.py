@@ -5,5 +5,7 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .main import main
-main()
+from .main import main, script_entry_point_guard
+
+with script_entry_point_guard():
+    main()

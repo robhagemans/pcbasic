@@ -1,28 +1,31 @@
 
 
 ### Setting up a development environment for PC-BASIC
-These instructions cover the steps needed to install the development source of PC-BASIC and its dependencies. You can also follow them if you simply want to install PC-BASIC from the source repository on GitHub.
+These instructions cover the steps needed to install the development source of PC-BASIC and its dependencies.
 
-#### You won't need to read this file just to install PC-BASIC ####
-General installation instructions for PC-BASIC can be found in `README.md`.
-The instructions there cover the most common platforms and use cases.
+> #### You won't need to read this file just to install PC-BASIC ####
+> General installation instructions for PC-BASIC can be found in `README.md`.
+> The instructions there cover the most common platforms and use cases.
+> The instructions in this file are for developers only.
 
 
 #### Dependencies ####
 The following packages are needed, recommended or optional when installing PC-BASIC:
 
-| Package                                                                       | OS                 | Status       | Used for
-|-------------------------------------------------------------------------------|--------------------|--------------|----------------------------------------
-| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | all                | required     |
-| [SDL2](https://www.libsdl.org/download-2.0.php)                               | all                | recommended  | graphics and sound with `--interface=graphical`
-| [PySerial 3.4](https://github.com/pyserial/pyserial)                          | all                | optional     | physical or emulated serial port access
-| [PyParallel](https://github.com/pyserial/pyparallel)                          | Windows, Linux     | optional     | physical parallel port access
-| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | all                | optional     | sound without SDL2
+| Package                                                                       | Status                     | Used for
+|-------------------------------------------------------------------------------|----------------------------|----------------------------------------
+| [Python 3.6.9 or later](https://www.python.org/downloads/)                    | required                   |
+| [`importlib_resources`](https://pypi.python.org/pypi/importlib_resources)     | required for Python <= 3.6 |
+| [SDL2](https://www.libsdl.org/download-2.0.php)                               | recommended                | graphics and sound
+| [PySerial 3.4](https://github.com/pyserial/pyserial)                          | optional                   | physical or emulated serial port access
+| [PyParallel](https://github.com/pyserial/pyparallel)                          | optional                   | physical parallel port access
+| [PyAudio](http://people.csail.mit.edu/hubert/pyaudio/)                        | optional                   | sound without SDL2
 
-`setuptools` and `pip` are included with Python.
 Once you have a working Python installation, most dependencies can be installed with `pip`:
 
-        pip3 install pysdl2-dll pyserial
+        pip install pysdl2-dll pyserial
+
+If `pip` is not included with your copy of Python, install it with `python -m ensurepip` or through your system's package manager.
 
 For Windows, Mac, and Linux, it is recommended to use the SDL2 and SDL2-gfx libraries provided by the [pysdl2-dll](https://github.com/a-hurst/pysdl2-dll) package.
 Alternatively, you can get the library directly from [libsdl.org](https://www.libsdl.org/download-2.0.php).
@@ -64,7 +67,7 @@ The following additional packages and tools are used for development, testing an
 | [`wheel`](https://pypi.python.org/pypi/wheel)                                                                  | all               | packaging
 | [`twine`](https://pypi.python.org/pypi/twine)                                                                  | all               | packaging
 | [`toml`](https://pypi.python.org/pypi/toml)                                                                    | all               | packaging
-| [`Pillow`](https://python-pillow.org/)                                                                         | all               | packaging
+| [`pillow`](https://python-pillow.org/)                                                                         | all               | packaging
 | [`cx_Freeze` 6.11.1](https://pypi.org/project/cx_Freeze/)                                                      | Windows, MacOS    | packaging
 | `dpkg`                                                                                                         | Linux             | packaging
 | `alien`                                                                                                        | Linux             | packaging
@@ -78,7 +81,7 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 
 2. Make pcbasic/data/USAGE.txt
 
-        python3.7 -m make docs
+        python3.7 -m make local
 
 3. Run pcbasic directly from the source directory
 
@@ -88,8 +91,8 @@ These are the steps to set up the local repository ready to run PC-BASIC:
 #### Deprecation warnings ####
 
 The following features are deprecated and **will be removed in the near future**:
-- Python 2.7 support
-- The [PyGame 1.9.3](www.pygame.org)-based interface
+- Support for end-of-life Python versions 2.7 and 3.6
+- The [PyGame](www.pygame.org)-based interface
 - The [curses](https://invisible-island.net/ncurses/)-based interface
 - The option `--utf8` (use `--text-encoding=utf8`)
 - The aliases `freedos`, `univga`, and `unifont` for the default font (use `--font=default`)

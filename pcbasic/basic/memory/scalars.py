@@ -130,11 +130,11 @@ class Scalars(object):
             if name_try <= address and name_try > name_addr:
                 name_addr, var_addr = name_try, var_try
                 the_var = name
-        if the_var is None:
+        if the_var is None: # pragma: no cover
             return -1
         if address >= var_addr:
             offset = address - var_addr
-            if offset >= values.size_bytes(the_var):
+            if offset >= values.size_bytes(the_var): # pragma: no cover
                 return -1
             var_rep = self._vars[the_var]
             return var_rep[offset]
@@ -154,7 +154,13 @@ class Scalars(object):
 
 def get_name_in_memory(name, offset):
     """Memory representation of variable name."""
-    normname = bytearray(name.upper())
+    # 00 type size in bytes
+    # 01 1st char of name
+    # 02 2nd char of name or 00
+    # 03 length of name minus 3, 00 if less than 3 chars
+    # 04-- remaining chars of name, excluding sigil, shifted so that A is encoded as &hC1
+    #
+    normname = bytearray(name.upper())[:-1]
     if offset == 0:
         return values.size_bytes(name)
     elif offset == 1:
@@ -169,6 +175,8 @@ def get_name_in_memory(name, offset):
             return len(name)-3
         else:
             return 0
-    else:
+    elif 4 <= offset <= len(normname)+1:
         # rest of name is encoded such that c1 == 'A'
-        return normname[offset-1] - ord(b'A') + 0xC1
+        return normname[offset-2] - ord(b'A') + 0xC1
+    else: # pragma: no cover
+        return -1

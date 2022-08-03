@@ -25,7 +25,7 @@ from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 from .base import PY2
 from .streams import StdIOBase
 
-if PY2:
+if PY2: # pragma: no cover
     from .python2 import SimpleNamespace
 else:
     from types import SimpleNamespace
@@ -702,7 +702,7 @@ def read_all_available(stream):
 ##############################################################################
 # standard i/o
 
-if PY2:
+if PY2: # pragma: no cover
 
     class _StreamWrapper(object):
         """Delegating stream wrapper."""
@@ -751,7 +751,7 @@ if PY2:
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
 
-    if PY2:
+    if PY2: # pragma: no cover
         def _attach_stdin(self):
             if sys.stdin.isatty():
                 self.stdin = self._wrap_input_stream(_ConsoleInput())

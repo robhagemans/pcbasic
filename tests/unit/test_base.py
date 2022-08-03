@@ -352,6 +352,9 @@ class ByteMatrixTest(unittest.TestCase):
         assert ByteMatrix.frompacked(b'\xfe', 1, 8) == ByteMatrix(1, 8, [[1, 1, 1, 1, 1, 1, 1, 0]])
         # empty
         assert ByteMatrix.frompacked(b'', 0, 8) == ByteMatrix()
+        # insufficient length
+        assert ByteMatrix.frompacked(b'\0', 2, 8) == ByteMatrix()
+
 
     def test_hex(self):
         """Test hex representation."""

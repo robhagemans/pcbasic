@@ -80,12 +80,14 @@ class Interrupt(Exception):
         """String representation of exception."""
         return self.message.decode('ascii', 'replace')
 
+    __str__ = __repr__
+
     def get_message(self, line_number=None):
         """Error message."""
         if line_number is not None and 0 <= line_number < 65535:
-            return b'%s in %i\xFF\r' % (self.message, line_number)
+            return b'%s in %i' % (self.message, line_number)
         else:
-            return b'%s\xFF\r' % (self.message,)
+            return b'%s' % (self.message,)
 
 
 class Exit(Interrupt):

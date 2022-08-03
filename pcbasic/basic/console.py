@@ -321,7 +321,7 @@ class Console(object):
         """Write a string to the screen and end with a newline."""
         self.write(b'%s\r' % (s,), do_echo)
 
-    def list_line(self, line, newline):
+    def list_line(self, line, newline, set_text_position=None):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
         # replace LF CR with LF
@@ -340,6 +340,12 @@ class Console(object):
         # remove wrap after 80-column program line
         if len(line) == self.width and self._text_screen.current_row > 2:
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)
+        if set_text_position is not None:
+            # adjust column position if logical line extends across multiple rows
+            pos_row, pos_col = self._text_screen.find_position_in_line(
+                self.current_row, set_text_position
+            )
+            self.set_pos(pos_row, pos_col)
 
     def start_line(self):
         """

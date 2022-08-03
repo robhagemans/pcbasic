@@ -197,15 +197,10 @@ class DataSegment(object):
         self.reset_fields()
 
     @contextmanager
-    def preserve_commons(self, preserve_common, preserve_all):
+    def preserve_commons(self, common_scalars, common_arrays, preserve_all):
         """Preserve COMMON variables."""
-        # preserve COMMON variables
         if preserve_all:
-            preserve_sc, preserve_ar = self.scalars, self.arrays
-        elif preserve_common:
-            preserve_sc, preserve_ar = preserve_common
-        else:
-            preserve_sc, preserve_ar = set(), set()
+            common_scalars, common_arrays = self.scalars, self.arrays
         # do not collect garbage during string migration
         # it's not going to free up memory and it will break things
         with self.hold_garbage():
@@ -213,12 +208,12 @@ class DataSegment(object):
             # preserve scalars
             common_scalars = {
                 name: self.scalars.get(name)
-                for name in preserve_sc if name in self.scalars
+                for name in common_scalars if name in self.scalars
             }
             # preserve arrays
             common_arrays = {
                 name: (self.arrays.dimensions(name), bytearray(self.arrays.view_full_buffer(name)))
-                for name in preserve_ar if name in self.arrays
+                for name in common_arrays if name in self.arrays
             }
             scalar_strings = {
                 name: value.to_pointer()
@@ -312,10 +307,9 @@ class DataSegment(object):
 
     def set_basic_memory_size(self, new_size):
         """Set the data memory size (on CLEAR) """
-        if new_size == 0:
+        if new_size <= 0:
+            # new_size is unsigned int so < should not happen
             raise error.BASICError(error.IFC)
-        elif new_size < 0:
-            new_size += 0x10000
         if new_size > self.total_memory:
             raise error.BASICError(error.OUT_OF_MEMORY)
         self.total_memory = new_size
@@ -347,7 +341,7 @@ class DataSegment(object):
             self.program.set_memory(addr, val)
         elif addr >= self._field_mem_start:
             # file & FIELD memory
-            self._not_implemented_pass(addr, val)
+            self._set_field_memory(addr, val)
         elif addr >= 0:
             self._set_basic_memory(addr, val)
 
@@ -355,25 +349,22 @@ class DataSegment(object):
     # File buffer access
 
     def _get_field_offset(self, address):
-        """Get the field and affset for an address in a FIELD buffer."""
+        """Get the field and offset for an address in a FIELD buffer."""
         # find the file we're in
         start = address - self._field_mem_start
         number = 1 + start // self._field_mem_offset
         offset = start % self._field_mem_offset
-        if (number not in self.fields) or (start < 0):
+        if (number not in self.fields) or (start < 0): # pragma: no cover
             raise ValueError('Address %x is not in FIELD memory' % address)
         return number, offset
 
     def _get_field_memory(self, address):
         """Retrieve data from FIELD buffer."""
-        try:
-            number, offset = self._get_field_offset(address)
-        except ValueError:
-            return -1
-        try:
-            return self.fields[number].view_buffer()[offset]
-        except (KeyError, IndexError):
-            return -1
+        return bytearray(self.view_field_memory(address, 1))[0]
+
+    def _set_field_memory(self, address, value):
+        """Modify data in FIELD buffer."""
+        self.view_field_memory(address, 1)[:] = bytearray([value])
 
     def view_field_memory(self, address, length):
         """Get a view od data in FIELD buffer."""
@@ -427,7 +418,7 @@ class DataSegment(object):
         elif addr == 0x35D:
             return (self.var_current() + self.arrays.current) // 256
         elif addr == self.protection_flag_addr:
-            return self.program.protected * 255
+            return self.program.protected * 254
         return -1
 
     def _not_implemented_pass(self, addr, val):
@@ -457,14 +448,21 @@ class DataSegment(object):
             # array is allocated if retrieved and nonexistant
             return self.arrays.get(name, indices)
 
-    def let_(self, args):
-        """LET: assign value to variable or array."""
-        name, indices = next(args)
-        name = self.complete_name(name)
+    def _preallocate(self, name, indices):
+        """Pre-allocate space for variable."""
         if indices != []:
             # pre-dim even if this is not a legal statement!
             # e.g. 'a[1,1]' gives a syntax error, but even so 'a[1]' is out of range afterwards
             self.arrays.check_dim(name, indices)
+        else:
+            # allocate memory for the new variable prior to calculating the new value
+            self.set_variable(name, indices, None)
+
+    def let_(self, args):
+        """LET: assign value to variable or array."""
+        name, indices = next(args)
+        name = self.complete_name(name)
+        self._preallocate(name, indices)
         value = next(args)
         if isinstance(value, values.String):
             # if already permanent, store a deep copy to avoid double referencing
@@ -526,28 +524,28 @@ class DataSegment(object):
         error.throw_if(not name, error.STX)
         indices = next(args)
         list(args)
+        if indices != []:
+            # pre-allocate array elements, but not scalars which instead throw IFC if undefined
+            self.arrays.check_dim(name, indices)
         var_ptr = self.varptr(name, indices)
         vps = struct.pack('<BH', values.size_bytes(self.complete_name(name)), var_ptr)
         return self.values.new_string().from_str(vps)
-
-    def dereference(self, address):
-        """Get a value for a variable given its pointer address."""
-        found = self.scalars.dereference(address)
-        if found is not None:
-            return found
-        # no scalar found, try arrays
-        found = self.arrays.dereference(address)
-        if found is not None:
-            return found
-        raise error.BASICError(error.IFC)
 
     def get_value_for_varptrstr(self, varptrstr):
         """Get a value given a VARPTR$ representation."""
         if len(varptrstr) < 3:
             raise error.BASICError(error.IFC)
-        varptrstr = bytearray(varptrstr)
-        varptr, = struct.unpack('<H', varptrstr[1:3])
-        return self.dereference(varptr)
+        size, varptr = struct.unpack('<BH', varptrstr[:3])
+        value = self._dereference(varptr)
+        if value is not None:
+            return value
+        # if the pointer is not attached, return a null value of the right type
+        return self.values.new(values.SIZE_TO_TYPE[size])
+
+    def _dereference(self, address):
+        """Get a value for a variable given its pointer address. None if not found."""
+        # if no matching scalar found, try arrays; return None if not found
+        return self.scalars.dereference(address) or self.arrays.dereference(address)
 
     def _view_buffer(self, name, indices, empty_err):
         """Retrieve a memoryview to a scalar variable or an array element's buffer."""
@@ -612,9 +610,7 @@ class DataSegment(object):
         """MID$: set part of a string."""
         name, indices = next(args)
         name = self.complete_name(name)
-        if indices != []:
-            # pre-dim even if this is not a legal statement!
-            self.arrays.check_dim(name, indices)
+        self._preallocate(name, indices)
         start = values.to_int(next(args))
         num = next(args)
         if num is None:

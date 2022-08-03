@@ -407,6 +407,8 @@ class TextScreen(object):
     ###########################################################################
     # console operations
 
+    # logical line
+
     def find_start_of_line(self, srow):
         """Find the start of the logical line that includes our current position."""
         # move up as long as previous line wraps
@@ -420,6 +422,20 @@ class TextScreen(object):
         while srow <= self.mode.height and self._apage.wraps(srow):
             srow += 1
         return srow
+
+    def find_position_in_line(self, start_row, position):
+        """Set the cursor to given position in the logical line, following wraps and row length."""
+        row = self.find_start_of_line(start_row)
+        col = position + 1
+        while (
+                position >= self.row_length(row)
+                and row <= self.mode.height and self._apage.wraps(row)
+            ):
+            col -= self.row_length(row)
+            row += 1
+        if col >= self.row_length(row):
+            col = self.row_length(row) - 1
+        return row, col
 
     # delete
 

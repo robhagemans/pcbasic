@@ -29,7 +29,7 @@ class ByteStream(BytesIO):
         # _pyio.BytesIO clears buffer here but memoryview has no clear()
         BufferedIOBase.close(self)
 
-    if PY2:
+    if PY2: # pragma: no cover
         def read(self, n=None):
             if self.closed:
                 raise ValueError("read from closed file")

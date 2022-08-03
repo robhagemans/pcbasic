@@ -49,7 +49,7 @@ class VideoPygame(VideoPlugin):
             **kwargs
         ):
         """Initialise pygame interface."""
-        logging.warning('The `pygame` interface is deprecated, please use the `graphics` interface instead.')
+        logging.warning('The `pygame` interface is deprecated, please use the `graphical` interface instead.')
         try:
             _import_pygame()
         except ImportError:
@@ -135,7 +135,7 @@ class VideoPygame(VideoPlugin):
                 self.display.get_bitsize()
             )
             self._smooth = False
-        if PY2:
+        if PY2: # pragma: no cover
             pygame.display.set_caption(self.caption.encode('utf-8', 'replace'))
         else:
             pygame.display.set_caption(self.caption)

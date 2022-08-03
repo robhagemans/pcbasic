@@ -436,7 +436,7 @@ class Display(object):
         dst = values.to_int(next(args))
         list(args)
         error.range_check(0, self.mode.num_pages-1, dst)
-        self.pages[dst].copy_from(self.pages[dst])
+        self.pages[dst].copy_from(self.pages[src])
 
     def color_(self, args):
         """COLOR: set colour attributes."""
@@ -488,7 +488,7 @@ class Display(object):
         lst = self._memory.arrays.view_full_buffer(array_name)
         start = self._memory.arrays.index(start_indices, dimensions)
         num_palette_entries = self.colourmap.num_palette
-        error.throw_if(self._memory.arrays.array_len(dimensions) - start < num_palette_entries)
+        error.throw_if(self._memory.arrays.flat_length(dimensions) - start < num_palette_entries)
         new_palette = []
         for i in range(num_palette_entries):
             offset = (start+i) * 2
