@@ -16,6 +16,7 @@ from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, make_docs, prune, remove, mkdir
+from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import EXCLUDE_EXTERNAL_PACKAGES
 from .freeze import build_manifest
@@ -30,19 +31,24 @@ def package():
 
         def run(self):
             """Run build_exe command."""
-            # include dylibs
-            build_manifest(INCLUDE_FILES + ('pcbasic/lib/darwin/*',), EXCLUDE_FILES)
+            # prepare resources
+            mkdir(RESOURCE_PATH)
+            build_icon()
+            make_docs()
+            # build the executable and library
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
             # so remove some stuff we don't need
             for root, _, files in os.walk(build_dir + 'lib'):
-                testing = set(root.split(os.sep)) & set(('test', 'tests', 'testing', 'examples'))
+                exclude = set(root.split(os.sep)) & set(
+                    ('Headers', 'test', 'tests', 'testing', 'examples')
+                )
                 for fname in files:
                     name = os.path.join(root, fname)
                     # remove tests and examples
                     # remove windows DLLs and PYDs
-                    if (testing or 'win32_' in name or name.endswith('.dll')):
+                    if (exclude or 'win32_' in name or name.endswith('.dll')):
                         remove(name)
 
     class BdistMacCommand(cx_Freeze.bdist_mac):
@@ -51,17 +57,8 @@ def package():
         def run(self):
             """Run bdist_mac command."""
             cx_Freeze.bdist_mac.run(self)
-            build_dir = 'build/PC-BASIC-2.0.app/Contents/MacOS/'
-            # remove some files we don't need
-            for path in glob.glob('build/PC-BASIC-2.0.app/Contents/MacOS/libnpymath*'):
-                remove(path)
-            # remove modules that can be left out
-            for module in ():
-                #    'distutils', 'setuptools', 'pydoc_data', 'lib2to3',
-                #    'unittest', 'wheel', 'pip', 'lxml',
-                #    'multiprocessing', 'asyncio',
-                #):
-                prune(build_dir + 'lib/%s' % module)
+            #'build/PC-BASIC-2.0.app/Contents/MacOS/'
+            build_dir = self.bundle_dir + '/Contents/MacOS/'
             # big libs we don't need
             remove(build_dir + 'libcrypto.1.1.dylib')
             remove(build_dir + 'libssl.1.1.dylib')
@@ -69,6 +66,25 @@ def package():
             prune(build_dir + 'lib/sdl2dll/dll/SDL2_mixer.framework')
             prune(build_dir + 'lib/sdl2dll/dll/SDL2_image.framework')
             prune(build_dir + 'lib/sdl2dll/dll/SDL2_ttf.framework')
+            # fix sdl symlinks, or codesign will bork
+            cwd = os.getcwd()
+            os.chdir(build_dir + 'lib/sdl2dll/dll/SDL2.framework/Versions/')
+            os.symlink('A', 'Current')
+            os.chdir('..')
+            os.symlink('Versions/Current/SDL2', 'SDL2')
+            os.symlink('Versions/Current/Resources', 'Resources')
+            #os.symlink('Versions/Current/Headers', 'Headers')
+            os.chdir(cwd)
+            os.chdir(build_dir + 'lib/sdl2dll/dll/SDL2_gfx.framework/Versions/')
+            os.symlink('A', 'Current')
+            os.chdir('..')
+            os.symlink('Versions/Current/SDL2_gfx', 'SDL2_gfx')
+            os.symlink('Versions/Current/Resources', 'Resources')
+            #os.symlink('Versions/Current/Headers', 'Headers')
+            os.chdir(cwd)
+            # codesign the app
+            print('>>> ad hoc code signing ', self.bundle_dir)
+            subprocess.run(['codesign', '--force', '--deep', '--sign', '-', self.bundle_dir])
 
         def copy_file(self, src, dst):
             # catch copy errors, these happen with relative references with funny bracketed names
@@ -86,37 +102,72 @@ def package():
 
         def run(self):
             """Run bdist_dmg command."""
-            build_icon()
-            make_docs()
             cx_Freeze.bdist_dmg.run(self)
             # move the disk image to dist/
             mkdir('dist/')
-            if os.path.exists('dist/' + os.path.basename(self.dmg_name)):
-                os.unlink('dist/' + os.path.basename(self.dmg_name))
             dmg_name = '{}-{}.dmg'.format(NAME, VERSION)
+            if os.path.exists('dist/' + os.path.basename(dmg_name)):
+                os.unlink('dist/' + os.path.basename(dmg_name))
             os.rename(self.dmg_name, dmg_name)
             shutil.move(dmg_name, 'dist/')
             #make_clean()
 
-        def buildDMG(self):
+        def build_dmg(self):
+            # from cx_Freeze 6.11.1 source
+
             # Remove DMG if it already exists
             if os.path.exists(self.dmg_name):
                 os.unlink(self.dmg_name)
-            # hdiutil with multiple -srcfolder hangs, so create a temp dir
-            prune('build/dmg')
-            mkdir('build/dmg')
-            shutil.copytree(self.bundleDir, 'build/dmg/' + os.path.basename(self.bundleDir))
+
+            # Make dist folder
+            self.dist_dir = os.path.join(self.build_dir, "dist")
+            if os.path.exists(self.dist_dir):
+                shutil.rmtree(self.dist_dir)
+            self.mkpath(self.dist_dir)
+
+            # Copy App Bundle
+            dest_dir = os.path.join(
+                self.dist_dir, os.path.basename(self.bundle_dir)
+            )
+            #self.copy_tree(self.bundle_dir, dest_dir)
+            shutil.copytree(self.bundle_dir, dest_dir, symlinks=True)
+
+            ### added
             # include the docs at them top level in the dmg
-            shutil.copy('build/doc/PC-BASIC_documentation.html', 'build/dmg/Documentation.html')
-            # removed application shortcuts logic as I'm not using it anyway
-            # Create the dmg
+            shutil.copy('build/doc/PC-BASIC_documentation.html', self.dist_dir)
+            ###
+
             createargs = [
-                'hdiutil', 'create', '-fs', 'HFSX', '-format', 'UDZO',
-                self.dmg_name, '-imagekey', 'zlib-level=9', '-srcfolder',
-                'build/dmg', '-volname', self.volume_label,
+                "hdiutil",
+                "create",
             ]
-            if os.spawnvp(os.P_WAIT, 'hdiutil', createargs) != 0:
-                raise OSError('creation of the dmg failed')
+            if self.silent:
+                createargs += ["-quiet"]
+            createargs += [
+                "-fs",
+                "HFSX",
+                "-format",
+                "UDZO",
+                self.dmg_name,
+                "-imagekey",
+                "zlib-level=9",
+                "-srcfolder",
+                self.dist_dir,
+                "-volname",
+                self.volume_label,
+            ]
+
+            if self.applications_shortcut:
+                apps_folder_link = os.path.join(self.dist_dir, "Applications")
+                os.symlink(
+                    "/Applications", apps_folder_link, target_is_directory=True
+                )
+
+            # Create the dmg
+            if subprocess.call(createargs) != 0:
+                raise OSError("creation of the dmg failed")
+
+
 
     setup_options['cmdclass'] = COMMANDS
     setup_options['cmdclass']['build_exe'] = BuildExeCommand
