@@ -72,7 +72,7 @@ cp build/resources/control $DEBDIR/DEBIAN/control
 
 # calculate installed size
 echo -n "Installed-Size: " >> $DEBDIR/DEBIAN/control
-du -s build/python3-pcbasic_2.0.5_all/usr/ | awk '{print $1 }' >> $DEBDIR/DEBIAN/control
+du -s build/python3-pcbasic_"$VERSION"_all/usr/ | awk '{print $1 }' >> $DEBDIR/DEBIAN/control
 
 # build the deb
 echo "building the .deb package"
