@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 
@@ -5,7 +7,8 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
-from .main import main, script_entry_point_guard
+from pcbasic import main, script_entry_point_guard
 
-with script_entry_point_guard():
-    main()
+if __name__ == '__main__':
+    with script_entry_point_guard():
+        main()

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PC-BASIC make.common
 Python, Windows, MacOS and Linux packaging utilities
@@ -20,12 +19,28 @@ from contextlib import contextmanager
 from PIL import Image
 
 from pcbasic import NAME, VERSION, AUTHOR, COPYRIGHT
-from pcbasic.basic.data import ICON
-from docsrc import build_docs as make_docs
+from pcbasic.data import ICON
+from docs import make_htmldoc, make_usage, make_man
 
+
+# paths
 
 # root location
 HERE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+BUILD_PATH = os.path.join(HERE, 'build')
+RESOURCE_PATH = os.path.join(BUILD_PATH, 'resources')
+DOC_PATH = os.path.join(BUILD_PATH, 'doc')
+USAGE_PATH = os.path.join(HERE, 'pcbasic', 'data')
+
+ICON_PATTERN = os.path.join(RESOURCE_PATH, 'pcbasic.{format}')
+
+STAMP_FILE = os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json')
+MANIFEST_FILE = os.path.join(HERE, 'MANIFEST.in')
+
+USAGE_NAME = 'USAGE.txt'
+MAN_NAME = 'pcbasic.1.gz'
+HTMLDOC_NAME = 'PC-BASIC_documentation.html'
 
 
 ###############################################################################
@@ -37,7 +52,7 @@ def make_clean():
     for path in glob.glob(os.path.join(HERE, '*.egg-info')):
         prune(path)
     # remove intermediate builds
-    prune(os.path.join(HERE, 'build'))
+    prune(BUILD_PATH)
     # remove bytecode files
     for root, dirs, files in os.walk(HERE):
         for name in dirs:
@@ -46,19 +61,27 @@ def make_clean():
         for name in files:
             if (name.endswith('.pyc') or name.endswith('.pyo')) and 'test' not in root:
                 remove(os.path.join(root, name))
-    # remove distribution resources
-    prune(os.path.join(HERE, 'resources'))
-    prune(os.path.join(HERE, 'doc'))
     # remove release stamp
-    remove(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'))
+    remove(STAMP_FILE)
     # remove manifest
-    remove(os.path.join(HERE, 'MANIFEST.in'))
+    remove(MANIFEST_FILE)
 
 def prepare():
     """Prepare for sdist and wheel builds."""
     make_clean()
     stamp_release()
     make_docs()
+
+def make_docs():
+    """Build manfile, usage, html and pdf documentation."""
+    mkdir(DOC_PATH)
+    make_man(DOC_PATH, MAN_NAME)
+    make_htmldoc(DOC_PATH, HTMLDOC_NAME)
+    make_usage(USAGE_PATH, USAGE_NAME)
+
+def make_local():
+    """Build manfile, usage, html and pdf documentation."""
+    make_usage(USAGE_PATH, USAGE_NAME)
 
 
 ###############################################################################
@@ -85,7 +108,7 @@ RELEASE_ID = {
 def stamp_release():
     """Place the relase ID file."""
     json_str = json.dumps(RELEASE_ID)
-    with open(os.path.join(HERE, 'pcbasic', 'basic', 'data', 'release.json'), 'w') as release_json:
+    with open(STAMP_FILE, 'w') as release_json:
         release_json.write(json_str)
 
 
@@ -94,11 +117,6 @@ def stamp_release():
 
 def build_icon():
     """Create an icon file for the present platform."""
-    try:
-        os.mkdir('resources')
-    except EnvironmentError:
-        pass
-    # build icon
     flat = (_b for _row in ICON for _b in _row)
     rgb = ((_b*255,)*3 for _b in flat)
     rgbflat = (_b for _tuple in rgb for _b in _tuple)
@@ -106,7 +124,9 @@ def build_icon():
     width, height = len(ICON[0]), len(ICON)
     img = Image.frombytes('RGB', (width, height), imgstr)
     format = {'win32': 'ico', 'darwin': 'icns'}.get(sys.platform, 'png')
-    img.resize((width*2, height*2)).save('resources/pcbasic.%s' % (format,))
+    icon_file = ICON_PATTERN.format(format=format)
+    with os_safe('building icon file', icon_file):
+        img.resize((width*2, height*2)).save(icon_file)
 
 
 ###############################################################################

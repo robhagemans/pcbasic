@@ -1,5 +1,5 @@
 """
-PC-BASIC - packaging.windows
+PC-BASIC - make.windows
 Windows packaging
 
 (c) 2015--2022 Rob Hagemans
@@ -14,9 +14,10 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import make_clean, build_icon, make_docs, prune, remove, mkdir
-from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
-from .freeze import build_manifest
+from .common import build_icon, prune, remove, mkdir
+from .common import RESOURCE_PATH
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
+
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
 PRODUCT_CODE = msilib.gen_uuid()
@@ -31,11 +32,9 @@ def package():
 
         def run(self):
             """Run build_exe command."""
-            make_clean()
+            mkdir(RESOURCE_PATH)
             build_icon()
-            make_docs()
             # only include 32-bit DLLs
-            build_manifest(INCLUDE_FILES + ('pcbasic/lib/win32_x86/*',), EXCLUDE_FILES)
             cx_Freeze.build_exe.run(self)
             build_dir = 'build/exe.{}/'.format(PLATFORM_TAG)
             # build_exe just includes everything inside the directory
@@ -45,7 +44,7 @@ def package():
                 for fname in files:
                     name = os.path.join(root, fname)
                     if (
-                            # remove superfluous copies of python27.dll in lib/
+                            # remove superfluous copies of python dll in lib/
                             # as there is a copy in the package root already
                             fname.lower() == 'python37.dll'
                             # remove tests and examples
@@ -298,19 +297,15 @@ def package():
     msi_data = {
         'Directory': directory_table,
         'Shortcut': shortcut_table,
-        'Icon': [('PC-BASIC-Icon', msilib.Binary('./resources/pcbasic.ico')),],
+        'Icon': [('PC-BASIC-Icon', msilib.Binary('./build/resources/pcbasic.ico')),],
         'Property': [('ARPPRODUCTICON', 'PC-BASIC-Icon'),],
     }
 
     # cx_Freeze options
     setup_options['options'] = {
         'build_exe': {
-            'excludes': [
-                'pygame',
-                'pip', 'wheel', 'unittest', 'pydoc_data',
-                'email', 'xml',
-            ],
-            'include_files': ['doc/PC-BASIC_documentation.html'],
+            'excludes': EXCLUDE_EXTERNAL_PACKAGES,
+            'include_files': ['build/doc/PC-BASIC_documentation.html'],
             # optimize removes:
             # - asserts (which we don't have as only in th eomitted tests package)
             # - docstrings (which we may be using in error messages)
@@ -329,10 +324,10 @@ def package():
 
     setup_options['executables'] = [
         Executable(
-            'pc-basic', base='Console', targetName='pcbasic.exe', icon='resources/pcbasic.ico',
+            'run-pcbasic.py', base='Console', targetName='pcbasic.exe', icon='build/resources/pcbasic.ico',
             copyright=COPYRIGHT),
         Executable(
-            'pc-basic', base='Win32GUI', targetName='pcbasicw.exe', icon='resources/pcbasic.ico',
+            'run-pcbasic.py', base='Win32GUI', targetName='pcbasicw.exe', icon='build/resources/pcbasic.ico',
             #shortcutName='PC-BASIC %s' % VERSION, shortcutDir='MyProgramMenu',
             copyright=COPYRIGHT),
     ]

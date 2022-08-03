@@ -18,6 +18,8 @@ import codecs
 import contextlib
 import itertools
 import tempfile
+import socket
+import errno
 import sys
 import os
 
@@ -26,6 +28,21 @@ import Queue as queue
 import copy_reg as copyreg
 
 _FS_ENCODING = sys.getfilesystemencoding()
+
+
+# __path__ hack for __init__ to ensure os.chdir does not break intra-package imports
+# which they do because the package __path__ is given relative to cwd
+# at least if run with python2 -m package
+from .. import __path__
+__path__[:] = [os.path.abspath(_e) for _e in __path__]
+
+
+# deal with broken pipes
+
+BrokenPipeError = IOError
+
+def is_broken_pipe(e):
+    return isinstance(e, IOError) and e.errno == errno.EPIPE
 
 
 # strings

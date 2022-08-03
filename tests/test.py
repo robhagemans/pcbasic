@@ -326,7 +326,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
                             # for it to find extension modules
                             sys.path = PYTHONPATH + [os.path.abspath('.')]
                             # run PC-BASIC
-                            pcbasic.run('--interface=none')
+                            pcbasic.main('--interface=none')
             # update test time
             if test_frame.exists and not test_frame.skip and not test_frame.crash:
                 times[fullname] = timer.wall_time

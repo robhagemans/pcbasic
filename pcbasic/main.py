@@ -15,36 +15,15 @@ import traceback
 from . import basic
 from . import state
 from . import config
-from .guard import ExceptionGuard, NOGUARD
+from .guard import ExceptionGuard
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
 from .interface import Interface, InitFailed
-from .compat import stdio, resources
+from .compat import stdio, resources, nullcontext
+from .compat import script_entry_point_guard
 
 
-def main(*arguments): # pragma: no cover
-    """Wrapper for run() to deal with argv encodings, Ctrl-C, stdio and pipes."""
-    try:
-        run(*arguments)
-    except KeyboardInterrupt:
-        pass
-    except:
-        # without this except clause we seem to be dropping exceptions
-        # probably due to the sys.stdout.close() hack below
-        logging.error('Unhandled exception\n%s', traceback.format_exc())
-    finally:
-        # avoid sys.excepthook errors when piping output
-        # http://stackoverflow.com/questions/7955138/addressing-sys-excepthook-error-in-bash-script
-        try:
-            sys.stdout.close()
-        except:
-            pass
-        try:
-            sys.stderr.close()
-        except:
-            pass
-
-def run(*arguments):
+def main(*arguments):
     """Initialise, parse arguments and perform requested operations."""
     with config.TemporaryDirectory(prefix='pcbasic-') as temp_dir:
         # get settings and prepare logging
@@ -64,6 +43,10 @@ def run(*arguments):
         else:
             # start an interpreter session with standard i/o
             _run_session(**settings.launch_params)
+
+# api backward compatibility
+run = main
+
 
 def _show_usage():
     """Show usage description."""
@@ -91,14 +74,14 @@ def _convert(settings):
 
 def _launch_session(settings):
     """Start an interactive interpreter session."""
-    guard = ExceptionGuard(**settings.guard_params)
+    exception_guard = ExceptionGuard(**settings.guard_params)
     try:
-        Interface(guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
+        Interface(exception_guard, **settings.iface_params).launch(_run_session, **settings.launch_params)
     except InitFailed as e: # pragma: no cover
         logging.error(e)
 
 def _run_session(
-        interface=None, guard=NOGUARD,
+        interface=None, exception_guard=None,
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
@@ -106,7 +89,11 @@ def _run_session(
     Session = basic.DebugSession if debug else basic.Session
     with Session(interface, **session_params) as s:
         with state.manage_state(s, state_file, resume) as session:
-            with guard.protect(interface, session):
+            if not exception_guard:
+                protect = nullcontext()
+            else:
+                protect = exception_guard.protect(interface, session)
+            with protect:
                 if greeting:
                     session.greet()
                 if prog:

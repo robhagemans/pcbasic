@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 PC-BASIC make.freeze
 common definitions for cx_Freeze packaging utilities
@@ -14,8 +13,9 @@ from distutils.util import get_platform
 from setuptools import find_packages
 from setuptools.command import sdist, build_py
 
-from .common import VERSION, AUTHOR, HERE
-from .common import make_clean, make_docs, stamp_release
+from .common import VERSION, AUTHOR
+from .common import HERE, MANIFEST_FILE
+from .common import prepare, stamp_release
 
 
 SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])
@@ -29,17 +29,22 @@ PLATFORM_TAG = '{}-{}.{}'.format(
 INCLUDE_FILES = (
     '*.md',
     '*.txt',
-    'doc/*.html',
     'pcbasic/data/',
     'pcbasic/basic/data/',
 )
 
 # python files to exclude from distributions
 EXCLUDE_FILES = (
-    'tests/', 'make/', 'docsrc/', 'fontsrc/',
+    'tests/', 'make/', 'docs/',
 )
 EXCLUDE_PACKAGES=[
     _name+'*' for _name in os.listdir(HERE) if _name != 'pcbasic'
+]
+
+EXCLUDE_EXTERNAL_PACKAGES = [
+    'pygame',
+    'pip', 'wheel', 'unittest', 'pydoc_data',
+    'email', 'xml',
 ]
 
 SETUP_OPTIONS = dict(
@@ -47,7 +52,7 @@ SETUP_OPTIONS = dict(
     version=VERSION,
     author=AUTHOR,
     # contents
-    # only include subpackages of pcbasic: exclude tests, docsrc, packaging etc
+    # only include subpackages of pcbasic: exclude tests, docs, make etc
     # even if these are excluded in the manifest, bdist_wheel will pick them up (but sdist won't)
     packages=find_packages(exclude=EXCLUDE_PACKAGES),
     ext_modules=[],
@@ -70,7 +75,7 @@ def build_manifest(includes, excludes):
     ) + u''.join(
         u'prune {}\n'.format(_exc[:-1]) for _exc in excludes if _exc.endswith('/')
     )
-    with open(os.path.join(HERE, 'MANIFEST.in'), 'w') as manifest_file:
+    with open(MANIFEST_FILE, 'w') as manifest_file:
         manifest_file.write(manifest)
 
 
@@ -105,8 +110,8 @@ def extend_command(parent, function):
 
 def build_py_ext(obj):
     """Run custom build_py command."""
-    stamp_release()
-    build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
+    prepare()
+    #build_manifest(INCLUDE_FILES + ('pcbasic/lib/*/*',), EXCLUDE_FILES)
     build_py.build_py.run(obj)
 
 
