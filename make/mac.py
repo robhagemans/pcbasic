@@ -132,6 +132,9 @@ def package():
             #self.copy_tree(self.bundle_dir, dest_dir)
             shutil.copytree(self.bundle_dir, dest_dir, symlinks=True)
 
+            # seems we have to sign *again*, for some reason
+            subprocess.run(['codesign', '--force', '--deep', '--sign', '-', dest_dir])
+
             ### added
             # include the docs at them top level in the dmg
             shutil.copy('build/doc/PC-BASIC_documentation.html', self.dist_dir)
@@ -202,4 +205,4 @@ def package():
     # run the cx_Freeze setup()
     cx_Freeze.setup(script_args=['bdist_dmg'], **setup_options)
     # cx_Freeze's codesign options result in failure with "app is already signed", so trying here
-    subprocess.run(['codesign', '-s', '-', '--deep', f'dist/PC-BASIC-{VERSION}.dmg'])
+    #subprocess.run(['codesign', '-s', '-', '--deep', f'dist/PC-BASIC-{VERSION}.dmg'])
