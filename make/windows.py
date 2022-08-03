@@ -14,7 +14,7 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import build_icon, prune, remove, mkdir
+from .common import build_icon, prune, remove, mkdir, prepare
 from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
 
@@ -26,6 +26,7 @@ PRODUCT_CODE = msilib.gen_uuid()
 def package():
     """Build a Windows .MSI package."""
     setup_options = SETUP_OPTIONS
+    prepare()
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
