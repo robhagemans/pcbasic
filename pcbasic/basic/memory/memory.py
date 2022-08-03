@@ -515,6 +515,10 @@ class DataSegment(object):
             name = arg0
             error.throw_if(not name, error.STX)
             indices, = args
+            name = self.complete_name(name)
+            if indices != []:
+                # pre-allocate array elements, but not scalars which instead throw IFC if undefined
+                self.arrays.check_dim(name, indices)
             var_ptr = self.varptr(name, indices)
         return self.values.new_integer().from_int(var_ptr, unsigned=True)
 
@@ -524,6 +528,7 @@ class DataSegment(object):
         error.throw_if(not name, error.STX)
         indices = next(args)
         list(args)
+        name = self.complete_name(name)
         if indices != []:
             # pre-allocate array elements, but not scalars which instead throw IFC if undefined
             self.arrays.check_dim(name, indices)
