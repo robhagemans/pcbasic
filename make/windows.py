@@ -16,7 +16,7 @@ from cx_Freeze import Executable
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
 from .common import build_icon, prune, remove, mkdir, prepare
 from .common import RESOURCE_PATH
-from .freeze import SETUP_OPTIONS, SHORT_VERSION, COMMANDS, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
+from .freeze import SETUP_OPTIONS, SHORT_VERSION, EXCLUDE_EXTERNAL_PACKAGES, PLATFORM_TAG
 
 
 UPGRADE_CODE = '{714d23a9-aa94-4b17-87a5-90e72d0c5b8f}'
@@ -206,7 +206,6 @@ def package():
     setup_options['cmdclass'] = dict(
         build_exe=BuildExeCommand,
         bdist_msi=BdistMsiCommand,
-        **COMMANDS
     )
 
     numversion = '.'.join(v for v in VERSION.split('.') if v.isdigit())
