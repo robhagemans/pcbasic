@@ -40,15 +40,13 @@ class ExceptionGuard(object):
         """Crash context guard."""
         try:
             yield
-        except (error.Exit, error.Reset):
+        except error.Reset:
             raise
-        except BrokenPipeError as e:
-            # may be raised by shell pipes, handled at entry point
-            # see docs.python.org/3/library/signal.html#note-on-sigpipe
+        except BaseException as e:
             if is_broken_pipe(e):
-                raise error.Exit()
-            raise
-        except BaseException:
+                # BrokenPipeError may be raised by shell pipes, handled at entry point
+                # see docs.python.org/3/library/signal.html#note-on-sigpipe
+                raise
             if not self._bluescreen(session._impl, self._interface, *sys.exc_info()):
                 raise
             self._interface.pause(PAUSE_MESSAGE)
