@@ -13,6 +13,7 @@ from ..compat import text_type
 from .base import error
 from .devices import NameWrapper
 from . import implementation
+from . import state
 
 from ..data import read_codepage as codepage
 from ..data import read_fonts as font
@@ -143,6 +144,15 @@ class Session(object):
         self.start()
         with self._impl.io_streams.activate():
             self._impl.interact()
+
+    def suspend(self, session_filename):
+        """Save session object to file."""
+        state.save_session(self, session_filename)
+
+    @classmethod
+    def resume(self, session_filename):
+        """Load new session object from file."""
+        return state.load_session(session_filename)
 
     def close(self):
         """Close the session."""

@@ -13,7 +13,6 @@ import logging
 import traceback
 
 from . import basic
-from . import state
 from . import config
 from .guard import ExceptionGuard
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
@@ -90,33 +89,36 @@ def _run_session(
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
-    session = _initialise_session(resume, debug, state_file, **session_params)
-    with exception_handler(session):
-        try:
-            _operate_session(session, interface, prog, commands, keys, greeting)
-        finally:
-            state.save_session(session, state_file)
-
-def _initialise_session(resume, debug, state_file, **session_params):
-    """Initialise BASIC session."""
     if resume:
-        session_class = state.load_session(state_file)
+        try:
+            session = basic.Session.resume(state_file)
+        except Exception as e:
+            # if we were told to resume but can't, give up
+            logging.critical('Failed to resume session from %s: %s' % (state_file, e))
+            sys.exit(1)
     elif debug:
-        session_class = basic.DebugSession
+        session = basic.DebugSession(**session_params)
     else:
-        session_class = basic.Session
-    return session_class(**session_params)
+        session = basic.Session(**session_params)
+    with exception_handler(session):
+        with session:
+            try:
+                _operate_session(session, interface, prog, commands, keys, greeting)
+            finally:
+                try:
+                    session.suspend(state_file)
+                except Exception as e:
+                    logging.error('Failed to save session to %s: %s', state_file, e)
 
 def _operate_session(session, interface, prog, commands, keys, greeting):
     """Run an interactive BASIC session."""
-    with session:
-        session.attach(interface)
-        if greeting:
-            session.greet()
-        if prog:
-            with session.bind_file(prog) as progfile:
-                session.execute(b'LOAD "%s"' % (progfile,))
-        session.press_keys(keys)
-        for cmd in commands:
-            session.execute(cmd)
-        session.interact()
+    session.attach(interface)
+    if greeting:
+        session.greet()
+    if prog:
+        with session.bind_file(prog) as progfile:
+            session.execute(b'LOAD "%s"' % (progfile,))
+    session.press_keys(keys)
+    for cmd in commands:
+        session.execute(cmd)
+    session.interact()
