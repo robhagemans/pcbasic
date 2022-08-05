@@ -100,7 +100,7 @@ def _run_session(
         session = basic.DebugSession(**session_params)
     else:
         session = basic.Session(**session_params)
-    with exception_handler(session):
+    with exception_handler(session) as handler:
         with session:
             try:
                 _operate_session(session, interface, prog, commands, keys, greeting)
@@ -109,6 +109,11 @@ def _run_session(
                     session.suspend(state_file)
                 except Exception as e:
                     logging.error('Failed to save session to %s: %s', state_file, e)
+    if handler.exception_handled:
+        _run_session(
+            interface, exception_handler, resume=True, state_file=state_file, greeting=False
+        )
+
 
 def _operate_session(session, interface, prog, commands, keys, greeting):
     """Run an interactive BASIC session."""

@@ -23,7 +23,7 @@ from .compat import BrokenPipeError, is_broken_pipe
 
 
 LOG_PATTERN = u'crash-%Y%m%d-'
-PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
+PAUSE_MESSAGE = u'System error. Please file a bug report. Press <Enter> to resume.'
 
 
 class ExceptionGuard(object):
@@ -34,12 +34,14 @@ class ExceptionGuard(object):
         self._interface = interface
         self._uargv = uargv
         self._log_dir = log_dir
+        self.exception_handled = None
 
     @contextmanager
     def protect(self, session):
         """Crash context guard."""
+        self.exception_handled = False
         try:
-            yield
+            yield self
         except error.Reset:
             raise
         except BaseException as e:
@@ -49,8 +51,11 @@ class ExceptionGuard(object):
                 raise
             if not self._bluescreen(session._impl, self._interface, *sys.exc_info()):
                 raise
-            self._interface.pause(PAUSE_MESSAGE)
-            self._interface.pause(PAUSE_MESSAGE)
+            while True:
+                event = self._interface.pause(PAUSE_MESSAGE)
+                if event.params[0] == '\r':
+                    break
+            self.exception_handled = True
 
     def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
         """Display modal message"""
@@ -91,7 +96,7 @@ class ExceptionGuard(object):
         # construct the message
         frozen = getattr(sys, 'frozen', u'') or u''
         message = [
-            (0x70, u'FATAL ERROR\n'),
+            (0x70, u'PC-BASIC SYSTEM ERROR\n'),
             (0x17, u'version   '),
             (0x1f, LONG_VERSION),
             (0x17, u'\npython    '),
@@ -112,22 +117,23 @@ class ExceptionGuard(object):
             (0x17, u' {0}\n\n'.format(exc_value)),
             (0x70, u'This is a bug in PC-BASIC.\n'),
             (0x17, u'Sorry about that. You can help improve PC-BASIC:\n\n'),
-            (0x17, u'- Please file a bug report, including this message and the steps you took\n'),
-            (0x17, u'  just before the crash. Go to:\n'),
-            (0x17, u'    '),
+            (0x17, u'- Please file a bug report at '),
             (0x1f, u'https://github.com/robhagemans/pcbasic/issues\n\n'),
-            (0x17, u'- Please include the full crash log in your report.\n'),
-            (0x17, u'  You can paste it from the clipboard or from the file at:\n    '),
+            (0x17, u'- Please include the full crash log found here:\n'),
+            (0x17, u'  '),
             (0x1f, logfile.name),
         ]
-        bottom = (0x70,
-            u'Thank you! Press a key to close this window.'
+        bottom = (
+            (0x70, u'Press <Enter> to resume.'),
+            (0x17, u' It is recommended that you save any unsaved work.'),
         )
         # create crash log
         crashlog = [
             u'PC-BASIC crash log',
             u'=' * 100,
             u''.join(text for _, text in message),
+            u'\n',
+            u'==== Traceback ='.ljust(100, u'='),
             u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
             u'==== Screen Pages ='.ljust(100, u'='),
             repr(impl.display.text_screen),
@@ -159,10 +165,11 @@ class ExceptionGuard(object):
         for attr, text in message:
             impl.display.set_attr(attr)
             impl.console.write(text.encode('cp437', 'replace').replace(b'\n', b'\r'))
-        impl.display.set_attr(bottom[0])
         impl.display.text_screen._bottom_row_allowed = True
         impl.display.text_screen.set_pos(25, 1)
-        impl.console.write(bottom[1].encode('cp437', 'replace'))
+        for attr, text in bottom:
+            impl.display.set_attr(attr)
+            impl.console.write(text.encode('cp437', 'replace'))
         # write crash log
         crashlog = u'\n'.join(
             line.decode('cp437', 'replace') if isinstance(line, bytes) else line
@@ -170,6 +177,4 @@ class ExceptionGuard(object):
         )
         with logfile as f:
             f.write(crashlog.encode('utf-8', 'replace'))
-        # put on clipboard
-        impl.queues.video.put(signals.Event(signals.VIDEO_SET_CLIPBOARD_TEXT, (crashlog,)))
         return True
