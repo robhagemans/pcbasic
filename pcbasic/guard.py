@@ -35,33 +35,43 @@ class ExceptionGuard(object):
         self._interface = interface
         self._uargv = uargv
         self._log_dir = log_dir
+        self._session = None
+
+    def __call__(self, session):
+        """Complete initialisation."""
+        self._session = session
+        return self
+
+    def __enter__(self):
+        """Enter context guard."""
         self.exception_handled = None
+        return self
 
-    @contextmanager
-    def protect(self, session):
-        """Crash context guard."""
-        self.exception_handled = False
-        try:
-            yield self
-        except error.Reset:
-            raise
-        except BaseException as e:
-            if is_broken_pipe(e):
-                # BrokenPipeError may be raised by shell pipes, handled at entry point
-                # see docs.python.org/3/library/signal.html#note-on-sigpipe
-                raise
-            if not self._bluescreen(session._impl, self._interface, *sys.exc_info()):
-                raise
-            while True:
-                event = self._interface.pause(PAUSE_MESSAGE)
-                if event.event_type == signals.QUIT:
-                    break
-                elif event.event_type == signals.KEYB_DOWN and event.params[0] == '\r':
-                    # add our own attribute to the session object as a flag
-                    self.exception_handled = e
-                    break
+    def __exit__(self, exc_type, exc_val, traceback):
+        """Handle exceptions."""
+        if not exc_type or exc_type == error.Reset:
+            return False
+        if is_broken_pipe(exc_val):
+            # BrokenPipeError may be raised by shell pipes, handled at entry point
+            # see docs.python.org/3/library/signal.html#note-on-sigpipe
+            return False
+        if not self._bluescreen(
+            self._session._impl, self._interface,
+            self._uargv, self._log_dir,
+            exc_type, exc_val, traceback
+        ):
+            return False
+        while True:
+            event = self._interface.pause(PAUSE_MESSAGE)
+            if event.event_type == signals.QUIT:
+                break
+            elif event.event_type == signals.KEYB_DOWN and event.params[0] == '\r':
+                # add our own attribute to the session object as a flag
+                self.exception_handled = exc_val
+                break
+        return True
 
-    def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
+    def _bluescreen(self, impl, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
         """Display modal message"""
         if not impl:
             return False
@@ -95,7 +105,7 @@ class ExceptionGuard(object):
         # create crash log file
         logname = datetime.now().strftime(LOG_PATTERN)
         logfile = tempfile.NamedTemporaryFile(
-            mode='wb', suffix='.log', prefix=logname, dir=self._log_dir, delete=False
+            mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False
         )
         # construct the message
         frozen = getattr(sys, 'frozen', u'') or u''
@@ -158,7 +168,7 @@ class ExceptionGuard(object):
                 break
             crashlog.append(bytes(line).decode('cp437', 'replace'))
         crashlog.append(u'==== Options ='.ljust(100, u'='))
-        crashlog.append(repr(self._uargv))
+        crashlog.append(repr(argv))
         # clear screen for modal message
         # choose attributes - this should be readable on VGA, MDA, PCjr etc.
         impl.display.screen(0, 0, 0, 0, new_width=80)

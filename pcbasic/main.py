@@ -80,7 +80,7 @@ def _run_session_with_interface(settings):
         interface.launch(
             _run_session,
             interface=interface,
-            exception_handler=exception_guard.protect,
+            exception_handler=exception_guard,
             **settings.launch_params
         )
 
@@ -89,6 +89,7 @@ def _run_session(
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
+    """Start or resume session, handle exceptions, suspend on exit."""
     if resume:
         try:
             session = basic.Session.resume(state_file)
@@ -109,7 +110,7 @@ def _run_session(
                     session.suspend(state_file)
                 except Exception as e:
                     logging.error('Failed to save session to %s: %s', state_file, e)
-    if handler.exception_handled:
+    if exception_handler is not nullcontext and handler.exception_handled:
         _run_session(
             interface, exception_handler, resume=True, state_file=state_file, greeting=False
         )
