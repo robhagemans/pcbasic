@@ -34,16 +34,16 @@ class DebugSession(api.Session):
 
     def __init__(self, *args, **kwargs):
         """Initialise debugger."""
+        # register as an extension
+        kwargs['extension'] = tuple(kwargs.get('extension', ())) + (self,)
         api.Session.__init__(self, *args, **kwargs)
 
     def start(self):
         """Start the session."""
-        if not self._impl:
-            api.Session.start(self)
-            # register as an extension
-            self._impl.extensions.add(self)
+        # initialise implementation
+        if api.Session.start(self):
             # replace dummy debugging step
-            self._impl.interpreter.step = self._debug_step
+            self.set_hook(self._debug_step)
             self._do_trace = False
             self._watch_list = []
 
@@ -53,18 +53,16 @@ class DebugSession(api.Session):
         if self._do_trace:
             linum = struct.unpack_from('<H', token, 2)
             outstr += u'[%i]' % linum
-        for (expr, outs) in self._watch_list:
-            outstr += u' %r = ' % (expr,)
-            outs.seek(2)
+        for expr in self._watch_list:
+            exprstr = self.convert(expr, to_type=text_type)
+            outstr += u' %s = ' % (exprstr,)
             try:
-                val = self._impl.parser.expression_parser.parse(outs)
-                if isinstance(val, values.String):
-                    outstr += u'"%s"' % self._impl.codepage.bytes_to_unicode(val.to_str())
+                val = self.evaluate(expr)
+                print(expr, val)
+                if isinstance(val, bytes):
+                    outstr += u'"%s"' % self.convert(val, to_type=text_type)
                 else:
-                    outstr += (
-                        values.to_repr(val, leading_space=False, type_sign=True)
-                        .decode('ascii', 'ignore')
-                    )
+                    outstr += repr(val)
             except Exception as e:
                 self._handle_exception(e)
         if outstr:
@@ -113,7 +111,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(self._impl.codepage.bytes_to_unicode(b' '.join(bytes(arg) for arg in args)))
+        logging.debug(self.convert(b' '.join(bytes(arg) for arg in args), to_type=text_type))
 
     def logwrite(self, *args):
         """Write arguments to log."""
@@ -125,30 +123,29 @@ class DebugSession(api.Session):
 
     def watch(self, expr):
         """Add an expression to the watch list."""
-        outs = self._impl.tokeniser.tokenise_line(b'?' + expr)
-        self._watch_list.append((expr, outs))
+        self._watch_list.append(expr)
 
     def showvariables(self):
         """Dump all variables to the log."""
         repr_vars = '\n'.join((
             '==== Scalars ='.ljust(100, '='),
-            repr(self._impl.scalars),
+            self.info.repr_scalars(),
             '==== Arrays ='.ljust(100, '='),
-            repr(self._impl.arrays),
+            self.info.repr_arrays(),
             '==== Strings ='.ljust(100, '='),
-            repr(self._impl.strings),
+            self.info.repr_strings(),
         ))
         for s in repr_vars.split('\n'):
             logging.debug(s)
 
     def showscreen(self):
         """Copy the screen buffer to the log."""
-        for s in repr(self._impl.display.text_screen).split('\n'):
-            logging.debug(self._impl.codepage.bytes_to_unicode(s.encode('latin-1', 'ignore')))
+        for s in self.info.repr_text_screen().split('\n'):
+            logging.debug(s)
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""
-        for s in repr(self._impl.program).split('\n'):
+        for s in self.info.repr_program().split('\n'):
             logging.debug(s)
 
     def showplatform(self):

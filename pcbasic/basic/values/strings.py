@@ -164,7 +164,10 @@ class StringSpace(object):
 
     def __repr__(self):
         """Debugging representation of string table."""
-        return '\n'.join('%x: %r' % (n, v) for n, v in iteritems(self._strings))
+        return '\n'.join(
+            '%x: %r' % (n, bytes(v))
+            for n, v in iteritems(self._strings)
+        )
 
     def clear(self):
         """Empty string space."""

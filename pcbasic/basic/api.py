@@ -52,6 +52,8 @@ class Session(object):
         """Start the session."""
         if not self._impl:
             self._impl = implementation.Implementation(**self._kwargs)
+            return True
+        return False
 
     def attach(self, interface=None):
         """Attach interface to interpreter session."""
@@ -158,3 +160,43 @@ class Session(object):
         """Close the session."""
         if self._impl:
             self._impl.close()
+
+    @property
+    def info(self):
+        """Get a session information object."""
+        self.start()
+        return SessionInfo(self)
+
+    def set_hook(self, step_function):
+        """Set function to be called on interpreter step."""
+        self.start()
+        self._impl.interpreter.step = step_function
+
+
+class SessionInfo(object):
+    """Retrieve information about current session."""
+
+    def __init__(self, session):
+        """Initialise the SessionInfo object."""
+        self._session = session
+        self._impl = session._impl
+
+    def repr_scalars(self):
+        """Get a representation of all scalars."""
+        return repr(self._impl.scalars)
+
+    def repr_arrays(self):
+        """Get a representation of all arrays."""
+        return repr(self._impl.scalars)
+
+    def repr_strings(self):
+        """Get a representation of string space."""
+        return repr(self._impl.strings)
+
+    def repr_text_screen(self):
+        """Get a representation of the text screen."""
+        return repr(self._impl.display.text_screen)
+
+    def repr_program(self):
+        """Get a marked-up hex dump of the program."""
+        return repr(self._impl.program)
