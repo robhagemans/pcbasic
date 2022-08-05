@@ -14,6 +14,7 @@ import traceback
 
 from . import basic
 from . import config
+from . import info
 from .guard import ExceptionGuard
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 from .basic import debug
@@ -53,7 +54,7 @@ def _show_version(settings):
     """Show version with optional debugging details."""
     if settings.debug:
         stdio.stdout.write(u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT))
-        stdio.stdout.write(debug.get_platform_info())
+        stdio.stdout.write(info.get_platform_info())
     else:
         stdio.stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
 
