@@ -6,7 +6,7 @@ Tests for debugging module
 This file is released under the GNU GPL version 3 or later.
 """
 
-from pcbasic.basic import debug
+from pcbasic import debug
 from pcbasic.basic.base import error
 from tests.unit.utils import TestCase, run_tests
 

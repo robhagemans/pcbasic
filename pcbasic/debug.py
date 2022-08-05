@@ -11,12 +11,10 @@ import sys
 import logging
 import struct
 
-from .base import error
-from ..compat import PY2, text_type
-from ..info import get_platform_info
-from . import values
-from . import api
-
+from .basic.base import error
+from .compat import PY2, text_type
+from .info import get_platform_info
+from .basic import values, api
 
 
 class DebugException(BaseException):
