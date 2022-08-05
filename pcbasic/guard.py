@@ -12,6 +12,7 @@ import logging
 import platform
 import tempfile
 import traceback
+import webbrowser
 import json
 from datetime import datetime
 from contextlib import contextmanager
@@ -177,4 +178,6 @@ class ExceptionGuard(object):
         )
         with logfile as f:
             f.write(crashlog.encode('utf-8', 'replace'))
+        # open text file
+            webbrowser.open(logfile.name)
         return True
