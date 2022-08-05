@@ -54,9 +54,12 @@ class ExceptionGuard(object):
                 raise
             while True:
                 event = self._interface.pause(PAUSE_MESSAGE)
-                if event.params[0] == '\r':
+                if event.event_type == signals.QUIT:
                     break
-            self.exception_handled = True
+                elif event.event_type == signals.KEYB_DOWN and event.params[0] == '\r':
+                    # add our own attribute to the session object as a flag
+                    self.exception_handled = e
+                    break
 
     def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
         """Display modal message"""
