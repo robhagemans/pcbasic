@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 import sys
 import logging
 import platform
@@ -20,11 +21,7 @@ from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
 from .basic import VERSION, LONG_VERSION
-from .compat import BrokenPipeError, is_broken_pipe
-
-
-LOG_PATTERN = u'crash-%Y%m%d-'
-PAUSE_MESSAGE = u'System error. Please file a bug report. Press <Enter> to resume.'
+from .compat import BrokenPipeError, is_broken_pipe, text_type
 
 
 class ExceptionGuard(object):
@@ -55,24 +52,62 @@ class ExceptionGuard(object):
             # BrokenPipeError may be raised by shell pipes, handled at entry point
             # see docs.python.org/3/library/signal.html#note-on-sigpipe
             return False
-        if not _bluescreen(
+        success = _bluescreen(
             self._session, self._interface,
             self._uargv, self._log_dir,
             exc_type, exc_val, traceback
-        ):
-            return False
-        while True:
-            event = self._interface.pause(PAUSE_MESSAGE)
-            if event.event_type == signals.QUIT:
-                break
-            elif event.event_type == signals.KEYB_DOWN and event.params[0] == '\r':
-                self.exception_handled = exc_val
-                break
-        return True
+        )
+        if success:
+            self.exception_handled = exc_val
+        return success
 
+
+LOG_PATTERN = u'crash-%Y%m%d-'
+CAPTION = u'System error. Please file a bug report. Press <Enter> to resume.'
+
+REPORT_TEMPLATE="""
+10 ' ** modal crash report **
+20 SCREEN 0,0,0,0: WIDTH 80: COLOR 7,1,1: CLS: KEY OFF
+100 ' print the report
+110 WHILE -1
+120   READ FG%, BG%, S$, NL%: COLOR FG%, BG%: PRINT S$;
+130   IF NL% = 255 THEN 200
+140   IF NL% THEN PRINT
+150 WEND
+200 ' bottom line
+210 LOCATE 25,1: COLOR 1,7: PRINT "Press <Enter> to resume.";
+220 COLOR 15,1: PRINT " It is recommended that you save any unsaved work.";
+230 LOCATE 23,1
+300 ' wait
+310 A$=INKEY$: IF A$<>CHR$(13) THEN 310
+900 ' exit
+910 COLOR 7,0: END
+1000 ' template
+1010 DATA 1,7,"PC-BASIC SYSTEM ERROR",0, 7,1,"",1
+1020 DATA 7,1,"version   ",0, 15,1,"{version}",1
+1030 DATA 7,1,"python    ",0, 15,1,"{python_version}",1
+1040 DATA 7,1,"platform  ",0, 15,1,"{os_version}",1
+1050 DATA 7,1,"interface ",0, 15,1,"{interface}",1
+1060 DATA 7,1,"statement ",0, 15,1,"{statement}",1
+1070 DATA 7,1,"",1
+1080 DATA 15,1,"{traceback_0}",1
+1090 DATA 15,1,"{traceback_1}",1
+1100 DATA 15,1,"{traceback_2}",1
+1110 DATA 15,1,"{traceback_3}",1
+1120 DATA 15,1,"{exc_type}: ",0, 7,1,"{exc_val}",1
+1130 DATA 7,1,"",1
+1140 DATA 1,7,"This is a bug in PC-BASIC.",0, 7,1,"",1
+1150 DATA 7,1,"Sorry about that. You can help improve PC-BASIC:",1
+1160 DATA 7,1,"- Please file a bug report at",1
+1170 DATA 15,1,"  {bug_url}",1
+1180 DATA 7,1,"- Please include the full crash log stored at",1
+1190 DATA 15,1,"  {crashlog}",1
+1200 DATA 7,1,"",255
+"""
 
 def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
     """Display modal message"""
+    # gather information
     impl = session._impl
     if not impl:
         return False
@@ -99,55 +134,34 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         code_line = bytes(
             impl.lister.detokenise_compound_statement(impl.interpreter.direct_line)[0]
         )
-    # don't risk codepage logic here, use cp437
-    code_line = code_line.decode('cp437', 'replace')
-    # stop program execution
-    impl.interpreter.set_pointer(False)
+    code_line = session.convert(code_line, to_type=text_type)
+    # get frozen status
+    frozen = getattr(sys, 'frozen', u'') or u''
+    python_version = u'%s [%s] %s' % (
+        platform.python_version(), u' '.join(platform.architecture()), frozen
+    )
     # create crash log file
     logname = datetime.now().strftime(LOG_PATTERN)
     logfile = tempfile.NamedTemporaryFile(
-        mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False
-    )
-    # construct the message
-    frozen = getattr(sys, 'frozen', u'') or u''
-    message = [
-        (0x70, u'PC-BASIC SYSTEM ERROR\n'),
-        (0x17, u'version   '),
-        (0x1f, LONG_VERSION),
-        (0x17, u'\npython    '),
-        (0x1f, u'%s [%s] %s' % (
-            platform.python_version(), u' '.join(platform.architecture()), frozen
-        )),
-        (0x17, u'\nplatform  '),
-        (0x1f, platform.platform()),
-        (0x17, u'\ninterface '),
-        (0x1f, iface_name),
-        (0x17, u'\nstatement '),
-        (0x1f, code_line + u'\n\n'),
-    ] + [
-        (0x1f, u'{0}:{1}, {2}\n'.format(os.path.split(s[0])[-1], s[1], s[2]))
-        for s in stack[-4:]
-    ] + [
-        (0x1f, u'{0}:'.format(exc_type.__name__)),
-        (0x17, u' {0}\n\n'.format(exc_value)),
-        (0x70, u'This is a bug in PC-BASIC.\n'),
-        (0x17, u'Sorry about that. You can help improve PC-BASIC:\n'),
-        (0x17, u'- Please file a bug report at\n'),
-        (0x17, u'  '),
-        (0x1f, u'https://github.com/robhagemans/pcbasic/issues\n'),
-        (0x17, u'- Please include the full crash log stored at\n'),
-        (0x17, u'  '),
-        (0x1f, logfile.name),
-    ]
-    bottom = (
-        (0x70, u'Press <Enter> to resume.'),
-        (0x17, u' It is recommended that you save any unsaved work.'),
+        mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False,
     )
     # create crash log
     crashlog = [
         u'PC-BASIC crash log',
         u'=' * 100,
-        u''.join(text for _, text in message),
+        (
+            u'version: {version}\n'
+            u'python: {python_version}\n'
+            u'platform: {os_version}\n'
+            u'interface: {interface}\n'
+            u'statement: {statement}'
+        ).format(
+                version=LONG_VERSION,
+                python_version=python_version,
+                os_version=platform.platform(),
+                interface=iface_name,
+                statement=code_line,
+        ),
         u'\n',
         u'==== Traceback ='.ljust(100, u'='),
         u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
@@ -171,24 +185,40 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         crashlog.append(bytes(line).decode('cp437', 'replace'))
     crashlog.append(u'==== Options ='.ljust(100, u'='))
     crashlog.append(repr(argv))
-    # clear screen for modal message
-    # choose attributes - this should be readable on VGA, MDA, PCjr etc.
-    impl.display.screen(0, 0, 0, 0, new_width=80)
-    impl.display.set_attr(0x17)
-    impl.display.set_border(1)
-    impl.display.text_screen.clear()
-    # show message on screen
-    for attr, text in message:
-        impl.display.set_attr(attr)
-        impl.console.write(text.encode('cp437', 'replace').replace(b'\n', b'\r'))
-    impl.display.text_screen._bottom_row_allowed = True
-    impl.display.text_screen.set_pos(25, 1)
-    for attr, text in bottom:
-        impl.display.set_attr(attr)
-        impl.console.write(text.encode('cp437', 'replace'))
+    # format the traceback
+    traceback_lines = [
+        u'{0}:{1}, {2}'.format(os.path.split(s[0])[-1], s[1], s[2])
+        for s in stack[-4:]
+    ]
+    # make sure the list is long enough if the traceback is not
+    traceback_lines.extend([u''] * 4)
+    # provide a status message
+    impl.queues.video.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
+    # stop program execution and clear everything
+    session.execute('NEW')
+    # display report
+    # construct the message
+    message = REPORT_TEMPLATE.format(
+        version=LONG_VERSION,
+        python_version=python_version,
+        os_version=platform.platform(),
+        interface=iface_name,
+        statement=code_line,
+        traceback_0=traceback_lines[0],
+        traceback_1=traceback_lines[1],
+        traceback_2=traceback_lines[2],
+        traceback_3=traceback_lines[3],
+        exc_type=u'{0}'.format(exc_type.__name__),
+        exc_val=u'{0}'.format(exc_value),
+        bug_url=u'https://github.com/robhagemans/pcbasic/issues',
+        crashlog=logfile.name,
+    )
+    session.execute(message)
+    session.execute('RUN')
+    impl.queues.video.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
     # write crash log
     crashlog = u'\n'.join(
-        line.decode('cp437', 'replace') if isinstance(line, bytes) else line
+        session.convert(line, to_type=text_type)
         for line in crashlog
     )
     with logfile as f:
