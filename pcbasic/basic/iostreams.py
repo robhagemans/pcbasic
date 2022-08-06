@@ -26,59 +26,80 @@ TICK = 0.03
 class IOStreams(object):
     """Manage input/output to files, printers and stdio."""
 
-    def __init__(self, queues, codepage, input_streams, output_streams):
+    def __init__(self, queues, codepage):
         """Initialise I/O streams."""
         self._queues = queues
         self._codepage = codepage
-        # input
-        if input_streams in (u'stdio', b'stdio'):
-            # sentinel value
-            # stdin needs to be picked at runtime as both console.stdin and sys.stdin can change
-            # and we would be keeping a reference to a closed/bad file
-            input_streams = stdio.stdin
-        # put in tuple if it's file-like or not a sequence, so we do the right thing when looping
-        if not input_streams:
-            input_streams = ()
-        elif hasattr(input_streams, 'read'):
-            input_streams = (input_streams,)
-        else:
-            try:
-                iter(input_streams)
-            except TypeError:
-                raise TypeError(
-                    'input_streams must be "stdio", file-like or a sequence of file-likes, not `%s`'
-                    % (type(input_streams),)
-                )
-        self._input_streams = [self._wrap_input(stream) for stream in input_streams]
-        # output
-        if output_streams in (u'stdio', b'stdio'):
-            output_streams = stdio.stdout
-        # put in tuple if it's file-like so we do the right thing when looping
-        if not output_streams:
-            output_streams = ()
-        elif hasattr(output_streams, 'write'):
-            output_streams = (output_streams,)
-        else:
-            try:
-                iter(output_streams)
-            except TypeError:
-                raise TypeError(
-                    'output_streams must be "stdio", file-like or a sequence of file-likes, not `%s`'
-                    % (type(output_streams),)
-                )
-        self._output_echos = [
-            self._codepage.wrap_output_stream(stream, preserve=CONTROL)
-            for stream in output_streams
-        ]
-        # disable at start
+        # disable input streams at start
         self._active = False
-        # launch a daemon thread for input
+        # flag for input daemon thread
         self._stop_threads = False
-        if self._input_streams:
+        # streams
+        self._input_streams = []
+        self._output_echos = []
+
+    def add_input_streams(self, *input_streams):
+        """Attach input streams."""
+        if not input_streams:
+            return
+        first_streams = not self._input_streams
+        for stream in input_streams:
+            self._input_streams.append(self._get_wrapped_input_stream(stream))
+        if first_streams and self._input_streams:
             # launch a thread to allow nonblocking reads on both Windows and Unix
             thread = threading.Thread(target=self._process_input, args=())
             thread.daemon = True
             thread.start()
+
+    #def remove_input_streams(self, *input_streams):
+    #    """Detach input streams."""
+    #    for stream in input_streams:
+    #        self._input_streams.remove(self._get_wrapped_input_stream(stream))
+
+    def _get_wrapped_input_stream(self, stream):
+        """Interpret stream argument and get the appropriate stream."""
+        if stream in (u'stdio', b'stdio'):
+            # sentinel value
+            # stdin needs to be picked at runtime as both console.stdin and sys.stdin can change
+            # and we would be keeping a reference to a closed/bad file
+            stream = stdio.stdin
+        elif not hasattr(stream, 'read'):
+            raise TypeError(
+                'input_streams must be file-like or "stdio", not `%s`'
+                % (type(stream),)
+            )
+        return NonBlockingInputWrapper(
+            stream, self._codepage, lfcr=not WIN32 and stream.isatty()
+        )
+
+    def add_output_streams(self, *output_streams):
+        """Attach output streams."""
+        for stream in output_streams:
+            self._output_echos.append(self._get_wrapped_output_stream(stream))
+
+    def remove_output_streams(self, *output_streams):
+        """Detach output streams."""
+        for stream in output_streams:
+            self._output_echos.remove(self._get_wrapped_output_stream(stream))
+
+    def toggle_output_stream(self, stream):
+        """Toggle copying of all screen I/O to stream."""
+        stream = self._get_wrapped_output_stream(stream)
+        if stream in self._output_echos:
+            self._output_echos.remove(stream)
+        else:
+            self._output_echos.append(stream)
+
+    def _get_wrapped_output_stream(self, stream):
+        """Interpret stream argument and get the appropriate stream."""
+        if stream in (u'stdio', b'stdio'):
+            stream = stdio.stdout
+        elif not hasattr(stream, 'write'):
+            raise TypeError(
+                'output_streams must be file-like or "stdio", not `%s`'
+                % (type(stream),)
+            )
+        return self._codepage.wrap_output_stream(stream, preserve=CONTROL)
 
     def close(self):
         """Kill threads before exit."""
@@ -94,14 +115,6 @@ class IOStreams(object):
         for f in self._output_echos:
             f.write(s)
 
-    def toggle_echo(self, stream):
-        """Toggle copying of all screen I/O to stream."""
-        stream = self._codepage.wrap_output_stream(stream, preserve=CONTROL)
-        if stream in self._output_echos:
-            self._output_echos.remove(stream)
-        else:
-            self._output_echos.append(stream)
-
     @contextmanager
     def activate(self):
         """Grab and release input stream."""
@@ -110,12 +123,6 @@ class IOStreams(object):
             yield
         finally:
             self._active = False
-
-    def _wrap_input(self, stream):
-        """Wrap input stream."""
-        return NonBlockingInputWrapper(
-            stream, self._codepage, lfcr=not WIN32 and stream.isatty()
-        )
 
     def _process_input(self):
         """Process input from streams."""

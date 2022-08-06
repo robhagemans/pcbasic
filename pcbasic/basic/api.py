@@ -88,12 +88,12 @@ class Session(object):
             as_type = type(command)
         output = io.BytesIO() if as_type == bytes else io.StringIO()
         with self._impl.io_streams.activate():
-            self._impl.io_streams.toggle_echo(output)
+            self._impl.io_streams.add_output_streams(output)
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.unicode_to_bytes(cmd)
                 self._impl.execute(cmd)
-            self._impl.io_streams.toggle_echo(output)
+            self._impl.io_streams.remove_output_streams(output)
         return output.getvalue()
 
     def evaluate(self, expression):
