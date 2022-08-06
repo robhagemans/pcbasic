@@ -124,22 +124,9 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     stack = traceback.extract_tb(exc_traceback)
     logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     # obtain statement being executed
-    if impl.interpreter.run_mode:
-        codestream = impl.program.bytecode
-        bytepos = codestream.tell() - 1
-        from_line = impl.program.get_line_number(bytepos)
-        try:
-            codestream.seek(impl.program.line_numbers[from_line]+1)
-            _, output, _ = impl.lister.detokenise_line(codestream)
-            code_line = bytes(output)
-        except KeyError:
-            code_line = b'<could not retrieve line number %d>' % from_line
-    else:
-        impl.interpreter.direct_line.seek(0)
-        code_line = bytes(
-            impl.lister.detokenise_compound_statement(impl.interpreter.direct_line)[0]
-        )
-    code_line = session.convert(code_line, to_type=text_type)
+    code_line = session.info.get_current_code(as_type=text_type)
+    # hide intermediate output and stop execution
+    session.execute('COLOR 0,0:LOCATE 1,1,0:STOP')
     # get frozen status
     frozen = getattr(sys, 'frozen', u'') or u''
     python_version = u'%s [%s] %s' % (
@@ -172,14 +159,10 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         session.info.repr_strings(),
         u'==== Program Buffer ='.ljust(100, u'='),
         session.info.repr_program(),
+        u'',
+        u'==== Program ='.ljust(100, u'='),
+        session.execute('LIST', as_type=text_type),
     ]
-    impl.program.bytecode.seek(1)
-    crashlog.append(u'==== Program ='.ljust(100, u'='))
-    while True:
-        _, line, _ = impl.lister.detokenise_line(impl.program.bytecode)
-        if not line:
-            break
-        crashlog.append(bytes(line).decode('cp437', 'replace'))
     # write crash log
     crashlog = u'\n'.join(
         session.convert(line, to_type=text_type)
