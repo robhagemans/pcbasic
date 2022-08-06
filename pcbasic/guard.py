@@ -116,60 +116,104 @@ REPORT_TEMPLATE="""
 """
 
 def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
-    """Display modal message"""
-    # hide further output from defunct session
-    session.attach(None)
-    # gather information
+    """Process crash information and write reports."""
+    # retrieve information from the defunct session
+    session_info = _debrief_session(session)
+    # interface information
     if iface:
         iface_name = u'%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
     else:
         iface_name = u'--'
-    # log the standard python error
-    stack = traceback.extract_tb(exc_traceback)
-    # obtain statement being executed
-    code_line = session.info.get_current_code(as_type=text_type)
-    # get code listing
-    listing = session.execute('LIST', as_type=text_type)
-    # get frozen status
-    frozen = getattr(sys, 'frozen', u'') or u''
+    # platform information
     python_version = u'%s [%s] %s' % (
-        platform.python_version(), u' '.join(platform.architecture()), frozen
+        platform.python_version(), u' '.join(platform.architecture()),
+        getattr(sys, 'frozen', u'') or u''
     )
-    # format the traceback
-    traceback_lines = [
+    # format traceback
+    # make sure the list is long enough if the traceback is not
+    stack = traceback.extract_tb(exc_traceback)
+    traceback_lines=[
         u'{0}:{1}, {2}'.format(os.path.basename(s[0]), s[1], s[2])
         for s in stack[-4:]
-    ]
-    # make sure the list is long enough if the traceback is not
-    traceback_lines.extend([u''] * 4)
+    ] + [u''] * 4
+    # standard traceback format
+    python_traceback=traceback.format_exception(exc_type, exc_value, exc_traceback)
+    # write crash log and get its name
+    log_file_name = _write_crashlog(
+        log_dir, argv, python_traceback,
+        **session_info
+    )
+    # display modal message on the interface
+    do_resume = _show_report(
+        iface, iface_name, python_version, session_info['code_line'],
+        traceback_lines, exc_type, exc_value,
+        log_file_name
+    )
+    return do_resume
 
-    ###############################################################################################
+
+def _debrief_session(session):
+    # hide further output from defunct session
+    session.attach(None)
+    info = dict(
+        # get session information
+        repr_text_screen=session.info.repr_text_screen(),
+        repr_scalars=session.info.repr_scalars(),
+        repr_arrays=session.info.repr_arrays(),
+        repr_strings=session.info.repr_strings(),
+        repr_program=session.info.repr_program(),
+        # obtain statement being executed
+        code_line=session.info.get_current_code(as_type=text_type),
+        # get code listing
+        listing=session.execute('LIST', as_type=text_type),
+    )
+    return info
+
+
+def _get_exception_info(exc_type, exc_value, exc_traceback):
+    """Format the traceback."""
+    stack = traceback.extract_tb(exc_traceback)
+    exception_info = dict(
+        # make sure the list is long enough if the traceback is not
+        traceback_lines=[
+            u'{0}:{1}, {2}'.format(os.path.basename(s[0]), s[1], s[2])
+            for s in stack[-4:]
+        ] + [u''] * 4,
+        # standard traceback format
+        python_traceback=traceback.format_exception(exc_type, exc_value, exc_traceback)
+    )
+    return exception_info
+
+
+def _write_crashlog(
+        log_dir, argv, python_traceback,
+        repr_text_screen,
+        repr_scalars,
+        repr_arrays,
+        repr_strings,
+        repr_program,
+        code_line,
+        listing
+    ):
+    def separator(title):
+        return u'==== {} ='.format(title).ljust(100, u'=')
+
 
     # create crash log
     crashlog = [
         u'PC-BASIC crash log',
         u'=' * 100,
-        info.get_version_info(),
-        u'==== Platform ='.ljust(100, u'='),
-        info.get_platform_info(),
-        u'==== Options ='.ljust(100, u'='),
-        repr(argv),
-        u'',
-        u'==== Traceback ='.ljust(100, u'='),
-        u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
-        u'==== Screen Pages ='.ljust(100, u'='),
-        session.info.repr_text_screen(),
-        u'==== Scalars ='.ljust(100, u'='),
-        session.info.repr_scalars(),
-        u'==== Arrays ='.ljust(100, u'='),
-        session.info.repr_arrays(),
-        u'==== Strings ='.ljust(100, u'='),
-        session.info.repr_strings(),
-        u'==== Program Buffer ='.ljust(100, u'='),
-        session.info.repr_program(),
-        u'',
-        u'==== Program ='.ljust(100, u'='),
-        listing,
+        code_line, u'',
+        separator('Traceback'), u''.join(python_traceback),
+        separator('Version'), info.get_version_info(),
+        separator('Platform'), info.get_platform_info(),
+        separator('Options'), repr(argv), u'',
+        separator('Screen Pages'), repr_text_screen,
+        separator('Scalars'), repr_scalars,
+        separator('Arrays'), repr_arrays,
+        separator('Strings'), repr_strings,
+        separator('Program Buffer'), repr_program, u'',
+        separator('Program'), listing,
     ]
     # create crash log file
     logname = datetime.now().strftime(LOG_PATTERN)
@@ -178,21 +222,21 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     )
     with logfile as f:
         for line in crashlog:
-            f.write(
-                session.convert(line, to_type=text_type).encode('utf-8', 'replace')
-            )
+            f.write(line.encode('utf-8', 'replace'))
             f.write(b'\n')
     # open text file
-        webbrowser.open(logfile.name)
+    webbrowser.open(logfile.name)
+    return logfile.name
 
-    ###############################################################################################
 
+def _show_report(iface, iface_name, python_version, code_line, traceback_lines, exc_type, exc_value, log_file_name):
+    """Show a crash report on the interface."""
     resume = False
     # provide a status caption
     if iface:
         _, video_queue, _ = iface.get_queues()
         video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
-    with Session() as session:
+    with Session(output_streams='stdio' if not iface else ()) as session:
         session.attach(iface)
         # display report
         # construct the message
@@ -209,7 +253,7 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
             exc_type=u'{0}'.format(exc_type.__name__),
             exc_value=u'{0}'.format(exc_value),
             bug_url=u'https://github.com/robhagemans/pcbasic/issues',
-            crashlog=logfile.name,
+            crashlog=log_file_name,
         )
         session.execute(message)
         session.execute('RUN')
