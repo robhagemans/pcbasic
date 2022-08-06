@@ -127,17 +127,24 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     # obtain statement being executed
     code_line = session.info.get_current_code(as_type=text_type)
     # hide intermediate output and stop execution
-    session.execute('COLOR 0,0:LOCATE 1,1,0:STOP')
+    session.execute('COLOR 1,1,1:KEY OFF:CLS:LOCATE ,,0:STOP')
+    # get code listing
+    listing = session.execute('LIST', as_type=text_type)
     # get frozen status
     frozen = getattr(sys, 'frozen', u'') or u''
     python_version = u'%s [%s] %s' % (
         platform.python_version(), u' '.join(platform.architecture()), frozen
     )
-    # create crash log file
-    logname = datetime.now().strftime(LOG_PATTERN)
-    logfile = tempfile.NamedTemporaryFile(
-        mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False,
-    )
+    # format the traceback
+    traceback_lines = [
+        u'{0}:{1}, {2}'.format(os.path.basename(s[0]), s[1], s[2])
+        for s in stack[-4:]
+    ]
+    # make sure the list is long enough if the traceback is not
+    traceback_lines.extend([u''] * 4)
+
+    ###############################################################################################
+
     # create crash log
     crashlog = [
         u'PC-BASIC crash log',
@@ -162,24 +169,24 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         session.info.repr_program(),
         u'',
         u'==== Program ='.ljust(100, u'='),
-        session.execute('LIST', as_type=text_type),
+        listing,
     ]
-    # write crash log
-    crashlog = u'\n'.join(
-        session.convert(line, to_type=text_type)
-        for line in crashlog
+    # create crash log file
+    logname = datetime.now().strftime(LOG_PATTERN)
+    logfile = tempfile.NamedTemporaryFile(
+        mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False,
     )
     with logfile as f:
-        f.write(crashlog.encode('utf-8', 'replace'))
+        for line in crashlog:
+            f.write(
+                session.convert(line, to_type=text_type).encode('utf-8', 'replace')
+            )
+            f.write(b'\n')
     # open text file
         webbrowser.open(logfile.name)
-    # format the traceback
-    traceback_lines = [
-        u'{0}:{1}, {2}'.format(os.path.basename(s[0]), s[1], s[2])
-        for s in stack[-4:]
-    ]
-    # make sure the list is long enough if the traceback is not
-    traceback_lines.extend([u''] * 4)
+
+    ###############################################################################################
+
     # provide a status caption
     if iface:
         _, video_queue, _ = iface.get_queues()
