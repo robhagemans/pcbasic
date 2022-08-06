@@ -53,7 +53,7 @@ def _show_usage():
 def _show_version(settings):
     """Show version with optional debugging details."""
     if settings.debug:
-        stdio.stdout.write(u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT))
+        stdio.stdout.write(info.get_version_info())
         stdio.stdout.write(info.get_platform_info())
     else:
         stdio.stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))

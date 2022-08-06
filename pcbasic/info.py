@@ -11,10 +11,15 @@ import platform
 import importlib
 
 from .compat import which
+from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
 
+
+def get_version_info():
+    """Retrieve long version info."""
+    return u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT)
 
 def get_platform_info():
-    """Show information about operating system and installed modules."""
+    """Retrieve information about operating system and installed modules."""
     info = []
     info.append(u'\nPLATFORM')
     info.append(u'os: %s' % platform.platform())

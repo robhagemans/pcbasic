@@ -22,6 +22,7 @@ from subprocess import check_output, CalledProcessError
 from .basic.base import error, signals
 from .basic import VERSION, LONG_VERSION
 from .compat import BrokenPipeError, is_broken_pipe, text_type
+from . import info
 
 
 class ExceptionGuard(object):
@@ -46,19 +47,23 @@ class ExceptionGuard(object):
 
     def __exit__(self, exc_type, exc_val, traceback):
         """Handle exceptions."""
+        success = False
         if not exc_type or exc_type == error.Reset:
-            return False
+            return success
         if is_broken_pipe(exc_val):
             # BrokenPipeError may be raised by shell pipes, handled at entry point
             # see docs.python.org/3/library/signal.html#note-on-sigpipe
-            return False
-        success = _bluescreen(
-            self._session, self._interface,
-            self._uargv, self._log_dir,
-            exc_type, exc_val, traceback
-        )
-        if success:
-            self.exception_handled = exc_val
+            return success
+        try:
+            success = _bluescreen(
+                self._session, self._interface,
+                self._uargv, self._log_dir,
+                exc_type, exc_val, traceback
+            )
+            if success:
+                self.exception_handled = exc_val
+        except error.Exit:
+            pass
         return success
 
 
@@ -149,32 +154,24 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     crashlog = [
         u'PC-BASIC crash log',
         u'=' * 100,
-        (
-            u'version: {version}\n'
-            u'python: {python_version}\n'
-            u'platform: {os_version}\n'
-            u'interface: {interface}\n'
-            u'statement: {statement}'
-        ).format(
-                version=LONG_VERSION,
-                python_version=python_version,
-                os_version=platform.platform(),
-                interface=iface_name,
-                statement=code_line,
-        ),
-        u'\n',
+        info.get_version_info(),
+        u'==== Platform ='.ljust(100, u'='),
+        info.get_platform_info(),
+        u'==== Options ='.ljust(100, u'='),
+        repr(argv),
+        u'',
         u'==== Traceback ='.ljust(100, u'='),
         u''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
         u'==== Screen Pages ='.ljust(100, u'='),
-        repr(impl.display.text_screen),
+        session.info.repr_text_screen(),
         u'==== Scalars ='.ljust(100, u'='),
-        repr(impl.scalars),
+        session.info.repr_scalars(),
         u'==== Arrays ='.ljust(100, u'='),
-        repr(impl.arrays),
+        session.info.repr_arrays(),
         u'==== Strings ='.ljust(100, u'='),
-        repr(impl.strings),
+        session.info.repr_strings(),
         u'==== Program Buffer ='.ljust(100, u'='),
-        repr(impl.program),
+        session.info.repr_program(),
     ]
     impl.program.bytecode.seek(1)
     crashlog.append(u'==== Program ='.ljust(100, u'='))
@@ -183,8 +180,15 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         if not line:
             break
         crashlog.append(bytes(line).decode('cp437', 'replace'))
-    crashlog.append(u'==== Options ='.ljust(100, u'='))
-    crashlog.append(repr(argv))
+    # write crash log
+    crashlog = u'\n'.join(
+        session.convert(line, to_type=text_type)
+        for line in crashlog
+    )
+    with logfile as f:
+        f.write(crashlog.encode('utf-8', 'replace'))
+    # open text file
+        webbrowser.open(logfile.name)
     # format the traceback
     traceback_lines = [
         u'{0}:{1}, {2}'.format(os.path.split(s[0])[-1], s[1], s[2])
@@ -216,13 +220,4 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     session.execute(message)
     session.execute('RUN')
     impl.queues.video.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
-    # write crash log
-    crashlog = u'\n'.join(
-        session.convert(line, to_type=text_type)
-        for line in crashlog
-    )
-    with logfile as f:
-        f.write(crashlog.encode('utf-8', 'replace'))
-    # open text file
-        webbrowser.open(logfile.name)
     return True
