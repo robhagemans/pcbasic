@@ -196,7 +196,6 @@ def _write_crashlog(
     def separator(title):
         return u'==== {} ='.format(title).ljust(100, u'=')
 
-
     # create crash log
     crashlog = [
         u'PC-BASIC crash log',
@@ -220,6 +219,9 @@ def _write_crashlog(
     )
     with logfile as f:
         for line in crashlog:
+            if isinstance(line, bytes): # pragma: no cover
+                # for python 2 - show as cp437
+                line = line.decode('cp437')
             f.write(line.encode('utf-8', 'replace'))
             f.write(b'\n')
     # open text file

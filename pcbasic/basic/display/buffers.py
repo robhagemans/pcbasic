@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import logging
 from contextlib import contextmanager
 
-from ...compat import zip, int2byte, iterchar, text_type
+from ...compat import PY2, zip, int2byte, iterchar, text_type
 from ...compat import iter_chunks
 from ..base import signals
 from ..base.bytematrix import ByteMatrix
@@ -115,14 +115,11 @@ class VideoBuffer(object):
         lastwrap = False
         row_strs.append(horiz_bar)
         for i, row in enumerate(self._rows):
-            # replace non-ascii with ? - this is not ideal but
-            # for python2 we need to stick to ascii-128 so implicit conversion to bytes works
-            # and for python3 we must use unicode
-            # and backslashreplace messes up the output width...
-            rowstr = ''.join(
-                _char.decode('ascii', 'replace').replace(u'\ufffd', u'?')
-                for _char in row.chars
-            )
+            if PY2: # pragma: no cover
+                rowstr = b''.join(row.chars)
+            else:
+                # for this purpose we convert on a per-byte basis, so no dbcs
+                rowstr = u''.join(self._codepage.bytes_to_unicode(_b) for _b in row.chars)
             left = '\\' if lastwrap else '|'
             right = '\\' if row.wrap else '|'
             row_strs.append('{0:2} {1}{2}{3} {4:2}'.format(
