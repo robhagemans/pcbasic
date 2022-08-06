@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 
 from ..compat import text_type
 
@@ -80,14 +81,20 @@ class Session(object):
         # not resolved, try to use/create as internal name
         return NameWrapper(self._impl.codepage, file_name_or_object)
 
-    def execute(self, command):
+    def execute(self, command, as_type=None):
         """Execute a BASIC statement."""
         self.start()
+        if as_type is None:
+            as_type = type(command)
+        output = io.BytesIO() if as_type == bytes else io.StringIO()
         with self._impl.io_streams.activate():
+            self._impl.io_streams.toggle_echo(output)
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.unicode_to_bytes(cmd)
                 self._impl.execute(cmd)
+            self._impl.io_streams.toggle_echo(output)
+        return output.getvalue()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
