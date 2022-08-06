@@ -38,6 +38,16 @@ class IOStreams(object):
         self._input_streams = []
         self._output_echos = []
 
+    def __getstate__(self):
+        """Pickle the streams."""
+        return self.__dict__
+
+    def __setstate__(self, pickle_dict):
+        """Unpickle and resume the streams."""
+        self.__dict__.update(pickle_dict)
+        if self._input_streams:
+            self._launch_input_thread()
+
     def add_input_streams(self, *input_streams):
         """Attach input streams."""
         if not input_streams:
@@ -46,10 +56,7 @@ class IOStreams(object):
         for stream in input_streams:
             self._input_streams.append(self._get_wrapped_input_stream(stream))
         if first_streams and self._input_streams:
-            # launch a thread to allow nonblocking reads on both Windows and Unix
-            thread = threading.Thread(target=self._process_input, args=())
-            thread.daemon = True
-            thread.start()
+            self._launch_input_thread()
 
     #def remove_input_streams(self, *input_streams):
     #    """Detach input streams."""
@@ -124,6 +131,13 @@ class IOStreams(object):
         finally:
             self._active = False
 
+
+    def _launch_input_thread(self):
+        """Launch a thread to allow nonblocking reads on both Windows and Unix."""
+        thread = threading.Thread(target=self._process_input, args=())
+        thread.daemon = True
+        thread.start()
+
     def _process_input(self):
         """Process input from streams."""
         while True:
@@ -142,12 +156,13 @@ class IOStreams(object):
             else:
                 # executed if not break
                 continue
-            # input stream is closed, remove it
-            self._input_streams.remove(stream)
-            # exit the interpreter if last input closed
-            if not self._input_streams:
+            # exit the interpreter instead of closing last input
+            # the input is preserved for resume
+            if len(self._input_streams) == 1:
                 queue.put(signals.Event(signals.STREAM_CLOSED))
                 return
+            # input stream is closed, remove it
+            self._input_streams.remove(stream)
 
 
 class NonBlockingInputWrapper(object):
