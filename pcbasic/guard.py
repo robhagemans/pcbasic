@@ -118,9 +118,6 @@ REPORT_TEMPLATE="""
 def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
     """Display modal message"""
     # gather information
-    impl = session._impl
-    if not impl:
-        return False
     if iface:
         iface_name = u'%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
     else:
@@ -183,8 +180,10 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     ]
     # make sure the list is long enough if the traceback is not
     traceback_lines.extend([u''] * 4)
-    # provide a status message
-    impl.queues.video.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
+    # provide a status caption
+    if iface:
+        _, video_queue, _ = iface.get_queues()
+        video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
     # stop program execution and clear everything
     session.execute('NEW')
     # display report
@@ -206,5 +205,6 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     )
     session.execute(message)
     session.execute('RUN')
-    impl.queues.video.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
+    if iface:
+        video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
     return True
