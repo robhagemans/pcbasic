@@ -200,3 +200,25 @@ class SessionInfo(object):
     def repr_program(self):
         """Get a marked-up hex dump of the program."""
         return repr(self._impl.program)
+
+    def get_current_code(self, as_type=bytes):
+        """Obtain statement being executed."""
+        if self._impl.interpreter.run_mode:
+            codestream = self._impl.program.bytecode
+            bytepos = codestream.tell()
+            from_line = self._impl.program.get_line_number(bytepos-1)
+            try:
+                codestream.seek(self._impl.program.line_numbers[from_line]+1)
+                _, output, _ = self._impl.lister.detokenise_line(codestream)
+                code_line = bytes(output)
+            except KeyError:
+                code_line = b''
+        else:
+            codestream = self._impl.interpreter.direct_line
+            bytepos = codestream.tell()
+            codestream.seek(0)
+            code_line = bytes(
+                self._impl.lister.detokenise_compound_statement(codestream)[0]
+            )
+        codestream.seek(bytepos)
+        return self._session.convert(code_line, as_type)
