@@ -45,12 +45,12 @@ class ExceptionGuard(object):
         self.exception_handled = None
         return self
 
-    def __exit__(self, exc_type, exc_val, traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         """Handle exceptions."""
         success = False
         if not exc_type or exc_type == error.Reset:
             return success
-        if is_broken_pipe(exc_val):
+        if is_broken_pipe(exc_value):
             # BrokenPipeError may be raised by shell pipes, handled at entry point
             # see docs.python.org/3/library/signal.html#note-on-sigpipe
             return success
@@ -58,12 +58,17 @@ class ExceptionGuard(object):
             success = _bluescreen(
                 self._session, self._interface,
                 self._uargv, self._log_dir,
-                exc_type, exc_val, traceback
+                exc_type, exc_value, exc_traceback
             )
             if success:
-                self.exception_handled = exc_val
+                # we still want to show the exception on the log
+                logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+                self.exception_handled = exc_value
         except error.Exit:
             pass
+        except BaseException as e:
+            logging.error(e)
+            raise
         return success
 
 
@@ -99,7 +104,7 @@ REPORT_TEMPLATE="""
 1090 DATA 15,1,"{traceback_1}",1
 1100 DATA 15,1,"{traceback_2}",1
 1110 DATA 15,1,"{traceback_3}",1
-1120 DATA 15,1,"{exc_type}: ",0, 7,1,"{exc_val}",1
+1120 DATA 15,1,"{exc_type}: ",0, 7,1,"{exc_value}",1
 1130 DATA 7,1,"",1
 1140 DATA 1,7,"This is a bug in PC-BASIC.",0, 7,1,"",1
 1150 DATA 7,1,"Sorry about that. You can help improve PC-BASIC:",1
@@ -122,7 +127,6 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         iface_name = u'--'
     # log the standard python error
     stack = traceback.extract_tb(exc_traceback)
-    logging.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     # obtain statement being executed
     code_line = session.info.get_current_code(as_type=text_type)
     # hide intermediate output and stop execution
@@ -174,7 +178,7 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         webbrowser.open(logfile.name)
     # format the traceback
     traceback_lines = [
-        u'{0}:{1}, {2}'.format(os.path.split(s[0])[-1], s[1], s[2])
+        u'{0}:{1}, {2}'.format(os.path.basename(s[0]), s[1], s[2])
         for s in stack[-4:]
     ]
     # make sure the list is long enough if the traceback is not
@@ -196,7 +200,7 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
         traceback_2=traceback_lines[2],
         traceback_3=traceback_lines[3],
         exc_type=u'{0}'.format(exc_type.__name__),
-        exc_val=u'{0}'.format(exc_value),
+        exc_value=u'{0}'.format(exc_value),
         bug_url=u'https://github.com/robhagemans/pcbasic/issues',
         crashlog=logfile.name,
     )
