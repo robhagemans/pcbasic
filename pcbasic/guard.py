@@ -88,10 +88,8 @@ REPORT_TEMPLATE="""
 210 LOCATE 25,1: COLOR 1,7: PRINT "Press <Enter> to resume.";
 220 COLOR 15,1: PRINT " It is recommended that you save any unsaved work.";
 230 LOCATE 23,1
-300 ' wait
-310 A$=INKEY$: IF A$<>CHR$(13) THEN 310
 900 ' exit
-910 COLOR 7,0: END
+910 COLOR 7,1: END
 1000 ' template
 1010 DATA 1,7,"PC-BASIC SYSTEM ERROR",0, 7,1,"",1
 1020 DATA 7,1,"version   ",0, 15,1,"{version}",1
@@ -232,12 +230,7 @@ def _write_crashlog(
 def _show_report(iface, iface_name, python_version, code_line, traceback_lines, exc_type, exc_value, log_file_name):
     """Show a crash report on the interface."""
     resume = False
-    # provide a status caption
-    if iface:
-        _, video_queue, _ = iface.get_queues()
-        video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
     with Session(output_streams='stdio' if not iface else ()) as session:
-        session.attach(iface)
         # display report
         # construct the message
         message = REPORT_TEMPLATE.format(
@@ -257,7 +250,12 @@ def _show_report(iface, iface_name, python_version, code_line, traceback_lines, 
         )
         session.execute(message)
         session.execute('RUN')
-        resume = True
-    if iface:
-        video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
-    return resume
+        session.attach(iface)
+    if not iface:
+        return False
+    while True:
+        signal = iface.pause(CAPTION)
+        if signal.event_type == signals.KEYB_DOWN and signal.params[0] == '\r':
+            return True
+        elif signal.event_type == signals.QUIT:
+            return False
