@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from subprocess import check_output, CalledProcessError
 
 from .basic.base import error, signals
-from .basic import VERSION, LONG_VERSION
+from .basic import VERSION, LONG_VERSION, Session
 from .compat import BrokenPipeError, is_broken_pipe, text_type
 from . import info
 
@@ -117,6 +117,8 @@ REPORT_TEMPLATE="""
 
 def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
     """Display modal message"""
+    # hide further output from defunct session
+    session.attach(None)
     # gather information
     if iface:
         iface_name = u'%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
@@ -126,8 +128,6 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     stack = traceback.extract_tb(exc_traceback)
     # obtain statement being executed
     code_line = session.info.get_current_code(as_type=text_type)
-    # hide intermediate output and stop execution
-    session.execute('COLOR 1,1,1:KEY OFF:CLS:LOCATE ,,0:STOP')
     # get code listing
     listing = session.execute('LIST', as_type=text_type)
     # get frozen status
@@ -187,31 +187,33 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
 
     ###############################################################################################
 
+    resume = False
     # provide a status caption
     if iface:
         _, video_queue, _ = iface.get_queues()
         video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (CAPTION,)))
-    # stop program execution and clear everything
-    session.execute('NEW')
-    # display report
-    # construct the message
-    message = REPORT_TEMPLATE.format(
-        version=LONG_VERSION,
-        python_version=python_version,
-        os_version=platform.platform(),
-        interface=iface_name,
-        statement=code_line,
-        traceback_0=traceback_lines[0],
-        traceback_1=traceback_lines[1],
-        traceback_2=traceback_lines[2],
-        traceback_3=traceback_lines[3],
-        exc_type=u'{0}'.format(exc_type.__name__),
-        exc_value=u'{0}'.format(exc_value),
-        bug_url=u'https://github.com/robhagemans/pcbasic/issues',
-        crashlog=logfile.name,
-    )
-    session.execute(message)
-    session.execute('RUN')
+    with Session() as session:
+        session.attach(iface)
+        # display report
+        # construct the message
+        message = REPORT_TEMPLATE.format(
+            version=LONG_VERSION,
+            python_version=python_version,
+            os_version=platform.platform(),
+            interface=iface_name,
+            statement=code_line,
+            traceback_0=traceback_lines[0],
+            traceback_1=traceback_lines[1],
+            traceback_2=traceback_lines[2],
+            traceback_3=traceback_lines[3],
+            exc_type=u'{0}'.format(exc_type.__name__),
+            exc_value=u'{0}'.format(exc_value),
+            bug_url=u'https://github.com/robhagemans/pcbasic/issues',
+            crashlog=logfile.name,
+        )
+        session.execute(message)
+        session.execute('RUN')
+        resume = True
     if iface:
         video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
-    return True
+    return resume
