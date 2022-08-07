@@ -33,6 +33,7 @@ dynamic = [
 "Homepage" = "http://pc-basic.org"
 "Bug Tracker" = "https://github.com/robhagemans/pcbasic/issues"
 "Source Code" = "https://github.com/robhagemans/pcbasic/"
+"Documentation" = "https://robhagemans.github.io/pcbasic/doc/2.0/"
 
 [project.optional-dependencies]
 full = [
