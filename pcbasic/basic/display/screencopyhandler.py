@@ -41,7 +41,8 @@ class ScreenCopyHandler(object):
         if not target_file:
             return
         for line in self._text_screen.get_chars(as_type=bytes):
-            target_file.write_line(b''.join(line).replace(b'\0', b' '))
+            target_file.write(b''.join(line).replace(b'\0', b' '))
+        target_file.write_line()
 
     def _copy_clipboard(self, start_row, start_col, stop_row, stop_col):
         """Copy selected screen area to clipboard."""
