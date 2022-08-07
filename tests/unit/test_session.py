@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import io
 
-from pcbasic import Session, run
+from pcbasic import Session
 from tests.unit.utils import TestCase, run_tests
 
 

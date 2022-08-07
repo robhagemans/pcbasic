@@ -29,13 +29,14 @@ PAUSE_MESSAGE = u'Fatal error. Press a key to close this window.'
 class ExceptionGuard(object):
     """Context manager to handle uncaught exceptions."""
 
-    def __init__(self, log_dir=u'', uargv=()):
+    def __init__(self, interface, log_dir=u'', uargv=()):
         """Initialise crash guard."""
+        self._interface = interface
         self._uargv = uargv
         self._log_dir = log_dir
 
     @contextmanager
-    def protect(self, interface, session):
+    def protect(self, session):
         """Crash context guard."""
         try:
             yield
@@ -48,10 +49,10 @@ class ExceptionGuard(object):
                 raise error.Exit()
             raise
         except BaseException:
-            if not self._bluescreen(session._impl, interface, *sys.exc_info()):
+            if not self._bluescreen(session._impl, self._interface, *sys.exc_info()):
                 raise
-            interface.pause(PAUSE_MESSAGE)
-            interface.pause(PAUSE_MESSAGE)
+            self._interface.pause(PAUSE_MESSAGE)
+            self._interface.pause(PAUSE_MESSAGE)
 
     def _bluescreen(self, impl, iface, exc_type, exc_value, exc_traceback):
         """Display modal message"""

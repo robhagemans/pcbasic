@@ -13,6 +13,7 @@ from ..compat import text_type
 from .base import error
 from .devices import NameWrapper
 from . import implementation
+from . import state
 
 from ..data import read_codepage as codepage
 from ..data import read_fonts as font
@@ -22,9 +23,8 @@ from .values import TYPE_TO_CLASS as SIGILS
 class Session(object):
     """Public API to BASIC session."""
 
-    def __init__(self, interface=None, **kwargs):
+    def __init__(self, **kwargs):
         """Set up session object."""
-        self.interface = interface
         self._kwargs = kwargs
         self._impl = None
 
@@ -42,7 +42,6 @@ class Session(object):
     def __getstate__(self):
         """Pickle the session."""
         pickle_dict = self.__dict__.copy()
-        pickle_dict['interface'] = None
         return pickle_dict
 
     def __setstate__(self, pickle_dict):
@@ -53,12 +52,10 @@ class Session(object):
         """Start the session."""
         if not self._impl:
             self._impl = implementation.Implementation(**self._kwargs)
-            self._impl.attach_interface(self.interface)
 
     def attach(self, interface=None):
         """Attach interface to interpreter session."""
         self.start()
-        self.interface = interface
         self._impl.attach_interface(interface)
         return self
 
@@ -147,6 +144,15 @@ class Session(object):
         self.start()
         with self._impl.io_streams.activate():
             self._impl.interact()
+
+    def suspend(self, session_filename):
+        """Save session object to file."""
+        state.save_session(self, session_filename)
+
+    @classmethod
+    def resume(self, session_filename):
+        """Load new session object from file."""
+        return state.load_session(session_filename)
 
     def close(self):
         """Close the session."""
