@@ -36,7 +36,7 @@ class IOStreams(object):
         self._stop_threads = False
         # streams
         self._input_streams = []
-        self._output_echos = []
+        self._output_streams = []
 
     def __getstate__(self):
         """Pickle the streams."""
@@ -53,8 +53,11 @@ class IOStreams(object):
         if not input_streams:
             return
         first_streams = not self._input_streams
+        has_stdin = any(_stream.name == stdio.stdin.name for _stream in self._input_streams)
         for stream in input_streams:
-            self._input_streams.append(self._get_wrapped_input_stream(stream))
+            if not (has_stdin and stream.name == stdio.stdin.name):
+                # include stdin stream at most once, others may be replicated
+                self._input_streams.append(self._get_wrapped_input_stream(stream))
         if first_streams and self._input_streams:
             self._launch_input_thread()
 
@@ -81,21 +84,24 @@ class IOStreams(object):
 
     def add_output_streams(self, *output_streams):
         """Attach output streams."""
+        has_stdout = any(_stream.name == stdio.stdout.name for _stream in self._output_streams)
         for stream in output_streams:
-            self._output_echos.append(self._get_wrapped_output_stream(stream))
+            if not (has_stdout and stream.name == stdio.stdout.name):
+                # include stdout stream at most once, others may be replicated
+                self._output_streams.append(self._get_wrapped_output_stream(stream))
 
     def remove_output_streams(self, *output_streams):
         """Detach output streams."""
         for stream in output_streams:
-            self._output_echos.remove(self._get_wrapped_output_stream(stream))
+            self._output_streams.remove(self._get_wrapped_output_stream(stream))
 
     def toggle_output_stream(self, stream):
         """Toggle copying of all screen I/O to stream."""
         stream = self._get_wrapped_output_stream(stream)
-        if stream in self._output_echos:
-            self._output_echos.remove(stream)
+        if stream in self._output_streams:
+            self._output_streams.remove(stream)
         else:
-            self._output_echos.append(stream)
+            self._output_streams.append(stream)
 
     def _get_wrapped_output_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -114,12 +120,12 @@ class IOStreams(object):
 
     def flush(self):
         """Flush output streams."""
-        for f in self._output_echos:
+        for f in self._output_streams:
             f.flush()
 
     def write(self, s):
         """Write bytes to all stream outputs."""
-        for f in self._output_echos:
+        for f in self._output_streams:
             f.write(s)
 
     @contextmanager
@@ -177,6 +183,10 @@ class NonBlockingInputWrapper(object):
         self._lfcr = lfcr
         # codepage, used to read unicode from bytes streams
         self._codepage = codepage
+        try:
+            self.name = stream.name
+        except AttributeError:
+            self.name = ''
 
     def read(self):
         """Read all chars available; nonblocking; returns unicode."""

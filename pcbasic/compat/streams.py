@@ -9,11 +9,20 @@ from contextlib import contextmanager
 from .base import PY2
 
 
+def _open_named_devnull(name, mode):
+    """Open a stream to /dev/null with the given stream name."""
+    stream = open(os.devnull, mode)
+    stream.name = name
+    return stream
+
 # stdio may become None in GUI mode
+# fix them to devnull to ensure any i/o doesn't lead to crashes
 if not sys.stdin:
-    sys.stdin = open(os.devnull, 'r')
+    sys.stdin = open_named_devnull('<stdin>', 'r')
 if not sys.stdout:
-    sys.stdout = open(os.devnull, 'w')
+    sys.stdout = open_named_devnull('<stdout>', 'w')
+if not sys.stderr:
+    sys.stderr = open_named_devnull('<stderr>', 'w')
 
 
 # pause/quiet standard streams
@@ -47,7 +56,7 @@ if not sys.stdout:
 
 
 class StdIOBase(object):
-    """holds standard unicode streams."""
+    """Holds standard unicode streams."""
 
     def __init__(self):
         self._attach_stdin()
@@ -55,12 +64,14 @@ class StdIOBase(object):
         self._attach_output_stream('stderr')
 
     def _attach_stdin(self):
-        # stdio become None in GUI mode
-        self.stdin = sys.__stdin__ or open(os.devnull, 'r')
+        # stdio becomes None in GUI mode
+        self.stdin = sys.__stdin__ or _open_named_devnull('<stdin>', 'r')
 
     def _attach_output_stream(self, stream_name, redirected=False):
-        # stdio become None in GUI mode
-        stream = getattr(sys, '__%s__' % (stream_name,)) or open(os.devnull, 'w')
+        # stdio becomes None in GUI mode
+        stream = getattr(sys, '__%s__' % (stream_name,))
+        if not stream:
+            stream = _open_named_devnull('<%s>' % (stream_name,), 'w')
         setattr(self, stream_name, stream)
 
     # unicode stream wrappers
