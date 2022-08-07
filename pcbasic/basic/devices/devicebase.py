@@ -196,6 +196,9 @@ class RawFile(object):
         with safe_io():
             self._fhandle.write(s)
 
+    def flush(self):
+        """Stub for compatibility with file-like objects."""
+
 
 #################################################################################
 # Text file base

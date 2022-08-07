@@ -115,10 +115,10 @@ class Implementation(object):
         self.io_streams = iostreams.IOStreams(self.queues, self.codepage)
         if hasattr(input_streams, 'read') or input_streams in (u'stdio', b'stdio'):
             input_streams = (input_streams,)
-        self.io_streams.add_input_streams(*input_streams)
+        self.io_streams.add_input_streams(*(input_streams or ()))
         if hasattr(output_streams, 'write') or output_streams in (u'stdio', b'stdio'):
             output_streams = (output_streams,)
-        self.io_streams.add_output_streams(*output_streams)
+        self.io_streams.add_output_streams(*(output_streams or ()))
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
         # initialise video

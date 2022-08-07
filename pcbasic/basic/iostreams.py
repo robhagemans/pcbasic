@@ -13,7 +13,7 @@ import time
 import io
 from contextlib import contextmanager
 
-from ..compat import WIN32, read_all_available, stdio
+from ..compat import WIN32, read_all_available, stdio, random_id
 from .base import signals
 from .codepage import CONTROL
 
@@ -48,6 +48,14 @@ class IOStreams(object):
         if self._input_streams:
             self._launch_input_thread()
 
+    def toggle_output_stream(self, stream):
+        """Toggle copying of all screen I/O to stream."""
+        stream = self._get_wrapped_output_stream(stream)
+        if stream.name in (_stream.name for _stream in self._output_streams):
+            self._output_streams.remove(stream)
+        else:
+            self._output_streams.append(stream)
+
     def add_input_streams(self, *input_streams):
         """Attach input streams."""
         if not input_streams:
@@ -55,16 +63,12 @@ class IOStreams(object):
         first_streams = not self._input_streams
         has_stdin = any(_stream.name == stdio.stdin.name for _stream in self._input_streams)
         for stream in input_streams:
+            stream = self._get_wrapped_input_stream(stream)
             if not (has_stdin and stream.name == stdio.stdin.name):
                 # include stdin stream at most once, others may be replicated
-                self._input_streams.append(self._get_wrapped_input_stream(stream))
+                self._input_streams.append(stream)
         if first_streams and self._input_streams:
             self._launch_input_thread()
-
-    #def remove_input_streams(self, *input_streams):
-    #    """Detach input streams."""
-    #    for stream in input_streams:
-    #        self._input_streams.remove(self._get_wrapped_input_stream(stream))
 
     def _get_wrapped_input_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -78,6 +82,8 @@ class IOStreams(object):
                 'input_streams must be file-like or "stdio", not `%s`'
                 % (type(stream),)
             )
+        if not hasattr(stream, 'name'):
+            stream.name = 'input_' + random_id(8)
         return NonBlockingInputWrapper(
             stream, self._codepage, lfcr=not WIN32 and stream.isatty()
         )
@@ -86,22 +92,24 @@ class IOStreams(object):
         """Attach output streams."""
         has_stdout = any(_stream.name == stdio.stdout.name for _stream in self._output_streams)
         for stream in output_streams:
+            stream = self._get_wrapped_output_stream(stream)
+            # include stdout stream at most once, others may be replicated
+            # (if you do need multiple stdio streams, change the stream name)
+            # this avoids duplicating stdio steams on resume
             if not (has_stdout and stream.name == stdio.stdout.name):
-                # include stdout stream at most once, others may be replicated
-                self._output_streams.append(self._get_wrapped_output_stream(stream))
+                self._output_streams.append(stream)
 
     def remove_output_streams(self, *output_streams):
         """Detach output streams."""
-        for stream in output_streams:
-            self._output_streams.remove(self._get_wrapped_output_stream(stream))
-
-    def toggle_output_stream(self, stream):
-        """Toggle copying of all screen I/O to stream."""
-        stream = self._get_wrapped_output_stream(stream)
-        if stream in self._output_streams:
-            self._output_streams.remove(stream)
-        else:
-            self._output_streams.append(stream)
+        for stream_to_remove in output_streams:
+            name = self._get_wrapped_output_stream(stream_to_remove).name
+            for stream in self._output_streams:
+                # remove the first stream whose name matches
+                if stream.name == name:
+                    self._output_streams.remove(stream)
+                    break
+            else:
+                raise ValueError("can't remove output stream {}, not attached".format(stream.name))
 
     def _get_wrapped_output_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -112,6 +120,8 @@ class IOStreams(object):
                 'output_streams must be file-like or "stdio", not `%s`'
                 % (type(stream),)
             )
+        if not hasattr(stream, 'name'):
+            stream.name = 'output_' + random_id(8)
         return self._codepage.wrap_output_stream(stream, preserve=CONTROL)
 
     def close(self):
