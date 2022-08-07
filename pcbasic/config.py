@@ -515,8 +515,10 @@ class Settings(object):
         if self._session_params:
             return self._session_params
         # don't parse any options on --resume
+        # except redirects
         if self.get('resume'):
-            return {}
+            params = self._add_implicit_redirects()
+            return params
         # preset PEEK values
         peek_values = {}
         try:
@@ -598,9 +600,8 @@ class Settings(object):
         return params
 
     def _get_redirects(self):
-        """Determine which i/o streams to attach."""
+        """Determine which i/o streams to attach based on config choices."""
         input_streams, output_streams = [], []
-        # explicit redirects
         # input redirects
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
@@ -635,7 +636,12 @@ class Settings(object):
                     output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open output file `%s`: %s', outfile, e.strerror)
-        # implicit stdio redirects
+        return self._add_implicit_redirects(input_streams, output_streams)
+
+    def _add_implicit_redirects(self, input_streams=(), output_streams=()):
+        """Determine which i/o streams to attach implicitly."""
+        input_streams = list(input_streams)
+        output_streams = list(output_streams)
         # add stdio if redirected or no interface
         if stdio.stdin not in input_streams and stdio.stdin.buffer not in input_streams:
             if IS_CONSOLE_APP and not stdio.stdin.isatty():
