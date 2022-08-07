@@ -319,7 +319,7 @@ class Keyboard(object):
     # character retrieval
 
     def wait_char(self, keyboard_only=False):
-        """Wait for character, then return it but don't drop from queue."""
+        """Block until character appears in keyboard queue or stream."""
         # if input stream has closed, don't wait but return empty
         # which will tell the Editor to close
         # except if we're waiting for KYBD: input
@@ -330,7 +330,7 @@ class Keyboard(object):
             ):
             self._queues.wait()
 
-    def _read_byte(self, expand=True):
+    def _read_kybd_byte(self, expand=True):
         """Read one byte from keyboard buffer, expanding macros if required."""
         try:
             return self._expansion_vessel.pop(0)
@@ -351,10 +351,26 @@ class Keyboard(object):
     def inkey_(self, args):
         """INKEY$: read one byte from keyboard or stream; nonblocking."""
         list(args)
+        inkey = self.read_byte()
+        return self._values.new_string().from_str(inkey)
+
+    def read_byte(self):
+        """Read one byte from keyboard or stream; nonblocking."""
         # wait a tick to reduce load in loops
         self._queues.wait()
-        inkey = self._read_byte() or (self._stream_buffer.popleft() if self._stream_buffer else b'')
-        return self._values.new_string().from_str(inkey)
+        inkey = self._read_kybd_byte()
+        if not inkey and self._stream_buffer:
+            inkey = self._stream_buffer.popleft()
+        return inkey
+
+    def read_bytes_block(self, n):
+        """Read bytes from keyboard or stream; blocking."""
+        word = []
+        for _ in range(n):
+            self.wait_char(keyboard_only=False)
+            word.append(self.read_byte())
+        print
+        return b''.join(word)
 
     def peek_byte_kybd_file(self):
         """Peek from keyboard only; for KYBD: files; blocking."""
@@ -366,15 +382,15 @@ class Keyboard(object):
         word = []
         for _ in range(num):
             self.wait_char(keyboard_only=True)
-            word.append(self._read_byte(expand=False))
+            word.append(self._read_kybd_byte(expand=False))
         return word
 
     def get_fullchar(self, expand=True):
         """Read one (sbcs or dbcs) full character; nonblocking."""
-        c = self._read_byte(expand)
+        c = self._read_kybd_byte(expand)
         # insert dbcs chars from keyboard buffer two bytes at a time
         if (c in self._codepage.lead and self.buf.peek() in self._codepage.trail):
-            c += self._read_byte(expand)
+            c += self._read_kybd_byte(expand)
         if not c and self._stream_buffer:
             c = self._stream_buffer.popleft()
             if (c in self._codepage.lead and self._stream_buffer and
