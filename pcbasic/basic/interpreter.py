@@ -68,6 +68,8 @@ class Interpreter(object):
         """Unpickle."""
         self.__dict__.update(pickle_dict)
         self.step = lambda token: None
+        # go to start of statement on resume
+        self.get_codestream().seek(self.current_statement)
 
     def _init_error_trapping(self):
         """Initialise error trapping."""
