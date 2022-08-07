@@ -13,7 +13,7 @@ import time
 import io
 from contextlib import contextmanager
 
-from ..compat import WIN32, read_all_available, stdio, random_id
+from ..compat import WIN32, read_all_available, stdio, random_id, text_type
 from .base import signals
 from .codepage import CONTROL
 
@@ -48,6 +48,16 @@ class IOStreams(object):
         if self._input_streams:
             self._launch_input_thread()
 
+    def add_pipes(self, input=None, output=None):
+        """Add input/output pipes."""
+        self._add_input_streams(*_make_iterable(input))
+        self._add_output_streams(*_make_iterable(output))
+
+    def remove_pipes(self, input=None, output=None):
+        """Remove input/output pipes."""
+        self._remove_input_streams(*_make_iterable(input))
+        self._remove_output_streams(*_make_iterable(output))
+
     def toggle_output_stream(self, stream):
         """Toggle copying of all screen I/O to stream."""
         stream = self._get_wrapped_output_stream(stream)
@@ -56,7 +66,7 @@ class IOStreams(object):
         else:
             self._output_streams.append(stream)
 
-    def add_input_streams(self, *input_streams):
+    def _add_input_streams(self, *input_streams):
         """Attach input streams."""
         if not input_streams:
             return
@@ -69,6 +79,18 @@ class IOStreams(object):
                 self._input_streams.append(stream)
         if first_streams and self._input_streams:
             self._launch_input_thread()
+
+    def _remove_input_streams(self, *input_streams):
+        """Detach output streams."""
+        for stream_to_remove in input_streams:
+            name = self._get_wrapped_output_stream(stream_to_remove).name
+            for stream in self._input_streams:
+                # remove the first stream whose name matches
+                if stream.name == name:
+                    self._input_streams.remove(stream)
+                    break
+            else:
+                raise ValueError("can't remove input stream {}, not attached".format(stream.name))
 
     def _get_wrapped_input_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -88,7 +110,7 @@ class IOStreams(object):
             stream, self._codepage, lfcr=not WIN32 and stream.isatty()
         )
 
-    def add_output_streams(self, *output_streams):
+    def _add_output_streams(self, *output_streams):
         """Attach output streams."""
         has_stdout = any(_stream.name == stdio.stdout.name for _stream in self._output_streams)
         for stream in output_streams:
@@ -99,7 +121,7 @@ class IOStreams(object):
             if not (has_stdout and stream.name == stdio.stdout.name):
                 self._output_streams.append(stream)
 
-    def remove_output_streams(self, *output_streams):
+    def _remove_output_streams(self, *output_streams):
         """Detach output streams."""
         for stream_to_remove in output_streams:
             name = self._get_wrapped_output_stream(stream_to_remove).name
@@ -179,6 +201,20 @@ class IOStreams(object):
                 return
             # input stream is closed, remove it
             self._input_streams.remove(stream)
+
+
+def _make_iterable(arg):
+    """Make the argument iterable, don't iterate over files or strings."""
+    if not arg:
+        return ()
+    if hasattr(arg, 'read') or isinstance(arg, (bytes, text_type)):
+        return (arg,)
+    try:
+        iter(arg)
+    except TypeError:
+        return (arg,)
+    return arg
+
 
 
 class NonBlockingInputWrapper(object):

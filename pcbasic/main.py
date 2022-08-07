@@ -94,8 +94,7 @@ def _run_session(
     if resume:
         try:
             session = Session.resume(state_file)
-            session._impl.io_streams.add_input_streams(*session_params['input_streams'])
-            session._impl.io_streams.add_output_streams(*session_params['output_streams'])
+            session.add_pipes(**session_params)
         except Exception as e:
             # if we were told to resume but can't, give up
             logging.critical('Failed to resume session from %s: %s' % (state_file, e))
