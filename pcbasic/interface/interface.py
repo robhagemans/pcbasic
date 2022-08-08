@@ -104,7 +104,8 @@ class Interface(object):
         while True:
             signal = self._input_queue.get()
             if signal.event_type in (signals.KEYB_DOWN, signals.QUIT):
-                break
+                self._video_queue.put(signals.Event(signals.VIDEO_SET_CAPTION, (u'',)))
+                return signal
 
     def quit_input(self):
         """Send signal through the input queue to quit BASIC."""

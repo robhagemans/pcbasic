@@ -6,73 +6,15 @@ DEBUG statement and utilities
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
 import io
 import sys
-import traceback
 import logging
-import platform
 import struct
-import tempfile
-import subprocess
-import importlib
 
-from .base import error
-from ..compat import PY2, WIN32, X64, BASE_DIR, which
-from . import values
-from . import api
-
-
-def get_platform_info():
-    """Show information about operating system and installed modules."""
-    info = []
-    info.append(u'\nPLATFORM')
-    info.append(u'os: %s' % platform.platform())
-    frozen = getattr(sys, 'frozen', '') or ''
-    info.append(
-        u'python: %s %s %s' % (
-        sys.version.replace('\n', ''), ' '.join(platform.architecture()), frozen))
-    info.append(u'\nMODULES')
-    modules = ('pyaudio', 'serial', 'parallel')
-    for module in modules:
-        try:
-            m = importlib.import_module(module)
-        except Exception:
-            info.append(u'%s: --' % module)
-        else:
-            for version_attr in ('__version__', 'version', 'VERSION'):
-                try:
-                    name = module.split('.')[-1]
-                    version = getattr(m, version_attr)
-                    if isinstance(version, bytes):
-                        version = version.decode('ascii', 'ignore')
-                    info.append(u'%s: %s' % (name, version))
-                    break
-                except AttributeError:
-                    pass
-            else:
-                info.append(u'%s: available' % module)
-    info.append(u'\nLIBRARIES')
-    try:
-        from ..interface import video_sdl2
-        video_sdl2._import_sdl2()
-
-        info.append(u'sdl2: %s' % (video_sdl2.sdl2.sdl2_lib.libfile,))
-        if video_sdl2:
-            info.append(u'sdl2_gfx: %s' % (video_sdl2.sdl2.gfx_lib.libfile, ))
-        else:
-            info.append(u'sdl2_gfx: --')
-    except ImportError as e:
-        raise
-        info.append(u'sdl2: --')
-        sdl2 = None
-    info.append(u'\nEXTERNAL TOOLS')
-    tools = (u'notepad', u'lpr', u'paps', u'beep', u'pbcopy', u'pbpaste')
-    for tool in tools:
-        location = which(tool) or u'--'
-        info.append(u'%s: %s' % (tool, location))
-    info.append(u'')
-    return u'\n'.join(info)
+from .basic.base import error
+from .compat import PY2, text_type
+from .info import get_platform_info
+from .basic import values, api
 
 
 class DebugException(BaseException):
@@ -90,16 +32,16 @@ class DebugSession(api.Session):
 
     def __init__(self, *args, **kwargs):
         """Initialise debugger."""
+        # register as an extension
+        kwargs['extension'] = tuple(kwargs.get('extension', ())) + (self,)
         api.Session.__init__(self, *args, **kwargs)
 
     def start(self):
         """Start the session."""
-        if not self._impl:
-            api.Session.start(self)
-            # register as an extension
-            self._impl.extensions.add(self)
+        # initialise implementation
+        if api.Session.start(self):
             # replace dummy debugging step
-            self._impl.interpreter.step = self._debug_step
+            self.set_hook(self._debug_step)
             self._do_trace = False
             self._watch_list = []
 
@@ -109,18 +51,16 @@ class DebugSession(api.Session):
         if self._do_trace:
             linum = struct.unpack_from('<H', token, 2)
             outstr += u'[%i]' % linum
-        for (expr, outs) in self._watch_list:
-            outstr += u' %r = ' % (expr,)
-            outs.seek(2)
+        for expr in self._watch_list:
+            exprstr = self.convert(expr, to_type=text_type)
+            outstr += u' %s = ' % (exprstr,)
             try:
-                val = self._impl.parser.expression_parser.parse(outs)
-                if isinstance(val, values.String):
-                    outstr += u'"%s"' % self._impl.codepage.bytes_to_unicode(val.to_str())
+                val = self.evaluate(expr)
+                print(expr, val)
+                if isinstance(val, bytes):
+                    outstr += u'"%s"' % self.convert(val, to_type=text_type)
                 else:
-                    outstr += (
-                        values.to_repr(val, leading_space=False, type_sign=True)
-                        .decode('ascii', 'ignore')
-                    )
+                    outstr += repr(val)
             except Exception as e:
                 self._handle_exception(e)
         if outstr:
@@ -169,7 +109,7 @@ class DebugSession(api.Session):
 
     def logprint(self, *args):
         """Write arguments to log."""
-        logging.debug(self._impl.codepage.bytes_to_unicode(b' '.join(bytes(arg) for arg in args)))
+        logging.debug(self.convert(b' '.join(bytes(arg) for arg in args), to_type=text_type))
 
     def logwrite(self, *args):
         """Write arguments to log."""
@@ -181,30 +121,29 @@ class DebugSession(api.Session):
 
     def watch(self, expr):
         """Add an expression to the watch list."""
-        outs = self._impl.tokeniser.tokenise_line(b'?' + expr)
-        self._watch_list.append((expr, outs))
+        self._watch_list.append(expr)
 
     def showvariables(self):
         """Dump all variables to the log."""
         repr_vars = '\n'.join((
             '==== Scalars ='.ljust(100, '='),
-            repr(self._impl.scalars),
+            self.info.repr_scalars(),
             '==== Arrays ='.ljust(100, '='),
-            repr(self._impl.arrays),
+            self.info.repr_arrays(),
             '==== Strings ='.ljust(100, '='),
-            repr(self._impl.strings),
+            self.info.repr_strings(),
         ))
         for s in repr_vars.split('\n'):
             logging.debug(s)
 
     def showscreen(self):
         """Copy the screen buffer to the log."""
-        for s in repr(self._impl.display.text_screen).split('\n'):
-            logging.debug(self._impl.codepage.bytes_to_unicode(s.encode('latin-1', 'ignore')))
+        for s in self.info.repr_text_screen().split('\n'):
+            logging.debug(s)
 
     def showprogram(self):
         """Write a marked-up hex dump of the program to the log."""
-        for s in repr(self._impl.program).split('\n'):
+        for s in self.info.repr_program().split('\n'):
             logging.debug(s)
 
     def showplatform(self):

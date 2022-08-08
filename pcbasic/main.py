@@ -12,11 +12,12 @@ import locale
 import logging
 import traceback
 
-from . import basic
 from . import config
+from . import info
+from .basic import Session
+from .debug import DebugSession
 from .guard import ExceptionGuard
 from .basic import NAME, VERSION, LONG_VERSION, COPYRIGHT
-from .basic import debug
 from .interface import Interface, InitFailed
 from .compat import stdio, resources, nullcontext
 from .compat import script_entry_point_guard
@@ -52,15 +53,15 @@ def _show_usage():
 def _show_version(settings):
     """Show version with optional debugging details."""
     if settings.debug:
-        stdio.stdout.write(u'%s %s\n%s\n' % (NAME, LONG_VERSION, COPYRIGHT))
-        stdio.stdout.write(debug.get_platform_info())
+        stdio.stdout.write(info.get_version_info())
+        stdio.stdout.write(info.get_platform_info())
     else:
         stdio.stdout.write(u'%s %s\n%s\n' % (NAME, VERSION, COPYRIGHT))
 
 def _convert(settings):
     """Perform file format conversion."""
     mode, in_name, out_name = settings.conv_params
-    with basic.Session(**settings.session_params) as session:
+    with Session(**settings.session_params) as session:
         # binary stdin if no name supplied - use BytesIO buffer for seekability
         with session.bind_file(in_name or io.BytesIO(stdio.stdin.buffer.read())) as infile:
             session.execute(b'LOAD "%s"' % (infile,))
@@ -80,7 +81,7 @@ def _run_session_with_interface(settings):
         interface.launch(
             _run_session,
             interface=interface,
-            exception_handler=exception_guard.protect,
+            exception_handler=exception_guard,
             **settings.launch_params
         )
 
@@ -89,18 +90,19 @@ def _run_session(
         resume=False, debug=False, state_file=None,
         prog=None, commands=(), keys=u'', greeting=True, **session_params
     ):
+    """Start or resume session, handle exceptions, suspend on exit."""
     if resume:
         try:
-            session = basic.Session.resume(state_file)
+            session = Session.resume(state_file)
         except Exception as e:
             # if we were told to resume but can't, give up
             logging.critical('Failed to resume session from %s: %s' % (state_file, e))
             sys.exit(1)
     elif debug:
-        session = basic.DebugSession(**session_params)
+        session = DebugSession(**session_params)
     else:
-        session = basic.Session(**session_params)
-    with exception_handler(session):
+        session = Session(**session_params)
+    with exception_handler(session) as handler:
         with session:
             try:
                 _operate_session(session, interface, prog, commands, keys, greeting)
@@ -109,6 +111,11 @@ def _run_session(
                     session.suspend(state_file)
                 except Exception as e:
                     logging.error('Failed to save session to %s: %s', state_file, e)
+    if exception_handler is not nullcontext and handler.exception_handled:
+        _run_session(
+            interface, exception_handler, resume=True, state_file=state_file, greeting=False
+        )
+
 
 def _operate_session(session, interface, prog, commands, keys, greeting):
     """Run an interactive BASIC session."""

@@ -7,6 +7,7 @@ This file is released under the GNU GPL version 3 or later.
 """
 
 import os
+import io
 
 from ..compat import text_type
 
@@ -52,6 +53,8 @@ class Session(object):
         """Start the session."""
         if not self._impl:
             self._impl = implementation.Implementation(**self._kwargs)
+            return True
+        return False
 
     def attach(self, interface=None):
         """Attach interface to interpreter session."""
@@ -78,14 +81,20 @@ class Session(object):
         # not resolved, try to use/create as internal name
         return NameWrapper(self._impl.codepage, file_name_or_object)
 
-    def execute(self, command):
+    def execute(self, command, as_type=None):
         """Execute a BASIC statement."""
         self.start()
+        if as_type is None:
+            as_type = type(command)
+        output = io.BytesIO() if as_type == bytes else io.StringIO()
         with self._impl.io_streams.activate():
+            self._impl.io_streams.toggle_echo(output)
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.unicode_to_bytes(cmd)
                 self._impl.execute(cmd)
+            self._impl.io_streams.toggle_echo(output)
+        return output.getvalue()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
@@ -158,3 +167,65 @@ class Session(object):
         """Close the session."""
         if self._impl:
             self._impl.close()
+
+    @property
+    def info(self):
+        """Get a session information object."""
+        self.start()
+        return SessionInfo(self)
+
+    def set_hook(self, step_function):
+        """Set function to be called on interpreter step."""
+        self.start()
+        self._impl.interpreter.step = step_function
+
+
+class SessionInfo(object):
+    """Retrieve information about current session."""
+
+    def __init__(self, session):
+        """Initialise the SessionInfo object."""
+        self._session = session
+        self._impl = session._impl
+
+    def repr_scalars(self):
+        """Get a representation of all scalars."""
+        return repr(self._impl.scalars)
+
+    def repr_arrays(self):
+        """Get a representation of all arrays."""
+        return repr(self._impl.scalars)
+
+    def repr_strings(self):
+        """Get a representation of string space."""
+        return repr(self._impl.strings)
+
+    def repr_text_screen(self):
+        """Get a representation of the text screen."""
+        return repr(self._impl.display.text_screen)
+
+    def repr_program(self):
+        """Get a marked-up hex dump of the program."""
+        return repr(self._impl.program)
+
+    def get_current_code(self, as_type=bytes):
+        """Obtain statement being executed."""
+        if self._impl.interpreter.run_mode:
+            codestream = self._impl.program.bytecode
+            bytepos = codestream.tell()
+            from_line = self._impl.program.get_line_number(bytepos-1)
+            try:
+                codestream.seek(self._impl.program.line_numbers[from_line]+1)
+                _, output, _ = self._impl.lister.detokenise_line(codestream)
+                code_line = bytes(output)
+            except KeyError:
+                code_line = b''
+        else:
+            codestream = self._impl.interpreter.direct_line
+            bytepos = codestream.tell()
+            codestream.seek(0)
+            code_line = bytes(
+                self._impl.lister.detokenise_compound_statement(codestream)[0]
+            )
+        codestream.seek(bytepos)
+        return self._session.convert(code_line, as_type)

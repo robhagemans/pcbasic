@@ -14,7 +14,6 @@ import sys
 import unittest
 
 from pcbasic import Session
-from pcbasic.basic.debug import DebugSession
 from pcbasic.basic import BASICError
 from tests.unit.utils import TestCase, run_tests
 from pcbasic.data import read_codepage
