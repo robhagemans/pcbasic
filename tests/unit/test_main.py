@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import io
 import sys
+import unittest
 from tempfile import NamedTemporaryFile
 
 from pcbasic import main
@@ -74,11 +75,13 @@ class MainTest(TestCase):
 
     # exercise sound
 
+    @unittest.skip('cutting off sound being played on sdl2 leads to segfaults')
     def test_cli_beep(self):
         """Exercise cli run."""
         with stdio.quiet():
             main('-bqe', 'beep')
 
+    @unittest.skip('cutting off sound being played on sdl2 leads to segfaults')
     def test_graphical_beep(self):
         """Exercise graphical run."""
         with stdio.quiet():
