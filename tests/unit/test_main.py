@@ -95,11 +95,11 @@ class MainTest(TestCase):
             with stdio.quiet():
                 main(
                     "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
-                    '--mount=z:%s' % self.output_path(), '-b',
+                    '--mount=z:%s' % self.output_path(), '-n',
                     '--state=%s' % state_file,
                 )
                 main(
-                    '--resume', '--keys=?#1,A:close:system\\r', '-b',
+                    '--resume', '--keys=?#1,A:close:system\\r', '-n',
                     '--state=%s' % state_file,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
