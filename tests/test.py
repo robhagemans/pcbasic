@@ -362,8 +362,9 @@ def report_results(results, times, overall_timer):
                 STATUS_COLOURS[status], ' '.join(tests)
             ))
 
+def test_main():
+    global pcbasic
 
-if __name__ == '__main__':
     arg_dict = parse_args()
     with Coverage(arg_dict['coverage']).track():
         # import late because of coverage
@@ -380,3 +381,6 @@ if __name__ == '__main__':
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
                 runner = unittest.TextTestRunner(verbosity=VERBOSITY)
                 runner.run(suite)
+
+if __name__ == '__main__':
+    test_main()
