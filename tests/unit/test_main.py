@@ -257,7 +257,7 @@ class DebugTest(TestCase):
         with NamedTemporaryFile('w+b', delete=False) as state_file:
             with stdio.quiet():
                 main(
-                    '--debug', '-qe', '_CRASH',
+                    '--debug', '-qe', '_CRASH', '-k', 'system\r'
                     '--state=%s' % state_file,
                 )
 
@@ -266,7 +266,7 @@ class DebugTest(TestCase):
         with NamedTemporaryFile('w+b', delete=False) as state_file:
             with stdio.quiet():
                 main(
-                    '--debug', '-k', '10 _crash\rrun\r',
+                    '--debug', '-k', '10 _crash\r20 system\rrun\r',
                     '--state=%s' % state_file,
                 )
 
