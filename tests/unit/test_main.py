@@ -251,13 +251,21 @@ class DebugTest(TestCase):
 
     def test_crash_direct(self):
         """Exercise graphical run and trigger bluescreen from direct mode."""
-        with stdio.quiet():
-            main('--debug', '-qe', '_CRASH')
+        with NamedTemporaryFile('w+b', delete=False) as state_file:
+            with stdio.quiet():
+                main(
+                    '--debug', '-qe', '_CRASH',
+                    '--state=%s' % state_file,
+                )
 
     def test_crash_in_program(self):
         """Exercise graphical run and trigger bluescreen from a program line."""
-        with stdio.quiet():
-            main('--debug', '-k', '10 _crash\rrun\r')
+        with NamedTemporaryFile('w+b', delete=False) as state_file:
+            with stdio.quiet():
+                main(
+                    '--debug', '-k', '10 _crash\rrun\r',
+                    '--state=%s' % state_file,
+                )
 
 
 if __name__ == '__main__':
