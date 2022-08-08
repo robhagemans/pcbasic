@@ -49,8 +49,10 @@ sys.path = [os.path.join(HERE, '..')] + sys.path
 PYTHONPATH = copy(sys.path)
 # test timing file
 TEST_TIMES = os.path.join(HERE, '_settings', 'slowtest.json')
-# umber of slowest tests to show or exclude
+# number of slowest tests to show or exclude
 SLOWSHOW = 20
+# unittest verbosity, increase for more info on what is running
+VERBOSITY = 1
 
 # statuses
 CRASHED = 'crashed'
@@ -360,8 +362,9 @@ def report_results(results, times, overall_timer):
                 STATUS_COLOURS[status], ' '.join(tests)
             ))
 
+def test_main():
+    global pcbasic
 
-if __name__ == '__main__':
     arg_dict = parse_args()
     with Coverage(arg_dict['coverage']).track():
         # import late because of coverage
@@ -376,5 +379,8 @@ if __name__ == '__main__':
                 # I can't quite believe how this near-unusable module made it into the standard library
                 import unittest
                 suite = unittest.loader.defaultTestLoader.discover(HERE+'/unit', 'test*.py', None)
-                runner = unittest.TextTestRunner()
+                runner = unittest.TextTestRunner(verbosity=VERBOSITY)
                 runner.run(suite)
+
+if __name__ == '__main__':
+    test_main()
