@@ -11,6 +11,7 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import io
 from io import open
+import unittest
 
 from pcbasic import Session
 from tests.unit.utils import TestCase, run_tests
@@ -271,7 +272,7 @@ class SessionTest(TestCase):
             abc = s.evaluate(b'input$(3)')
         assert abc == b'ab\x80', abc
 
-
+    @unittest.skip('correct behaviour as yet undecided.')
     def test_session_inputstr_iostreams_short(self):
         """Test Session with INPUT$ reading from pipe."""
         bi = io.BytesIO(b'ab')
@@ -302,6 +303,7 @@ class SessionTest(TestCase):
                 abc = s.evaluate(b'input$(3)')
             assert abc == b'ab\x80', abc
 
+    @unittest.skip('correct behaviour as yet undecided.')
     def test_session_inputstr_iostreams_file_short(self):
         """Test Session with INPUT$ reading from pipe."""
         with open(self.output_path('testfile'), 'w+b') as f:
