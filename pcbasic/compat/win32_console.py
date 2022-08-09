@@ -683,12 +683,14 @@ else:
 # non-blocking input
 
 def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
+    """Read all available bytes or unicode from a stream; nonblocking; None if closed."""
     # are we're reading from (wrapped) stdin or not?
     if hasattr(stream, 'isatty') and stream.isatty():
         # this is shaky - try to identify unicode vs bytes stream
         is_unicode_stream = hasattr(stream, 'buffer')
+        # console always produces unicode
         unistr = console.read_all_chars()
+        # but convert to bytes if the tty stream provides was a bytes stream
         if is_unicode_stream or unistr is None:
             return unistr
         else:
@@ -696,6 +698,7 @@ def read_all_available(stream):
     else:
         # this would work on unix too
         # just read the whole file and be done with it
+        # bytes or unicode, depends on stream
         return stream.read() or None
 
 
