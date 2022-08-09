@@ -263,10 +263,59 @@ class SessionTest(TestCase):
 
     def test_session_inputstr_iostreams(self):
         """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'ab\x80cd')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab\x80', abc
+
+
+    def test_session_inputstr_iostreams_short(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'ab')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab', abc
+
+    def test_session_inputstr_iostreams_closed(self):
+        """Test Session with INPUT$ reading from pipe."""
         bi = io.BytesIO(b'abc')
         with Session(input_streams=bi, output_streams=None) as s:
             abc = s.evaluate(b'input$(3)')
-        assert abc == b'abc'
+        assert abc == b'abc', abc
+
+    def test_session_inputstr_iostreams_unicode(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.StringIO('ab£cd')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab\x9C', abc
+
+    def test_session_inputstr_iostreams_file(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+b') as f:
+            f.write(b'ab\x80cd')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab\x80', abc
+
+    def test_session_inputstr_iostreams_file_short(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+b') as f:
+            f.write(b'ab')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab', abc
+
+    def test_session_inputstr_iostreams_unicode_file(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+') as f:
+            f.write('ab£cd')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab\x9C', abc
 
     def test_session_bad_type_iostreams(self):
         """Test Session with iostreams of incorrect type."""
