@@ -184,21 +184,22 @@ class IOStreams(object):
                 return
             if not self._active:
                 continue
-            queue = self._queues.inputs
             for stream in self._input_streams:
                 instr = stream.read()
                 if instr is None:
-                    break
+                    self._remove_closed_stream(stream)
                 elif instr:
-                    queue.put(signals.Event(signals.STREAM_CHAR, (instr,)))
-            else:
-                # executed if not break
-                continue
+                    self._queues.inputs.put(signals.Event(signals.STREAM_CHAR, (instr,)))
+
+    def _remove_closed_stream(self, stream):
+        """
+        Remove a closed stream from the list.
+        """
+        if len(self._input_streams) == 1:
             # exit the interpreter instead of closing last input
             # the input is preserved for resume
-            if len(self._input_streams) == 1:
-                queue.put(signals.Event(signals.STREAM_CLOSED))
-                return
+            self._queues.inputs.put(signals.Event(signals.STREAM_CLOSED))
+        else:
             # input stream is closed, remove it
             self._input_streams.remove(stream)
 
