@@ -261,6 +261,12 @@ class SessionTest(TestCase):
             s.execute(b'print a')
         assert bi.getvalue() == b' 1 \r\n'
 
+    def test_session_inputstr_iostreams(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'abc')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'abc'
 
     def test_session_bad_type_iostreams(self):
         """Test Session with iostreams of incorrect type."""
