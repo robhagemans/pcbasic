@@ -90,7 +90,7 @@ class IOStreams(object):
                     self._input_streams.remove(stream)
                     break
             else:
-                raise ValueError("can't remove input stream {}, not attached".format(stream.name))
+                raise ValueError("can't remove input stream {}, not attached".format(name))
 
     def _get_wrapped_input_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -131,7 +131,7 @@ class IOStreams(object):
                     self._output_streams.remove(stream)
                     break
             else:
-                raise ValueError("can't remove output stream {}, not attached".format(stream.name))
+                raise ValueError("can't remove output stream {}, not attached".format(name))
 
     def _get_wrapped_output_stream(self, stream):
         """Interpret stream argument and get the appropriate stream."""
@@ -237,7 +237,11 @@ class NonBlockingInputWrapper(object):
 
     def read(self):
         """Read all chars available; nonblocking; returns unicode."""
-        # we need non-blocking readers
+        # we need non-blocking readers to be able to meaningfully have multiple inputs
+        # this way we can have multiple files being read in order provided
+        # while also reading from e.g. stdin on an interactive basis
+        # it also enables us to convert bytes to unicode
+        # assuming multibyte code sequences are read in one go.
         s = read_all_available(self._stream)
         # can be None (closed) or b'' (no input)
         if s is None:
