@@ -571,7 +571,7 @@ class Files(object):
         return self._values.new_integer().from_int(col % 256)
 
     def input_(self, args):
-        """INPUT$: read num chars from file."""
+        """INPUT$: read num chars from file or keyboard."""
         num = values.to_int(next(args))
         error.range_check(1, 255, num)
         filenum = next(args)

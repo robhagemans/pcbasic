@@ -369,7 +369,6 @@ class Keyboard(object):
         for _ in range(n):
             self.wait_char(keyboard_only=False)
             word.append(self.read_byte())
-        print
         return b''.join(word)
 
     def peek_byte_kybd_file(self):
