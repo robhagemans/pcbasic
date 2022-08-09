@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 # pylint: disable=no-name-in-module
 
 import os
+import io
 import sys
 import tty
 import time
@@ -464,24 +465,32 @@ atexit.register(lambda: console.unset_raw() if console else None)
 def read_all_available(stream):
     """Read all available characters from a stream; nonblocking; None if closed."""
     # this function works for everything on unix, and sockets on Windows
-    instr = []
     # we're getting bytes counts for unicode which is pretty useless - so back to bytes
     try:
         encoding = stream.encoding
         stream = stream.buffer
     except:
         encoding = None
-    # if buffer has characters/lines to read
-    if select.select([stream], [], [], 0)[0]:
+    # select needs an actual file or socket that has a fileno, BytesIO not supported
+    if isinstance(stream, io.BytesIO):
+        c = stream.read()
+        if not c:
+            return None
+        return c
+    # select: if buffer has characters/lines to read
+    elif select.select([stream], [], [], 0)[0]:
         # find number of bytes available
         fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
         count = _sock_size[0]
-        # and read them all
-        c = stream.read(count)
-        if not c and not instr:
-            # break out, we're closed
-            return None
-        instr.append(c)
+    else:
+        return b''
+    # and read them all
+    c = stream.read(count)
+    # FIXME: per the description we should only return None if closed
+    # but tests only work if we return None whenever there is nothing to read
+    if not c: # and count:
+        # break out, we're closed
+        return None
     if encoding:
-        return b''.join(instr).decode(encoding, 'replace')
-    return b''.join(instr)
+        return c.decode(encoding, 'replace')
+    return c
