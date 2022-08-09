@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 PC-BASIC test.session
 unit tests for session API
@@ -8,6 +10,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import io
+from io import open
 
 from pcbasic import Session
 from tests.unit.utils import TestCase, run_tests
@@ -285,7 +288,7 @@ class SessionTest(TestCase):
 
     def test_session_inputstr_iostreams_unicode(self):
         """Test Session with INPUT$ reading from pipe."""
-        bi = io.StringIO('ab£cd')
+        bi = io.StringIO(u'ab£cd')
         with Session(input_streams=bi, output_streams=None) as s:
             abc = s.evaluate(b'input$(3)')
         assert abc == b'ab\x9C', abc
@@ -311,7 +314,7 @@ class SessionTest(TestCase):
     def test_session_inputstr_iostreams_unicode_file(self):
         """Test Session with INPUT$ reading from pipe."""
         with open(self.output_path('testfile'), 'w+') as f:
-            f.write('ab£cd')
+            f.write(u'ab£cd')
             f.seek(0)
             with Session(input_streams=f, output_streams=None) as s:
                 abc = s.evaluate(b'input$(3)')

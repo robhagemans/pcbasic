@@ -480,7 +480,8 @@ def read_all_available(stream):
         encoding = None
         # we might still have a unicode stream it just doesn't have the attributes
         # raise an error here, otherwise we might try to read too many chars and block later
-        if stream.read(0) == u'':
+        # we need to check type as b'' == u'' in python2
+        if type(stream.read(0)) == type(u''):
             raise TypeError(
                 "Can't perform non-blocking read from this text stream: %s"
                 % (exception,)
