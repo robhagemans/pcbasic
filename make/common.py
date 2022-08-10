@@ -63,7 +63,7 @@ def make_clean():
     # remove release stamp
     remove(STAMP_FILE)
 
-def prepare():
+def make_ready():
     """Prepare for sdist and wheel builds."""
     make_clean()
     stamp_release()

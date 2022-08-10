@@ -15,7 +15,7 @@ import cx_Freeze
 from cx_Freeze import Executable
 
 from .common import NAME, VERSION, AUTHOR, COPYRIGHT
-from .common import build_icon, make_docs, prune, remove, mkdir, prepare
+from .common import build_icon, make_docs, prune, remove, mkdir, make_ready
 from .common import RESOURCE_PATH
 from .freeze import SETUP_OPTIONS, SHORT_VERSION, INCLUDE_FILES, EXCLUDE_FILES, PLATFORM_TAG
 from .freeze import EXCLUDE_EXTERNAL_PACKAGES
@@ -24,7 +24,7 @@ from .freeze import EXCLUDE_EXTERNAL_PACKAGES
 def package():
     """Build a Mac .DMG package."""
     setup_options = SETUP_OPTIONS
-    prepare()
+    make_ready()
 
     class BuildExeCommand(cx_Freeze.build_exe):
         """Custom build_exe command."""
