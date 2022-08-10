@@ -91,7 +91,7 @@ class StdIOBase(object):
     def _wrap_output_stream(self, stream, encoding=None):
         """Wrap std bytes streams or redirected files to make them behave more like in Python 3."""
         encoding = encoding or stream.encoding or 'utf-8'
-        wrapped = codecs.getwriter(encoding)(stream)
+        wrapped = codecs.getwriter(encoding)(stream, errors='replace')
         wrapped.buffer = stream
         return wrapped
 
