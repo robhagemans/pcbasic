@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 # pylint: disable=no-name-in-module
 
 import os
+import io
 import sys
 import tty
 import time
@@ -462,26 +463,45 @@ atexit.register(lambda: console.unset_raw() if console else None)
 
 
 def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    # this function works for everything on unix, and sockets on Windows
-    instr = []
-    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
+    """Read all available bytes or unicode from a stream; nonblocking; None if closed."""
     try:
+        # select: check if buffer has characters/lines to read
+        # NOTE - select call works for files & sockets & character devices on unix; sockets only on Windows
+        has_bytes_available = select.select([stream], [], [], 0)[0]
+    except io.UnsupportedOperation:
+        # select needs an actual file or socket that has a fileno, BytesIO, StringIO etc not supported
+        return stream.read() or None
+    try:
+        # select gives bytes counts for unicode streams which is pretty useless
+        # so if provided with a unicode stream, take the buffer and decode back to unicode ourselves
         encoding = stream.encoding
         stream = stream.buffer
-    except:
+    except AttributeError as exception:
         encoding = None
-    # if buffer has characters/lines to read
-    if select.select([stream], [], [], 0)[0]:
-        # find number of bytes available
-        fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
-        count = _sock_size[0]
-        # and read them all
-        c = stream.read(count)
-        if not c and not instr:
-            # break out, we're closed
-            return None
-        instr.append(c)
+        # we might still have a unicode stream it just doesn't have the attributes
+        # raise an error here, otherwise we might try to read too many chars and block later
+        # we need to check type as b'' == u'' in python2
+        if type(stream.read(0)) == type(u''):
+            raise TypeError(
+                "Can't perform non-blocking read from this text stream: %s"
+                % (exception,)
+            )
+    if not has_bytes_available:
+        # nothing currently available to read.
+        # return an empty of the type the stream produces.
+        # fingers crossed this also works in Python 2
+        return stream.read(0)
+    # find number of bytes available (this always returns a count of *bytes*)
+    fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
+    count = _sock_size[0]
+    # and read them all
+    # note that count should not be zero unless the stream is closed
+    # or the select call would have failed above. if we read nothing, the stream has closed.
+    c = stream.read(count)
+    if not c:
+        # report that stream has closed
+        return None
+    # if we were provided with a unicode stream *and* managed to get its buffer, convert back
     if encoding:
-        return b''.join(instr).decode(encoding, 'replace')
-    return b''.join(instr)
+        return c.decode(encoding, 'replace')
+    return c
