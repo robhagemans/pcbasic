@@ -11,12 +11,14 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import io
 import sys
+import unittest
 
 from pcbasic import Session
 from pcbasic.basic.debug import DebugSession
 from pcbasic.basic import BASICError
 from tests.unit.utils import TestCase, run_tests
 from pcbasic.data import read_codepage
+from pcbasic.compat import PY2
 
 def pythoncall(script):
     return '"{0}" "{1}"'.format(sys.executable, script)
@@ -27,6 +29,7 @@ class DosTest(TestCase):
 
     tag = u'dos'
 
+    @unittest.skipIf(PY2, 'shell codepage agreement known not to work in Python 2.')
     def test_shell(self):
         """Test SHELL statement with commands."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
@@ -44,7 +47,7 @@ class DosTest(TestCase):
         # instead of \xc9 (per cp850, our local codepage))
         assert outstr == [b'1', b'\x9c', b"'x' is not recognised.", b"'\x9c' is not recognised."], outstr
 
-
+    @unittest.skipIf(PY2, 'shell codepage agreement known not to work in Python 2.')
     def test_shell_utf16(self):
         """Test SHELL statement to utf-16 script with commands."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
@@ -74,6 +77,7 @@ class DosTest(TestCase):
             s.execute(u'SHELL "echo 1"')
         assert self.get_text_stripped(s)[0] == b'Illegal function call\xff'
 
+    @unittest.skipIf(PY2, 'shell codepage agreement known not to work in Python 2.')
     def test_interactive_shell(self):
         """Test SHELL statement with interaction."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
@@ -85,6 +89,7 @@ class DosTest(TestCase):
         # output is messy due to race between press_keys and shell thread, but this should work
         assert b'_check_for_this' in self.get_text_stripped(s)[1]
 
+    @unittest.skipIf(PY2, 'shell codepage agreement known not to work in Python 2.')
     def test_interactive_shell_no_lf_at_end(self):
         """Test SHELL statement with interaction, helper script ends without LF."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
