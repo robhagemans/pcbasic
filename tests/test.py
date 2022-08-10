@@ -59,8 +59,9 @@ CRASHED = 'crashed'
 PASSED = 'passed'
 NEWPASSED = 'newly passed'
 ACCEPTED = 'accepted'
-OLDFAILED = 'failed before'
-NEWFAILED = 'failed'
+KNOWN = 'known failure'
+OLDFAILED = 'failed'
+NEWFAILED = 'newly failed'
 SKIPPED = 'skipped'
 NONESUCH = 'not found'
 
@@ -70,7 +71,8 @@ STATUS_COLOURS = {
     PASSED: '00;32',
     NEWPASSED: '01;32',
     ACCEPTED: '00;36',
-    OLDFAILED: '00;33',
+    KNOWN: '00;33',
+    OLDFAILED: '00;31',
     NEWFAILED: '01;31',
     SKIPPED: '00;30',
     NONESUCH: '00;31',
@@ -139,6 +141,7 @@ class TestFrame(object):
         self._output_dir = os.path.join(self._dirname, 'output')
         self._model_dir = os.path.join(self._dirname, 'model')
         self._accepted_dir = os.path.join(self._dirname, 'accepted')
+        self._known_dir = os.path.join(self._dirname, 'known')
         self.old_fail = False
         if os.path.isdir(self._output_dir):
             self.old_fail = True
@@ -156,6 +159,7 @@ class TestFrame(object):
         yield self
         self.passed = True
         self.accepted = os.path.isdir(self._accepted_dir)
+        self.known = os.path.isdir(self._known_dir)
         self.failfiles = []
         for path, dirs, files in os.walk(self._model_dir):
             for f in files:
@@ -177,6 +181,13 @@ class TestFrame(object):
                             os.path.join(self._accepted_dir, filename)
                         )
                     )
+                    self.known = (
+                        os.path.isdir(self._known_dir) and
+                        is_same(
+                            os.path.join(self._output_dir, filename),
+                            os.path.join(self._known_dir, filename)
+                        )
+                    )
                     self.passed = False
         for path, dirs, files in os.walk(self._output_dir):
             for f in files:
@@ -190,11 +201,13 @@ class TestFrame(object):
                     self.failfiles.append(filename)
                     self.passed = False
                     self.accepted = False
+                    self.known = False
         os.chdir(self._top)
         if self.passed:
             try:
                 shutil.rmtree(self._output_dir)
                 shutil.rmtree(self._accepted_dir)
+                shutil.rmtree(self._known_dir)
             except EnvironmentError:
                 pass
 
@@ -231,6 +244,8 @@ class TestFrame(object):
             return PASSED
         if self.accepted:
             return ACCEPTED
+        if self.known:
+            return KNOWN
         if self.old_fail:
             return OLDFAILED
         return NEWFAILED
