@@ -205,7 +205,7 @@ def iter_chunks(char_list, attrs):
 
 def random_id(number_digits, prefix='', exclude=()):
     """Generate a random hex id as bytes, optionally exclude from a given set."""
-    num_ids = 2**number_digits
+    num_ids = 10**number_digits
     # construct the template for the next % operation, e.g. '07X' if number_digits == 7
     format_spec = '0{}X'.format(number_digits)
     for _ in xrange(num_ids):
