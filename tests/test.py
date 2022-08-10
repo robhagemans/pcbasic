@@ -373,8 +373,8 @@ def report_results(results, times, overall_timer):
         if status == PASSED:
             print('.')
         else:
-            print(': \033[%sm%s\033[00;37m.' % (
-                STATUS_COLOURS[status], ' '.join(tests)
+            print(':\n        \033[%sm%s\033[00;37m.' % (
+                STATUS_COLOURS[status], '\n        '.join(tests)
             ))
 
 def test_main():
