@@ -24,6 +24,18 @@ if not sys.stdout:
 if not sys.stderr:
     sys.stderr = open_named_devnull('<stderr>', 'w')
 
+# avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
+# e.g latin-1 locales or unsupported locales defaulting to ascii
+# this needs Python >= 3.7
+try:
+    sys.stdout.reconfigure(errors='replace')
+except AttributeError:
+    pass
+try:
+    sys.stderr.reconfigure(errors='replace')
+except AttributeError:
+    pass
+
 
 # pause/quiet standard streams
 # ----------------------------
@@ -79,7 +91,7 @@ class StdIOBase(object):
     def _wrap_output_stream(self, stream, encoding=None):
         """Wrap std bytes streams or redirected files to make them behave more like in Python 3."""
         encoding = encoding or stream.encoding or 'utf-8'
-        wrapped = codecs.getwriter(encoding)(stream)
+        wrapped = codecs.getwriter(encoding)(stream, errors='replace')
         wrapped.buffer = stream
         return wrapped
 
