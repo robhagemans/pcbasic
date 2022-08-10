@@ -59,7 +59,7 @@ CRASHED = 'crashed'
 PASSED = 'passed'
 NEWPASSED = 'newly passed'
 ACCEPTED = 'accepted'
-KNOWN = 'known failure'
+KNOWN = 'known to fail'
 OLDFAILED = 'failed'
 NEWFAILED = 'newly failed'
 SKIPPED = 'skipped'
@@ -369,10 +369,12 @@ def report_results(results, times, overall_timer):
         (len(results), overall_timer.wall_time, overall_timer.cpu_time)
     )
     for status, tests in res_stat.items():
-        print('    %d %s' % (len(tests), status), end='')
         if status == PASSED:
+            print('    %d %s' % (len(tests), status), end='')
             print('.')
-        else:
+    for status, tests in res_stat.items():
+        if status != PASSED:
+            print('    %d %s' % (len(tests), status), end='')
             print(':\n        \033[%sm%s\033[00;37m.' % (
                 STATUS_COLOURS[status], '\n        '.join(tests)
             ))
