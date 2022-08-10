@@ -225,7 +225,7 @@ class Console(object):
                     self._text_screen.clear_view()
                 elif d == ea.CTRL_PRINT:
                     # ctrl+printscreen toggles printer copy
-                    self._io_streams.toggle_echo(self._lpt1_file)
+                    self._io_streams.toggle_output_stream(self._lpt1_file)
                 else:
                     try:
                         # these are done on a less deep level than the fn key macros

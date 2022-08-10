@@ -14,7 +14,6 @@ import io
 
 from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .base import split_quoted, split_pair, iter_chunks
 
 
 ##################################################################################################
@@ -133,3 +132,87 @@ def script_entry_point_guard():
         except Exception:
             pass
     sys.exit(exit_code)
+
+
+
+##################################################################################################
+# utility functions, this has to go somewhere...
+
+import re
+import random
+
+def _build_split_regexp(split_by, quote, as_type):
+    """
+    Build regexp for use with split_quoted and split_pair.
+    `split_by` and `quote` must be of type `as_type`.
+    """
+    if not quote:
+        quote = as_type()
+    quote = re.escape(quote)
+    if split_by is None:
+        # by default, split on whitespace
+        split_by = u'\s'
+    else:
+        split_by = re.escape(split_by)
+    # https://stackoverflow.com/questions/16710076/python-split-a-string-respect-and-preserve-quotes
+    # note ur'' is not accepted by python 3, and r'' means bytes in python2.
+    # bytes has no .format so using % which is awkward here
+    pattern = (
+        br'(?:[^{%s}{%s}]|[{%s}](?:\\.|[^{%s}])*[{%s}])+'
+    )
+    if as_type == type(u''):
+        # we know the template pattern string and ascii is ok
+        pattern = pattern.decode('ascii', 'ignore')
+    regexp = pattern % (split_by, quote, quote, quote, quote)
+    return regexp
+
+def split_quoted(line, split_by=None, quote=None, strip_quotes=False):
+    """
+    Split by separators, preserving quoted blocks; \\ escapes quotes.
+    """
+    regexp = _build_split_regexp(split_by, quote, as_type=type(line))
+    chunks = re.findall(regexp, line)
+    if strip_quotes:
+        chunks = [c.strip(quote) for c in chunks]
+    return chunks
+
+def split_pair(line, split_by=None, quote=None):
+    """
+    Split by separators, preserving quoted blocks; \\ escapes quotes.
+    First match only, always return two values.
+    """
+    regexp = _build_split_regexp(split_by, quote, as_type=type(line))
+    for match in re.finditer(regexp, line):
+        s0 = match.group()
+        s1 = line[match.end()+1:]
+        # only loop once
+        return s0, s1
+
+def iter_chunks(char_list, attrs):
+    """Iterate over list yielding chunks of elements with the same attribute."""
+    last_attr = None
+    chars = []
+    # collect chars in chunks with the same attribute
+    for char, attr in zip(char_list, attrs):
+        if attr != last_attr:
+            if last_attr is not None:
+                yield chars, last_attr
+            last_attr = attr
+            chars = []
+        chars.append(char)
+    if chars:
+        yield chars, attr
+
+def random_id(number_digits, prefix='', exclude=()):
+    """Generate a random hex id as bytes, optionally exclude from a given set."""
+    num_ids = 10**number_digits
+    # construct the template for the next % operation, e.g. '07X' if number_digits == 7
+    format_spec = '0{}X'.format(number_digits)
+    for _ in xrange(num_ids):
+        name = format(random.randint(0, num_ids), format_spec)
+        if isinstance(prefix, bytes):
+            name = name.encode('ascii')
+        name = prefix + name
+        if name not in exclude:
+            return name
+    raise RuntimeError('no free id of length {} available'.format(number_digits))

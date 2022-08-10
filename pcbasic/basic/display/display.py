@@ -294,11 +294,13 @@ class Display(object):
         self.colourmap.submit()
         # set the border
         self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
-        # rebuild cursor
-        self.cursor.rebuild()
         # redraw the text screen and submit to interface
         for page in self.pages:
             page.resubmit()
+        # rebuild cursor
+        # this should come *after* submission of the contents
+        # as video_cli waits for cursor position changes to show content
+        self.cursor.rebuild()
 
     ###########################################################################
     # memory accessible properties

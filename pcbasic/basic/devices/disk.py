@@ -14,12 +14,11 @@ import re
 import io
 import sys
 import errno
-import random
 import ntpath
 import logging
 
-from ...compat import xrange, text_type, add_str
-from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar
+from ...compat import text_type, add_str
+from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar, random_id
 
 from ..base import error
 from ..base.tokens import ALPHANUMERIC
@@ -760,15 +759,12 @@ class InternalDiskDevice(DiskDevice):
     def bind(self, file_name_or_object, name=None):
         """Bind a native file name or object to an internal name."""
         if not name:
-            # get unused 7-hexit string
-            num_ids = 0x10000000
-            for _ in xrange(num_ids):
-                name = (b'#%07x' % random.randint(0, num_ids)).upper()
-                if name not in self._bound_files:
-                    break
-            else:
+            # get unused 7-hexit string eg. #9ABCDEF
+            try:
+                name = random_id(7, prefix=b'#', exclude=self._bound_files)
+            except RuntimeError: # pragma: no cover
                 # unlikely
-                logging.error('No internal bound-file names available')
+                logging.error('No free internal bound-file names available')
                 raise error.BASICError(error.TOO_MANY_FILES)
         elif isinstance(name, text_type):
             name = self._codepage.unicode_to_bytes(name)

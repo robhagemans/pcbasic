@@ -112,9 +112,9 @@ class Implementation(object):
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
         # prepare I/O streams
-        self.io_streams = iostreams.IOStreams(
-            self.queues, self.codepage, input_streams, output_streams,
-        )
+        self.io_streams = iostreams.IOStreams(self.queues, self.codepage)
+        self.io_streams.add_pipes(input=input_streams)
+        self.io_streams.add_pipes(output=output_streams)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
         # initialise video
