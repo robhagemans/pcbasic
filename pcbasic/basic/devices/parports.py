@@ -54,8 +54,7 @@ class LPTDevice(Device):
             except EnvironmentError as e:
                 logging.warning(u'Could not attach parallel port %s to LPT device: %s', val, e)
         elif addr == u'STDIO' or (not addr and val == u'STDIO'):
-            crlf = (val.upper() == u'CRLF')
-            self.stream = StdIOParallelStream(crlf)
+            self.stream = StdIOParallelStream()
         elif addr == u'PRINTER' or (val and not addr):
             # 'PRINTER' is default
             # name:parameters (LINE, PAGE, ...)
@@ -276,17 +275,14 @@ class ParallelStream(object):
 class StdIOParallelStream(object):
     """LPT output to standard output."""
 
-    def __init__(self, crlf=False):
+    def __init__(self):
         """Initialise the stream."""
-        self._crlf = crlf
 
     def close(self):
         """Close the connection."""
 
     def write(self, s):
         """Write to stdout."""
-        if self._crlf:
-            s = s.replace(b'\r', b'\n')
         stdio.stdout.buffer.write(s)
         self.flush()
 

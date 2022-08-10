@@ -946,6 +946,7 @@ class ArgumentParser(object):
         # apply shorthands
         for short_arg, replacement in iteritems(SHORTHAND):
             key = key.replace(short_arg, replacement)
+        long_arg_value = None
         for i, short_arg in enumerate(key[1:]):
             try:
                 long_arg, long_arg_value = SHORT_ARGS[short_arg]
