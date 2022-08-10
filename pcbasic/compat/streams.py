@@ -24,6 +24,18 @@ if not sys.stdout:
 if not sys.stderr:
     sys.stderr = open_named_devnull('<stderr>', 'w')
 
+# avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
+# e.g latin-1 locales or unsupported locales defaulting to ascii
+# this needs Python >= 3.7
+try:
+    sys.stdout.reconfigure(errors='replace')
+except AttributeError:
+    pass
+try:
+    sys.stderr.reconfigure(errors='replace')
+except AttributeError:
+    pass
+
 
 # pause/quiet standard streams
 # ----------------------------
