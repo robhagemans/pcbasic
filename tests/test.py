@@ -138,7 +138,7 @@ class TestFrame(object):
             return
         self._output_dir = os.path.join(self._dirname, 'output')
         self._model_dir = os.path.join(self._dirname, 'model')
-        self._known_dir = os.path.join(self._dirname, 'known')
+        self._accepted_dir = os.path.join(self._dirname, 'accepted')
         self.old_fail = False
         if os.path.isdir(self._output_dir):
             self.old_fail = True
@@ -155,7 +155,7 @@ class TestFrame(object):
         os.chdir(self._output_dir)
         yield self
         self.passed = True
-        self.known = os.path.isdir(self._known_dir)
+        self.accepted = os.path.isdir(self._accepted_dir)
         self.failfiles = []
         for path, dirs, files in os.walk(self._model_dir):
             for f in files:
@@ -170,11 +170,11 @@ class TestFrame(object):
                         and not os.path.isfile(os.path.join(self._dirname, filename))
                     ):
                     self.failfiles.append(filename)
-                    self.known = (
-                        os.path.isdir(self._known_dir) and
+                    self.accepted = (
+                        os.path.isdir(self._accepted_dir) and
                         is_same(
                             os.path.join(self._output_dir, filename),
-                            os.path.join(self._known_dir, filename)
+                            os.path.join(self._accepted_dir, filename)
                         )
                     )
                     self.passed = False
@@ -189,12 +189,12 @@ class TestFrame(object):
                     ):
                     self.failfiles.append(filename)
                     self.passed = False
-                    self.known = False
+                    self.accepted = False
         os.chdir(self._top)
         if self.passed:
             try:
                 shutil.rmtree(self._output_dir)
-                shutil.rmtree(self._known_dir)
+                shutil.rmtree(self._accepted_dir)
             except EnvironmentError:
                 pass
 
@@ -226,10 +226,10 @@ class TestFrame(object):
         if self.crash:
             return CRASHED
         if self.passed:
-            if self.known or self.old_fail:
+            if self.accepted or self.old_fail:
                 return NEWPASSED
             return PASSED
-        if self.known:
+        if self.accepted:
             return ACCEPTED
         if self.old_fail:
             return OLDFAILED
