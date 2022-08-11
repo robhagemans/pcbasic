@@ -137,8 +137,6 @@ class TestFrame(object):
         self.failfiles = []
         for path, dirs, files in os.walk(self._model_dir):
             for f in files:
-                if f.endswith('.pyc'):
-                    continue
                 filename = os.path.join(path[len(self._model_dir)+1:], f)
                 if (
                         not is_same(
@@ -148,6 +146,11 @@ class TestFrame(object):
                         and not os.path.isfile(os.path.join(self._dirname, filename))
                     ):
                     self.failfiles.append(filename)
+                    self.passed = False
+        if not self.passed:
+            for path, dirs, files in os.walk(self._accepted_dir):
+                for f in files:
+                    filename = os.path.join(path[len(self._accepted_dir)+1:], f)
                     self.accepted = (
                         os.path.isdir(self._accepted_dir) and
                         is_same(
@@ -155,6 +158,10 @@ class TestFrame(object):
                             os.path.join(self._accepted_dir, filename)
                         )
                     )
+        if not self.passed and not self.accepted:
+            for path, dirs, files in os.walk(self._known_dir):
+                for f in files:
+                    filename = os.path.join(path[len(self._known_dir)+1:], f)
                     self.known = (
                         os.path.isdir(self._known_dir) and
                         is_same(
@@ -162,11 +169,8 @@ class TestFrame(object):
                             os.path.join(self._known_dir, filename)
                         )
                     )
-                    self.passed = False
         for path, dirs, files in os.walk(self._output_dir):
             for f in files:
-                if f.endswith('.pyc'):
-                    continue
                 filename = os.path.join(path[len(self._output_dir)+1:], f)
                 if (
                         not os.path.isfile(os.path.join(self._model_dir, filename))
@@ -174,8 +178,12 @@ class TestFrame(object):
                     ):
                     self.failfiles.append(filename)
                     self.passed = False
-                    self.accepted = False
-                    self.known = False
+                    self.accepted = self.accepted and (
+                        os.path.isfile(os.path.join(self._accepted_dir, filename))
+                    )
+                    self.known = self.known and (
+                        os.path.isfile(os.path.join(self._known_dir, filename))
+                    )
         os.chdir(self._top)
         if self.passed:
             try:
