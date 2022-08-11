@@ -37,7 +37,8 @@ except ValueError:
 
 PATH = os.path.join(HERE, 'basic', PRESET, TESTNAME)
 MODEL = os.path.join(PATH, 'model')
-ACCEPTED = os.path.join(PATH, 'known')
+ACCEPTED = os.path.join(PATH, 'accepted')
+KNOWN = os.path.join(PATH, 'known')
 OUTPUT = os.path.join(PATH, 'output')
 
 
