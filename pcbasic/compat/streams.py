@@ -96,6 +96,7 @@ class StdIOBase(object):
 
     def _attach_stdin(self):
         # stdio becomes None in GUI mode
+        # use __stdin__ as we depend elsewhere on this having a .buffer and pointing to true stdin
         self.stdin = sys.__stdin__ or _open_named_devnull('<stdin>', 'r')
 
     def _attach_output_stream(self, stream_name, redirected=False):
