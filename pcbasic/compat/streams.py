@@ -16,13 +16,15 @@ class StreamWrapper(object):
         """Set up codec."""
         self._stream = stream
 
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
-            return getattr(self._stream, name)
-        else:
-            # this is needed for pickle to be able to reconstruct the class
-            raise AttributeError()
+    def __getattr__(self, attr):
+        return getattr(self._stream, attr)
+
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, stdict):
+        return vars(self).update(stdict)
+
 
 
 def _open_named_devnull(name, mode):

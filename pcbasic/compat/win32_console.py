@@ -23,7 +23,7 @@ from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2
-from .streams import StdIOBase
+from .streams import StdIOBase, StreamWrapper
 
 if PY2: # pragma: no cover
     from .python2 import SimpleNamespace
@@ -707,26 +707,13 @@ def read_all_available(stream):
 
 if PY2: # pragma: no cover
 
-    class _StreamWrapper(object):
-        """Delegating stream wrapper."""
+    class _ConsoleOutput(StreamWrapper):
+        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
 
         def __init__(self, stream, handle, encoding='utf-8'):
-            self._wrapped = stream
+            StreamWrapper.__init__(self, stream)
             self._handle = handle
             self.encoding = encoding
-
-        def __getattr__(self, attr):
-            return getattr(self._wrapped, attr)
-
-        def __getstate__(self):
-            return vars(self)
-
-        def __setstate__(self, stdict):
-            return vars(self).update(stdict)
-
-
-    class _ConsoleOutput(_StreamWrapper):
-        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
 
         def write(self, bytestr):
             if not isinstance(bytestr, bytes):
@@ -735,11 +722,13 @@ if PY2: # pragma: no cover
             _ConsoleWriter.write(self._handle, unistr)
 
 
-    class _ConsoleInput(_StreamWrapper):
+    class _ConsoleInput(StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
         def __init__(self, encoding='utf-8'):
-            _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
+            StreamWrapper.__init__(self, sys.stdin)
+            self._handle = HSTDIN
+            self.encoding = encoding
 
         def read(self, size=-1):
             output = bytearray()
@@ -763,8 +752,8 @@ class StdIO(StdIOBase):
 
         def _attach_output_stream(self, stream_name, redirected=False):
             stream = getattr(sys, '__%s__' % (stream_name,))
-            handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
             if stream.isatty() and not redirected:
+                handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
                 new_stream = self._wrap_output_stream(_ConsoleOutput(stream, handle))
             else:
                 encoding = 'utf-8' if redirected else None
