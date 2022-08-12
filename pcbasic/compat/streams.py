@@ -31,26 +31,29 @@ def _open_named_devnull(name, mode):
     stream.name = name
     return stream
 
-# stdio may become None in GUI mode
-# fix them to devnull to ensure any i/o doesn't lead to crashes
-if not sys.stdin:
-    sys.stdin = _open_named_devnull('<stdin>', 'r')
-if not sys.stdout:
-    sys.stdout = _open_named_devnull('<stdout>', 'w')
-if not sys.stderr:
-    sys.stderr = _open_named_devnull('<stderr>', 'w')
 
-# avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
-# e.g latin-1 locales or unsupported locales defaulting to ascii
-# this needs Python >= 3.7
-try:
-    sys.stdout.reconfigure(errors='replace')
-except AttributeError:
-    pass
-try:
-    sys.stderr.reconfigure(errors='replace')
-except AttributeError:
-    pass
+def fix_stdio():
+    """Make sure sys.std* exist and are forgiving of errors."""
+    # stdio may become None in GUI mode
+    # fix them to devnull to ensure any i/o doesn't lead to crashes
+    if not sys.stdin:
+        sys.stdin = _open_named_devnull('<stdin>', 'r')
+    if not sys.stdout:
+        sys.stdout = _open_named_devnull('<stdout>', 'w')
+    if not sys.stderr:
+        sys.stderr = _open_named_devnull('<stderr>', 'w')
+
+    # avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
+    # e.g latin-1 locales or unsupported locales defaulting to ascii
+    # this needs Python >= 3.7
+    try:
+        sys.stdout.reconfigure(errors='replace')
+    except AttributeError:
+        pass
+    try:
+        sys.stderr.reconfigure(errors='replace')
+    except AttributeError:
+        pass
 
 
 # pause/quiet standard streams
