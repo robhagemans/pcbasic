@@ -9,20 +9,36 @@ from contextlib import contextmanager
 from .base import PY2
 
 
+class StreamWrapper(object):
+    """Base class for delegated stream wrappers."""
+
+    def __init__(self, stream):
+        """Set up codec."""
+        self._stream = stream
+
+    def __getattr__(self, name):
+        """Delegate methods to stream."""
+        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
+            return getattr(self._stream, name)
+        else:
+            # this is needed for pickle to be able to reconstruct the class
+            raise AttributeError()
+
+
 def _open_named_devnull(name, mode):
     """Open a stream to /dev/null with the given stream name."""
-    stream = open(os.devnull, mode)
+    stream = StreamWrapper(open(os.devnull, mode))
     stream.name = name
     return stream
 
 # stdio may become None in GUI mode
 # fix them to devnull to ensure any i/o doesn't lead to crashes
 if not sys.stdin:
-    sys.stdin = open_named_devnull('<stdin>', 'r')
+    sys.stdin = _open_named_devnull('<stdin>', 'r')
 if not sys.stdout:
-    sys.stdout = open_named_devnull('<stdout>', 'w')
+    sys.stdout = _open_named_devnull('<stdout>', 'w')
 if not sys.stderr:
-    sys.stderr = open_named_devnull('<stderr>', 'w')
+    sys.stderr = _open_named_devnull('<stderr>', 'w')
 
 # avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
 # e.g latin-1 locales or unsupported locales defaulting to ascii

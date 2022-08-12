@@ -68,14 +68,14 @@ else:
 
 if WIN32:
     from .win32_console import console, read_all_available, IS_CONSOLE_APP
-    from .win32_console import stdio
+    from .win32_console import stdio, StreamWrapper
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
     from .win32 import SHELL_ENCODING, OEM_ENCODING, HIDE_WINDOW
 else:
     from .posix_console import console, read_all_available, IS_CONSOLE_APP
-    from .posix_console import stdio
+    from .posix_console import stdio, StreamWrapper
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF

@@ -23,7 +23,7 @@ from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2
-from .streams import StdIOBase
+from .streams import StdIOBase, StreamWrapper
 
 if PY2: # pragma: no cover
     from .python2 import SimpleNamespace

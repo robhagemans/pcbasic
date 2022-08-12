@@ -27,7 +27,7 @@ except ImportError:
     curses = None
 
 from .base import MACOS, PY2, HOME_DIR
-from .streams import StdIOBase
+from .streams import StdIOBase, StreamWrapper
 
 
 # ANSI escape codes
