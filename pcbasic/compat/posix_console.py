@@ -473,8 +473,14 @@ try:
 except EnvironmentError:
     console = None
 
+
 # don't crash into raw terminal
-atexit.register(lambda: console.unset_raw() if console else None)
+def _atexit_unset_raw():
+    try:
+        console.unset_raw()
+    except Exception:
+        pass
+atexit.register(_atexit_unset_raw)
 
 
 def read_all_available(stream):
