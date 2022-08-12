@@ -774,13 +774,15 @@ class StdIO(StdIOBase):
 stdio = StdIO()
 
 
-# set stdio as binary, to avoid Windows messing around with CRLFs
-# only do this for redirected output, as it breaks interactive Python sessions
-try:
-    if not sys.stdin.isatty():
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    if not sys.stdout.isatty():
-        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-except EnvironmentError:
-    # raises an error if started in gui mode, as we have no stdio
-    pass
+def init_stdio():
+    """Platform-specific initialisation."""
+    # set stdio as binary, to avoid Windows messing around with CRLFs
+    # only do this for redirected output, as it breaks interactive Python sessions
+    try:
+        if not sys.stdin.isatty():
+            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+        if not sys.stdout.isatty():
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    except EnvironmentError:
+        # raises an error if started in gui mode, as we have no stdio
+        pass

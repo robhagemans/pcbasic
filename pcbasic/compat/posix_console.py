@@ -19,6 +19,8 @@ import fcntl
 import array
 import struct
 import atexit
+import locale
+import logging
 from collections import deque
 from contextlib import contextmanager
 try:
@@ -229,6 +231,19 @@ class StdIO(StdIOBase):
             setattr(self, stream_name, new_stream)
 
 stdio = StdIO()
+
+
+def init_stdio():
+    """Platform-specific initialisation."""
+    # set locale - this is necessary for curses and *maybe* for clipboard handling
+    # there's only one locale setting so best to do it all upfront here
+    # NOTE that this affects str.upper() etc.
+    # don't do this on Windows as it makes the console codepage different from the stdout encoding ?
+    try:
+        locale.setlocale(locale.LC_ALL, '')
+    except locale.Error as e:
+        # mis-configured locale can throw an error here, no need to crash
+        logging.error(e)
 
 
 # output buffer for ioctl call

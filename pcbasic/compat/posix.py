@@ -11,19 +11,9 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import sys
 import locale
-import logging
 import subprocess
 import array
 
-# set locale - this is necessary for curses and *maybe* for clipboard handling
-# there's only one locale setting so best to do it all upfront here
-# NOTE that this affects str.upper() etc.
-# don't do this on Windows as it makes the console codepage different from the stdout encoding ?
-try:
-    locale.setlocale(locale.LC_ALL, '')
-except locale.Error as e:
-    # mis-configured locale can throw an error here, no need to crash
-    logging.error(e)
 
 from .base import PY2, HOME_DIR, MACOS
 
