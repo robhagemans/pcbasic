@@ -12,10 +12,6 @@ import sys
 import os
 import io
 
-from .base import PLATFORM, PY2, WIN32, MACOS, X64
-from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .streams import StreamWrapper, fix_stdio
-
 
 ##################################################################################################
 # not available in Python <= 3.6
@@ -38,6 +34,15 @@ except ImportError: # pragma: no cover
             pass
 
 ##################################################################################################
+
+
+from .base import PLATFORM, PY2, WIN32, MACOS, X64
+from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
+from .streams import StreamWrapper, fix_stdio
+
+from .console import console, read_all_available, IS_CONSOLE_APP
+from .console import stdio, init_stdio
+
 
 if PY2: # pragma: no cover
     from .python2 import add_str, iterchar
@@ -68,15 +73,11 @@ else:
 
 
 if WIN32:
-    from .win32_console import console, read_all_available, IS_CONSOLE_APP
-    from .win32_console import stdio, init_stdio
     from .win32 import set_dpi_aware, line_print
     from .win32 import get_free_bytes, get_short_pathname, is_hidden
     from .win32 import EOL, EOF
     from .win32 import SHELL_ENCODING, OEM_ENCODING, HIDE_WINDOW
 else:
-    from .posix_console import console, read_all_available, IS_CONSOLE_APP
-    from .posix_console import stdio, init_stdio
     from .posix import set_dpi_aware, line_print
     from .posix import get_free_bytes, get_short_pathname, is_hidden
     from .posix import EOL, EOF

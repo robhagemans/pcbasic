@@ -230,8 +230,6 @@ class StdIO(StdIOBase):
             new_stream = self._wrap_output_stream(stream)
             setattr(self, stream_name, new_stream)
 
-stdio = StdIO()
-
 
 def init_stdio():
     """Platform-specific initialisation."""
@@ -253,12 +251,13 @@ _sock_size = array.array('i', [0])
 class PosixConsole(object):
     """POSIX-based console implementation."""
 
-    def __init__(self):
+    def __init__(self, stdio):
         """Set up the console."""
         # buffer to save termios state
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise EnvironmentError('Not a terminal')
         self._term_attr = termios.tcgetattr(sys.stdin.fileno())
+        self._stdio = stdio
         # preserve original terminal size
         self._orig_size = self.get_size()
         self._height, _ = self._orig_size
@@ -298,7 +297,7 @@ class PosixConsole(object):
     def start_screen(self):
         """Enter full-screen/application mode."""
         # suppress stderr to avoid log messages defacing the application screen
-        self._muffle = stdio.pause('stderr')
+        self._muffle = self._stdio.pause('stderr')
         self._muffle.__enter__()  # pylint: disable=no-member
         self.set_raw()
         # switch to alternate buffer
@@ -327,8 +326,8 @@ class PosixConsole(object):
 
     def write(self, unicode_str):
         """Write (unicode) text to console."""
-        stdio.stdout.write(unicode_str)
-        stdio.stdout.flush()
+        self._stdio.stdout.write(unicode_str)
+        self._stdio.stdout.flush()
 
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
@@ -340,15 +339,15 @@ class PosixConsole(object):
             pattern = curses.tigetstr(capability)
         if pattern:
             ansistr = curses.tparm(pattern, *args).decode('ascii')
-            stdio.stdout.write(ansistr)
-            stdio.stdout.flush()
+            self._stdio.stdout.write(ansistr)
+            self._stdio.stdout.flush()
             return True
         return False
 
     def set_caption(self, caption):
         """Set terminal caption."""
         if self._emit_ti('tsl'):
-            stdio.stdout.write(caption)
+            self._stdio.stdout.write(caption)
             self._emit_ti('fsl')
 
     def resize(self, height, width):
@@ -441,7 +440,7 @@ class PosixConsole(object):
         Read keypress from console. Non-blocking.
         Returns tuple (unicode, keycode, set of mods)
         """
-        sequence = read_all_available(stdio.stdin)
+        sequence = read_all_available(self._stdio.stdin)
         if sequence is None:
             # stream closed, send ctrl-d
             return u'\x04', 'd', {'CTRL'}
@@ -466,21 +465,10 @@ def _is_console_app():
             return False
     return True
 
+
 IS_CONSOLE_APP = _is_console_app()
 
-try:
-    console = PosixConsole()
-except EnvironmentError:
-    console = None
 
-
-# don't crash into raw terminal
-def _atexit_unset_raw():
-    try:
-        console.unset_raw()
-    except Exception:
-        pass
-atexit.register(_atexit_unset_raw)
 
 
 def read_all_available(stream):

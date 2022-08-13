@@ -673,34 +673,6 @@ def _has_console():
 
 IS_CONSOLE_APP = _has_console()
 
-if _has_console():
-    console = Win32Console()
-else:
-    console = None
-
-
-##############################################################################
-# non-blocking input
-
-def read_all_available(stream):
-    """Read all available bytes or unicode from a stream; nonblocking; None if closed."""
-    # are we're reading from (wrapped) stdin or not?
-    if hasattr(stream, 'isatty') and stream.isatty():
-        # this is shaky - try to identify unicode vs bytes stream
-        is_unicode_stream = hasattr(stream, 'buffer')
-        # console always produces unicode
-        unistr = console.read_all_chars()
-        # but convert to bytes if the tty stream provides was a bytes stream
-        if is_unicode_stream or unistr is None:
-            return unistr
-        else:
-            return unistr.encode(stdio.stdin.encoding, 'replace')
-    else:
-        # this would work on unix too
-        # just read the whole file and be done with it
-        # bytes or unicode, depends on stream
-        return stream.read() or None
-
 
 ##############################################################################
 # standard i/o
@@ -725,15 +697,16 @@ if PY2: # pragma: no cover
     class _ConsoleInput(StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
-        def __init__(self, encoding='utf-8'):
+        def __init__(self, console, encoding='utf-8'):
             StreamWrapper.__init__(self, sys.stdin)
             self._handle = HSTDIN
+            self._console = console
             self.encoding = encoding
 
         def read(self, size=-1):
             output = bytearray()
             while size < 0 or len(output) < size:
-                key = console.read_key()
+                key = self._console.read_key()
                 if isinstance(key, int):
                     continue
                 output.append(key.encode(self.encoding, errors='replace'))
@@ -743,10 +716,14 @@ if PY2: # pragma: no cover
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
 
+    def __init__(self, console):
+        self._console = console
+
     if PY2: # pragma: no cover
+
         def _attach_stdin(self):
             if sys.stdin.isatty():
-                self.stdin = self._wrap_input_stream(_ConsoleInput())
+                self.stdin = self._wrap_input_stream(_ConsoleInput(self._console))
             else:
                 self.stdin = self._wrap_input_stream(sys.stdin)
 
@@ -759,8 +736,6 @@ class StdIO(StdIOBase):
                 encoding = 'utf-8' if redirected else None
                 new_stream = self._wrap_output_stream(stream, encoding)
             setattr(self, stream_name, new_stream)
-
-stdio = StdIO()
 
 
 def init_stdio():
