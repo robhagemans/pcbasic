@@ -23,7 +23,7 @@ from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
 
 from .base import PY2
-from .streams import StdIOBase
+from .streams import StdIOBase, StreamWrapper
 
 if PY2: # pragma: no cover
     from .python2 import SimpleNamespace
@@ -673,60 +673,19 @@ def _has_console():
 
 IS_CONSOLE_APP = _has_console()
 
-if _has_console():
-    console = Win32Console()
-else:
-    console = None
-
-
-##############################################################################
-# non-blocking input
-
-def read_all_available(stream):
-    """Read all available bytes or unicode from a stream; nonblocking; None if closed."""
-    # are we're reading from (wrapped) stdin or not?
-    if hasattr(stream, 'isatty') and stream.isatty():
-        # this is shaky - try to identify unicode vs bytes stream
-        is_unicode_stream = hasattr(stream, 'buffer')
-        # console always produces unicode
-        unistr = console.read_all_chars()
-        # but convert to bytes if the tty stream provides was a bytes stream
-        if is_unicode_stream or unistr is None:
-            return unistr
-        else:
-            return unistr.encode(stdio.stdin.encoding, 'replace')
-    else:
-        # this would work on unix too
-        # just read the whole file and be done with it
-        # bytes or unicode, depends on stream
-        return stream.read() or None
-
 
 ##############################################################################
 # standard i/o
 
 if PY2: # pragma: no cover
 
-    class _StreamWrapper(object):
-        """Delegating stream wrapper."""
+    class _ConsoleOutput(StreamWrapper):
+        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
 
         def __init__(self, stream, handle, encoding='utf-8'):
-            self._wrapped = stream
+            StreamWrapper.__init__(self, stream)
             self._handle = handle
             self.encoding = encoding
-
-        def __getattr__(self, attr):
-            return getattr(self._wrapped, attr)
-
-        def __getstate__(self):
-            return vars(self)
-
-        def __setstate__(self, stdict):
-            return vars(self).update(stdict)
-
-
-    class _ConsoleOutput(_StreamWrapper):
-        """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
 
         def write(self, bytestr):
             if not isinstance(bytestr, bytes):
@@ -735,16 +694,19 @@ if PY2: # pragma: no cover
             _ConsoleWriter.write(self._handle, unistr)
 
 
-    class _ConsoleInput(_StreamWrapper):
+    class _ConsoleInput(StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
-        def __init__(self, encoding='utf-8'):
-            _StreamWrapper.__init__(self, sys.stdin, HSTDIN, encoding)
+        def __init__(self, console, encoding='utf-8'):
+            StreamWrapper.__init__(self, sys.stdin)
+            self._handle = HSTDIN
+            self._console = console
+            self.encoding = encoding
 
         def read(self, size=-1):
             output = bytearray()
             while size < 0 or len(output) < size:
-                key = console.read_key()
+                key = self._console.read_key()
                 if isinstance(key, int):
                     continue
                 output.append(key.encode(self.encoding, errors='replace'))
@@ -754,33 +716,37 @@ if PY2: # pragma: no cover
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
 
+    def __init__(self, console):
+        self._console = console
+
     if PY2: # pragma: no cover
+
         def _attach_stdin(self):
             if sys.stdin.isatty():
-                self.stdin = self._wrap_input_stream(_ConsoleInput())
+                self.stdin = self._wrap_input_stream(_ConsoleInput(self._console))
             else:
                 self.stdin = self._wrap_input_stream(sys.stdin)
 
         def _attach_output_stream(self, stream_name, redirected=False):
             stream = getattr(sys, '__%s__' % (stream_name,))
-            handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
             if stream.isatty() and not redirected:
+                handle = {'stdout': HSTDOUT, 'stderr': HSTDERR}[stream_name]
                 new_stream = self._wrap_output_stream(_ConsoleOutput(stream, handle))
             else:
                 encoding = 'utf-8' if redirected else None
                 new_stream = self._wrap_output_stream(stream, encoding)
             setattr(self, stream_name, new_stream)
 
-stdio = StdIO()
 
-
-# set stdio as binary, to avoid Windows messing around with CRLFs
-# only do this for redirected output, as it breaks interactive Python sessions
-try:
-    if not sys.stdin.isatty():
-        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-    if not sys.stdout.isatty():
-        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-except EnvironmentError:
-    # raises an error if started in gui mode, as we have no stdio
-    pass
+def init_stdio():
+    """Platform-specific initialisation."""
+    # set stdio as binary, to avoid Windows messing around with CRLFs
+    # only do this for redirected output, as it breaks interactive Python sessions
+    try:
+        if not sys.stdin.isatty():
+            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+        if not sys.stdout.isatty():
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+    except EnvironmentError:
+        # raises an error if started in gui mode, as we have no stdio
+        pass

@@ -9,32 +9,54 @@ from contextlib import contextmanager
 from .base import PY2
 
 
+class StreamWrapper(object):
+    """Base class for delegated stream wrappers."""
+
+    def __init__(self, stream):
+        """Set up codec."""
+        self._stream = stream
+
+    def __getattr__(self, attr):
+        return getattr(self._stream, attr)
+
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, stdict):
+        return vars(self).update(stdict)
+
+
+
 def _open_named_devnull(name, mode):
     """Open a stream to /dev/null with the given stream name."""
-    stream = open(os.devnull, mode)
+    stream = StreamWrapper(open(os.devnull, mode))
     stream.name = name
     return stream
 
-# stdio may become None in GUI mode
-# fix them to devnull to ensure any i/o doesn't lead to crashes
-if not sys.stdin:
-    sys.stdin = open_named_devnull('<stdin>', 'r')
-if not sys.stdout:
-    sys.stdout = open_named_devnull('<stdout>', 'w')
-if not sys.stderr:
-    sys.stderr = open_named_devnull('<stderr>', 'w')
 
-# avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
-# e.g latin-1 locales or unsupported locales defaulting to ascii
-# this needs Python >= 3.7
-try:
-    sys.stdout.reconfigure(errors='replace')
-except AttributeError:
-    pass
-try:
-    sys.stderr.reconfigure(errors='replace')
-except AttributeError:
-    pass
+def fix_stdio():
+    """Make sure sys.std* exist and are forgiving of errors."""
+    # stdio may become None in GUI mode
+    # fix them to devnull to ensure any i/o doesn't lead to crashes
+    if not sys.stdin:
+        sys.stdin = _open_named_devnull('<stdin>', 'r')
+    if not sys.stdout:
+        sys.stdout = _open_named_devnull('<stdout>', 'w')
+    if not sys.stderr:
+        sys.stderr = _open_named_devnull('<stderr>', 'w')
+
+    if not PY2:
+        # avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
+        # e.g latin-1 locales or unsupported locales defaulting to ascii
+        try:
+            # this needs Python >= 3.7
+            sys.stdout.reconfigure(errors='replace')
+        except AttributeError:
+            sys.stdout.__init__(sys.stdout.buffer, encoding=sys.stdout.encoding, errors='replace')
+        try:
+            sys.stderr.reconfigure(errors='replace')
+        except AttributeError:
+            sys.stderr.__init__(sys.stderr.buffer, encoding=sys.stderr.encoding, errors='replace')
 
 
 # pause/quiet standard streams
@@ -77,6 +99,7 @@ class StdIOBase(object):
 
     def _attach_stdin(self):
         # stdio becomes None in GUI mode
+        # use __stdin__ as we depend elsewhere on this having a .buffer and pointing to true stdin
         self.stdin = sys.__stdin__ or _open_named_devnull('<stdin>', 'r')
 
     def _attach_output_stream(self, stream_name, redirected=False):
