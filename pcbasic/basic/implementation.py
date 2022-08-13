@@ -355,6 +355,7 @@ class Implementation(object):
             self.program.store_line(self.interpreter.direct_line)
             return True
         elif c != b'':
+            self.interpreter.run_mode = False
             # it is a command, go and execute
             self.interpreter.set_parse_mode(True)
             return False
