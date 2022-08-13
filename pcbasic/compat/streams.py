@@ -45,17 +45,18 @@ def fix_stdio():
     if not sys.stderr:
         sys.stderr = _open_named_devnull('<stderr>', 'w')
 
-    # avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
-    # e.g latin-1 locales or unsupported locales defaulting to ascii
-    # this needs Python >= 3.7
-    try:
-        sys.stdout.reconfigure(errors='replace')
-    except AttributeError:
-        pass
-    try:
-        sys.stderr.reconfigure(errors='replace')
-    except AttributeError:
-        pass
+    if not PY2:
+        # avoid UnicodeDecodeErrors when writing to terminal which doesn't support all of Unicode
+        # e.g latin-1 locales or unsupported locales defaulting to ascii
+        try:
+            # this needs Python >= 3.7
+            sys.stdout.reconfigure(errors='replace')
+        except AttributeError:
+            sys.stdout.__init__(sys.stdout.buffer, encoding=sys.stdout.encoding, errors='replace')
+        try:
+            sys.stderr.reconfigure(errors='replace')
+        except AttributeError:
+            sys.stderr.__init__(sys.stderr.buffer, encoding=sys.stderr.encoding, errors='replace')
 
 
 # pause/quiet standard streams
