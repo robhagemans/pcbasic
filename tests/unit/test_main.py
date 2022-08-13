@@ -27,7 +27,7 @@ class MainTest(TestCase):
         output = io.BytesIO()
         with stdio.redirect_output(output, 'stdout'):
             main('-v')
-        assert output.getvalue().startswith(b'PC-BASIC')
+        assert output.getvalue().startswith(b'PC-BASIC'), output.getvalue()
 
     def test_debug_version(self):
         """Test debug version call."""
@@ -35,21 +35,21 @@ class MainTest(TestCase):
         output = io.BytesIO()
         with stdio.redirect_output(output, 'stdout'):
             main('-v', '--debug')
-        assert output.getvalue().startswith(b'PC-BASIC')
+        assert output.getvalue().startswith(b'PC-BASIC'), output.getvalue()
 
     def test_usage(self):
         """Test usage call."""
         output = io.BytesIO()
         with stdio.redirect_output(output, 'stdout'):
             main('-h')
-        assert output.getvalue().startswith(b'SYNOPSIS')
+        assert output.getvalue().startswith(b'SYNOPSIS'), output.getvalue()
 
     def test_script(self):
         """Test script run."""
         output = io.BytesIO()
         with stdio.redirect_output(output, 'stdout'):
             main('-nqe', '?1')
-        assert output.getvalue() == b' 1 \r\n'
+        assert output.getvalue() == b' 1 \r\n', output.getvalue()
 
     # exercise interfaces
 
@@ -185,7 +185,8 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert=p', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x1a'
+            outstr = outfile.read()
+            assert outstr == b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x1a', outstr
 
     def test_tokenised_to_ascii(self):
         """Test converter run."""
@@ -195,7 +196,8 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert=a', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'10 PRINT 1\r\n\x1a'
+            outstr = outfile.read()
+            assert outstr == b'10 PRINT 1\r\n\x1a', outstr
 
     def test_protected_to_ascii(self):
         """Test converter run."""
@@ -205,7 +207,8 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert=a', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'10 PRINT 1\r\n\x1a'
+            outstr = outfile.read()
+            assert outstr == b'10 PRINT 1\r\n\x1a', outstr
 
     def test_tokenised_to_protected(self):
         """Test converter run."""
@@ -215,8 +218,9 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert=p', infile.name, outfile.name)
             outfile.seek(0)
+            outstr = outfile.read()
             # note that the EOF gets encrypted too
-            assert outfile.read() == b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x73\x1a'
+            assert outstr == b'\xfe\xe9\xa9\xbf\x54\xe2\x12\xad\xf1\x89\xf9\x73\x1a', outstr
 
     def test_protected_to_tokenised(self):
         """Test converter run."""
@@ -226,7 +230,8 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert=b', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a'
+            outstr = outfile.read()
+            assert outstr == b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a', outstr
 
     def test_default(self):
         """Test converter run."""
@@ -236,7 +241,8 @@ class ConvertTest(TestCase):
                 infile.seek(0)
                 main('--convert', infile.name, outfile.name)
             outfile.seek(0)
-            assert outfile.read() == b'10 PRINT 1\r\n\x1a'
+            outstr = outfile.read()
+            assert outstr == b'10 PRINT 1\r\n\x1a', outstr
 
 
 class DebugTest(TestCase):
