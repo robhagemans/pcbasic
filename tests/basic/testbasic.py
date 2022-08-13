@@ -121,7 +121,6 @@ class TestFrame(object):
             self.old_fail = True
             shutil.rmtree(self._output_dir)
         os.makedirs(self._output_dir)
-        #os.mkdir(self._output_dir)
         for filename in os.listdir(self._dirname):
             if os.path.isfile(os.path.join(self._dirname, filename)):
                 shutil.copy(
@@ -266,7 +265,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
     if all:
         dirs = [
             _preset
-            for _preset in sorted(os.listdir(os.path.join(HERE)))
+            for _preset in sorted(os.listdir(HERE))
             if os.path.isdir(os.path.join(HERE, _preset))
             and _preset != '__pycache__'
         ]
