@@ -13,6 +13,8 @@ from contextlib import contextmanager
 from .unit import run_unit_tests
 from .basic import run_basic_tests
 
+# specify locations relative to this file
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # unittest verbosity, increase for more info on what is running
 VERBOSITY = 1
