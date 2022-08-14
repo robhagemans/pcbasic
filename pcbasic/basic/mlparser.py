@@ -48,7 +48,7 @@ class MLParser(codestream.CodeStream):
                 stepval = self.memory.get_value_for_varptrstr(self.read(3))
                 step = values.pass_number(stepval).to_int()
         elif c and c in DIGITS:
-            step = self._parse_const()
+            step = self._parse_literal()
         elif default is not None:
             step = default
         else:
@@ -78,8 +78,8 @@ class MLParser(codestream.CodeStream):
         indices = self._parse_indices()
         return self.memory.view_or_create_variable(name, indices)
 
-    def _parse_const(self):
-        """Parse and return a constant value in a macro-language string."""
+    def _parse_literal(self):
+        """Parse and return a literal value in a macro-language string."""
         digits = []
         while self.skip_blank() in set(iterchar(DIGITS)):
             digits.append(self.read(1))
@@ -92,7 +92,7 @@ class MLParser(codestream.CodeStream):
         if self.skip_blank_read_if((b'[', b'(')):
             while True:
                 if self.skip_blank() in set(iterchar(DIGITS)):
-                    indices.append(self._parse_const())
+                    indices.append(self._parse_literal())
                 else:
                     indices.append(self._parse_variable().to_int())
                 if not self.skip_blank_read_if((b',',)):
