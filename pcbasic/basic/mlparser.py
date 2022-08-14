@@ -40,11 +40,13 @@ class MLParser(codestream.CodeStream):
             if len(c) == 0:
                 raise error.BASICError(error.IFC)
             elif ord(c) > 8:
-                step = self._parse_variable().to_int()
+                stepval = self._parse_variable()
+                step = values.pass_number(stepval).to_int()
                 self.require_read((b';',), err=error.IFC)
             else:
                 # varptr$
-                step = self.memory.get_value_for_varptrstr(self.read(3)).to_int()
+                stepval = self.memory.get_value_for_varptrstr(self.read(3))
+                step = values.pass_number(stepval).to_int()
         elif c and c in DIGITS:
             step = self._parse_const()
         elif default is not None:
