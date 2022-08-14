@@ -198,6 +198,8 @@ def _write_crashlog(
 
     # create crash log
     crashlog = [
+        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+        u'\uFEFF'
         u'PC-BASIC crash log',
         u'=' * 100,
         code_line, u'',
@@ -223,7 +225,7 @@ def _write_crashlog(
                 # for python 2 - show as cp437
                 line = line.decode('cp437')
             f.write(line.encode('utf-8', 'replace'))
-            f.write(b'\n')
+            f.write(b'\r\n')
     # open text file
     webbrowser.open(logfile.name)
     return logfile.name
@@ -240,7 +242,7 @@ def _show_report(iface, iface_name, python_version, code_line, traceback_lines, 
             python_version=python_version,
             os_version=platform.platform(),
             interface=iface_name,
-            statement=code_line,
+            statement=code_line.replace('"', "'").replace('\n', ''),
             traceback_0=traceback_lines[0],
             traceback_1=traceback_lines[1],
             traceback_2=traceback_lines[2],
