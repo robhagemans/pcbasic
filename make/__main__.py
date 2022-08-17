@@ -30,7 +30,7 @@ if not sys.argv[1:]:
     package()
 elif not sys.argv[2:]:
     if sys.argv[1] in ('build'):
-        prepare()
+        make_local()
         # universal wheel: same code works in py2 and py3, no C extensions
         subprocess.run([sys.executable, '-m', 'build'])
     elif sys.argv[1] == 'docs':
