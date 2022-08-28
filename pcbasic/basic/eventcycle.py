@@ -82,8 +82,8 @@ class EventQueues(object):
     """Manage interface queues."""
 
     tick = 0.006
-    max_video_qsize = 500
-    max_audio_qsize = 20
+    max_video_qsize = 200
+    #max_audio_qsize = 20
 
     def __init__(self, ctrl_c_is_break, inputs=None, video=None, audio=None):
         """Initialise; default is NullQueues."""
@@ -133,13 +133,31 @@ class EventQueues(object):
 
     def check_events(self):
         """Main event cycle."""
-        # sleep(0) is needed for responsiveness, e.g. even trapping in programs with tight loops
-        # i.e. 100 goto 100 with event traps active)
+        # sleep(0) is needed for responsiveness, e.g. event trapping in programs with tight loops
+        # i.e. 100 goto 100 with event traps active) - needed to allow the input queue to fill
         # this also allows the screen to update between statements
         # it does slow the interpreter down by about 20% in FOR loops
+        # note that we always have an input queue, either for the interface of for iostreams
         time.sleep(0)
         # bizarrely, we need sleep(0) twice. I don't know why.
+        # note that multiple sleep(0) calls doen't seem to cause more slowdown than just one.
         time.sleep(0)
+        time.sleep(0)
+        # what I think is happening here is that the sdl2 interface thread,
+        # in its loop to process a single queue item, calls C library functions
+        # which do not need the GIL. so it releases it. this allows the engine thread to pick up
+        # and produce more work for the interface thread. sleep(0) does not wait but it does release
+        # the GIL back, so we need a few sleep(0) calls to allow the interface to get through
+        # individual items.
+        # this would not be a problem if the interface thread did not need the GIL at all
+        # (perhaps with numba, nuitka, cython, pypy or jython)
+        # but note that the video queue is a Python object so may require the GIL
+        # or if it held the GIL for a full cycle
+        # wait to for the queue to drain if it excceds a threshold value
+        # this allows the interface to catch up with video updates
+        if self.video.qsize() > self.max_video_qsize:
+            while self.video.qsize():
+                time.sleep(self.tick)
         self._check_input()
 
     def _check_input(self):
