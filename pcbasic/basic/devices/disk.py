@@ -19,6 +19,7 @@ import logging
 
 from ...compat import text_type, add_str
 from ...compat import get_short_pathname, get_free_bytes, is_hidden, iterchar, random_id
+from ...compat import is_readable_text_stream, is_writable_text_stream
 
 from ..base import error
 from ..base.tokens import ALPHANUMERIC
@@ -284,9 +285,18 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # wrap unicode or bytes native stream so that we always read/write codepage bytes
         # for text & ascii-program files, not for random-access files
         if self._is_text_file(filetype, mode):
+            # access non-raw text files as text stream
+            if self._text_mode and (
+                    (mode == b'I' and not is_readable_text_stream(fhandle))
+                    or (mode in (b'O', b'A') and not is_writable_text_stream(fhandle))
+                ):
+                # preserve original newlines on reading and writing
+                fhandle = io.TextIOWrapper(
+                    fhandle, encoding=self._text_mode, errors='replace', newline=''
+                )
+            # wrap unicode or bytes native stream so that we always read/write codepage bytes
             if mode in (b'O', b'A'):
                 # if the input stream is unicode: decode codepage bytes
                 fhandle = self._codepage.wrap_output_stream(fhandle, preserve=CONTROL+(b'\x1A',))
@@ -367,16 +377,7 @@ class DiskDevice(object):
                     pass
                 f.close()
             access_mode = ACCESS_MODES[mode]
-            if self._text_mode and self._is_text_file(filetype, mode):
-                # access non-raw text files as text stream
-                # preserve original newlines on reading and writing
-                stream = io.open(
-                    native_name, access_mode,
-                    encoding=self._text_mode, errors='replace', newline=''
-                )
-            else:
-                # access 'raw' text files and binary files as bytes stream
-                stream = io.open(native_name, access_mode + 'b')
+            stream = io.open(native_name, access_mode + 'b')
             return stream
         except EnvironmentError as e:
             handle_oserror(e)
