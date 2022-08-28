@@ -17,7 +17,7 @@ from tests.unit.utils import TestCase, run_tests
 
 
 class CodepageTest(TestCase):
-    """Unit tests for Session."""
+    """Unit tests for codepage functionality."""
 
     tag = u'codepage'
 
@@ -140,6 +140,31 @@ class CodepageTest(TestCase):
             # codepage 437 for a-acute
             assert s.get_variable('a$') == b'\xa0'
 
+    def test_lone_nul(self):
+        """Test converting a lone NUL from unicode to bytes."""
+        with Session() as s:
+            bstr = s.convert(u'\0', to_type=type(b''))
+        assert bstr == b'\0', bstr
+
+    def test_eascii(self):
+        """Test converting an eascii sequence from unicode to bytes."""
+        with Session() as s:
+            bstr = s.convert(u'\0\1', to_type=type(b''))
+        assert bstr == b'\0\1', bstr
+
+    def test_control(self):
+        """Test converting a control character from unicode to bytes."""
+        with Session() as s:
+            bstr = s.convert(u'\r', to_type=type(b''))
+        assert bstr == b'\r', bstr
+
+    def test_grapheme_sequence(self):
+        """Test converting a multi-codepoint grapheme sequence."""
+        cp = read_codepage('russup4ac')
+        with Session(codepage=cp) as s:
+            bstr = s.convert(u'\u041e\u041e\u0301\u263a', to_type=type(b''))
+        assert bstr == b'\x8e\xc5\1', bstr
+
 
 ##############################################################################
 
@@ -164,7 +189,7 @@ copyreg.pickle(StringIO, pickle_stringio)
 
 
 class StreamWrapperTest(TestCase):
-    """Unit tests for split_graphemes."""
+    """Unit tests for stream wrappers."""
 
     tag = u'codepage'
 
