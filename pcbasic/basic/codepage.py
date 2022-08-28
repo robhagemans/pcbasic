@@ -130,8 +130,10 @@ class Codepage(object):
         self._inverse_substitutes = dict((reversed(_item) for _item in iteritems(self._substitutes)))
         # keep set of clusters of more than one unicode code point
         self._unicode_clusters = set(
-            _cluster for _cluster in self._unicode_to_cp if len(_cluster) > 0
+            _cluster for _cluster in self._unicode_to_cp if len(_cluster) > 1
         )
+        # ensure longest sequences get checked first (greedy clustering)
+        self._unicode_clusters = list(reversed(sorted(self._unicode_clusters, key=len)))
         # is the current codepage a double-byte codepage?
         self.dbcs = dbcs_num_chars > 0
 
@@ -164,7 +166,7 @@ class Codepage(object):
         ucs = unicodedata.normalize('NFC', ucs)
         clusters = []
         while ucs:
-            if ucs[0] == u'\0' and ord(ucs[1:2]) < 256:
+            if ucs[0] == u'\0' and ucs[1:2] and ord(ucs[1:2]) < 256:
                 # preserve e-ascii clusters
                 length = 2
             else:
@@ -175,6 +177,7 @@ class Codepage(object):
                 for cluster in self._unicode_clusters:
                     if ucs.startswith(cluster):
                         length = len(cluster)
+                        break
             clusters.append(ucs[:length])
             ucs = ucs[length:]
         return clusters
