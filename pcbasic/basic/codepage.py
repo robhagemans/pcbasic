@@ -13,8 +13,7 @@ import os
 import io
 
 from ..compat import iterchar, iteritems, int2byte, unichr
-
-from .base.codestream import StreamWrapper
+from ..compat import StreamWrapper, is_readable_text_stream, is_writable_text_stream
 from .data import DEFAULT_CODEPAGE
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
@@ -208,20 +207,14 @@ class Codepage(object):
     def wrap_output_stream(self, stream, preserve=()):
         """Wrap a stream so that we can write codepage bytes to it."""
         # check for file-like objects that expect unicode, raw output otherwise
-        if not isinstance(stream, (
-                io.TextIOWrapper, io.StringIO,
-                codecs.StreamReaderWriter, codecs.StreamWriter,
-            )):
+        if not is_writable_text_stream(stream):
             return stream
         return OutputStreamWrapper(stream, self, preserve)
 
     def wrap_input_stream(self, stream, replace_newlines=False):
         """Wrap a stream so that we can read codepage bytes from it."""
         # check for file-like objects that expect unicode, raw output otherwise
-        if isinstance(stream, (
-                io.TextIOWrapper, io.StringIO,
-                codecs.StreamReaderWriter, codecs.StreamReader,
-            )):
+        if is_readable_text_stream(stream):
             stream = InputStreamWrapper(stream, self)
         if replace_newlines:
             return NewlineWrapper(stream)

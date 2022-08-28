@@ -106,7 +106,8 @@ class LPTFile(TextFileBase):
 
     def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
-        assert isinstance(s, bytes), type(s)
+        if not isinstance(s, bytes):
+            raise TypeError("LPTFile writes require bytes, not '%s'" % (type(s),))
         with safe_io():
             for c in iterchar(s):
                 # don't replace CR or LF with
