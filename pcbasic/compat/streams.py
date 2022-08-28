@@ -59,6 +59,35 @@ def fix_stdio():
             sys.stderr.__init__(sys.stderr.buffer, encoding=sys.stderr.encoding, errors='replace')
 
 
+if PY2:
+    def is_writable_text_stream(stream):
+        """Stream is a writable stream that expects unicode."""
+        return isinstance(stream, (
+            io.TextIOWrapper, io.StringIO,
+            codecs.StreamReaderWriter, codecs.StreamWriter,
+        ))
+
+    def is_readable_text_stream(stream):
+        """Stream is a readable stream that produces unicode."""
+        return isinstance(stream, (
+            io.TextIOWrapper, io.StringIO,
+            codecs.StreamReaderWriter, codecs.StreamReader,
+        ))
+else:
+    def is_writable_text_stream(stream):
+        """Stream is a writable stream that expects unicode."""
+        try:
+            stream.write(u'')
+        except TypeError:
+            return False
+        return True
+
+    def is_readable_text_stream(stream):
+        """Stream is a readable stream that produces unicode."""
+        return isinstance(stream.read(0), type(u''))
+
+
+
 # pause/quiet standard streams
 # ----------------------------
 # previously we had a version that redirected c-level streams, thereby catching non-python output

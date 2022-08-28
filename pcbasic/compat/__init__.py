@@ -38,7 +38,7 @@ except ImportError: # pragma: no cover
 
 from .base import PLATFORM, PY2, WIN32, MACOS, X64
 from .base import USER_CONFIG_HOME, USER_DATA_HOME, BASE_DIR, HOME_DIR
-from .streams import StreamWrapper, fix_stdio
+from .streams import StreamWrapper, fix_stdio, is_readable_text_stream, is_writable_text_stream
 
 from .console import console, read_all_available, IS_CONSOLE_APP
 from .console import stdio, init_stdio
