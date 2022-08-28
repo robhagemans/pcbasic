@@ -245,6 +245,11 @@ class DiskDevice(object):
         # locks are drive-specific
         self._locks = Locks()
         # text file settings
+        # use a BOM on input and output, but not append
+        if not text_mode:
+            text_mode = ''
+        if text_mode.lower() in UTF_8:
+            text_mode = 'utf-8-sig'
         self._text_mode = text_mode
         self._soft_linefeed = soft_linefeed
 
@@ -255,6 +260,11 @@ class DiskDevice(object):
     def available(self):
         """Device is available."""
         return True
+
+    @staticmethod
+    def _is_text_file(filetype, mode):
+        """Determine if a filetype and mode refer to a text file."""
+        return filetype in (b'A', b'D') and mode in (b'O', b'A', b'I')
 
     def _create_file_object(
             self, fhandle, filetype, mode, number=0,
@@ -274,33 +284,26 @@ class DiskDevice(object):
                 filetype = filetype_found
             except KeyError:
                 filetype = b'A'
-        # unicode or bytes input for text & ascii-program files
-        # not for random-access files
-        if filetype in b'DA':
+        # wrap unicode or bytes native stream so that we always read/write codepage bytes
+        # for text & ascii-program files, not for random-access files
+        if self._is_text_file(filetype, mode):
             if mode in (b'O', b'A'):
                 # if the input stream is unicode: decode codepage bytes
-                fhandle = self._codepage.wrap_output_stream(
-                    fhandle, preserve=CONTROL+(b'\x1A',)
-                )
-            elif mode == b'I':
+                fhandle = self._codepage.wrap_output_stream(fhandle, preserve=CONTROL+(b'\x1A',))
+            else: #if mode == b'I':
                 # if the input stream is unicode: encode codepage bytes
                 # replace newlines with \r in text mode
                 fhandle = self._codepage.wrap_input_stream(
                     fhandle, replace_newlines=not self._soft_linefeed
                 )
-        if filetype in b'BPM':
+            # ascii program file; or data file for input, output, append
+            return TextFile(fhandle, filetype, number, mode, self._locks)
+        elif filetype in (b'B', b'P', b'M'):
             # binary [B]LOAD, [B]SAVE
             return BinaryFile(fhandle, filetype, number, mode, seg, offset, length, self._locks)
-        elif filetype == b'A':
-            # ascii program file
-            return TextFile(fhandle, filetype, number, mode, self._locks)
-        elif filetype == b'D':
-            if mode in b'IAO':
-                # data file for input, output, append
-                return TextFile(fhandle, filetype, number, mode, self._locks)
-            else:
-                # data file for random
-                return RandomFile(fhandle, number, field, reclen, self._locks)
+        elif filetype == b'D' and mode == b'R':
+            # data file for random
+            return RandomFile(fhandle, number, field, reclen, self._locks)
         else:
             # incorrect file type requested
             msg = b'Incorrect file type %s requested for mode %s' % (filetype, mode)
@@ -364,18 +367,17 @@ class DiskDevice(object):
                     pass
                 f.close()
             access_mode = ACCESS_MODES[mode]
-            text_mode = self._text_mode
-            # access 'raw' text files as bytes
-            if not text_mode:
-                return io.open(native_name, access_mode + 'b')
-            # encoded text files
-            # use a BOM on input and output, but not append
-            if text_mode.lower() in UTF_8:
-                text_mode = 'utf-8-sig'
-            # preserve original newlines on reading and writing
-            return io.open(
-                native_name, access_mode, encoding=text_mode, errors='replace', newline=''
-            )
+            if self._text_mode and self._is_text_file(filetype, mode):
+                # access non-raw text files as text stream
+                # preserve original newlines on reading and writing
+                stream = io.open(
+                    native_name, access_mode,
+                    encoding=self._text_mode, errors='replace', newline=''
+                )
+            else:
+                # access 'raw' text files and binary files as bytes stream
+                stream = io.open(native_name, access_mode + 'b')
+            return stream
         except EnvironmentError as e:
             handle_oserror(e)
         except TypeError:
