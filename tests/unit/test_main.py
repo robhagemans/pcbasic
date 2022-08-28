@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 PC-BASIC test.main
 unit tests for main script
@@ -167,7 +169,7 @@ class ConvertTest(TestCase):
     tag = u'convert'
 
     def test_ascii_to_tokenised(self):
-        """Test converter run."""
+        """Test converting raw text to tokenised."""
         with NamedTemporaryFile('w+b', delete=False) as outfile:
             with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'10 ? 1\r\n\x1a')
@@ -178,7 +180,7 @@ class ConvertTest(TestCase):
             assert outstr == b'\xff\x76\x12\x0a\x00\x91\x20\x12\x00\x00\x00\x1a', outstr
 
     def test_ascii_to_protected(self):
-        """Test converter run."""
+        """Test converting raw text to protected."""
         with NamedTemporaryFile('w+b', delete=False) as outfile:
             with NamedTemporaryFile('w+b', delete=False) as infile:
                 infile.write(b'10 ? 1\r\n\x1a')
@@ -243,6 +245,18 @@ class ConvertTest(TestCase):
             outfile.seek(0)
             outstr = outfile.read()
             assert outstr == b'10 PRINT 1\r\n\x1a', outstr
+
+
+    def test_ascii_to_tokenised_encoding(self):
+        """Test converting utf-8 text to tokenised."""
+        with NamedTemporaryFile('w+b', delete=False) as outfile:
+            with NamedTemporaryFile('w+', delete=False) as infile:
+                infile.write('10 ? "£"\r\n\x1a')
+                infile.seek(0)
+                main('--text-encoding=utf-8', '--convert=b', infile.name, outfile.name)
+            outfile.seek(0)
+            outstr = outfile.read()
+            assert outstr == b'\xff\x78\x12\x0a\x00\x91\x20\x22\x9c\x22\x00\x00\x00\x1a', outstr
 
 
 class DebugTest(TestCase):
