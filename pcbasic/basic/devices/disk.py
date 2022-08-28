@@ -262,7 +262,8 @@ class DiskDevice(object):
         ):
         """Create disk file object of requested type."""
         # determine file type if needed
-        if len(filetype) > 1 and mode == b'I':
+        if len(filetype) > 1:
+            assert mode == b'I', 'file type can only be detected on input files'
             # read magic
             first = fhandle.read(1)
             fhandle.seek(0)
