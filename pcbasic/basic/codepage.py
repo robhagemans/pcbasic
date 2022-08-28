@@ -164,7 +164,7 @@ class Codepage(object):
         ucs = unicodedata.normalize('NFC', ucs)
         clusters = []
         while ucs:
-            if ucs[0] == u'\0' and ord(ucs[1:2]) < 256:
+            if ucs[0] == u'\0' and ucs[1:2] and ord(ucs[1:2]) < 256:
                 # preserve e-ascii clusters
                 length = 2
             else:
