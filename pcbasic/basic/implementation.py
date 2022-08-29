@@ -252,9 +252,11 @@ class Implementation(object):
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         with self._handle_exceptions():
-            tokens = self.tokeniser.tokenise_line(expression)
-            # skip : token and parse expression
-            tokens.read(1)
+            # prefix expression with a PRINT token
+            # to avoid any number at the start to be taken as a line number
+            tokens = self.tokeniser.tokenise_line(b'?' + expression)
+            # skip : and ? tokens and parse expression
+            tokens.read(2)
             val =  self.parser.parse_expression(tokens)
             return val.to_value()
         return None
