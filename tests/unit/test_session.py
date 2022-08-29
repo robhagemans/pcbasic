@@ -137,13 +137,21 @@ class SessionTest(TestCase):
                 s.set_variable('ARR2!()', [])
 
     def test_session_evaluate(self):
-        """Test Session.set_variable and Session.get_variable."""
+        """Test Session.evaluate."""
         with Session() as s:
             s.set_variable(b'A!', 1)
+            # variable, implicit sigil allowed. expression can be bytes or unicode
             assert s.evaluate(b'A') == 1
             assert s.evaluate(u'A') == 1
+            # expression
+            assert s.evaluate(u'A*2+1') == 3.0
             # syntax error
             assert s.evaluate(b'LOG+1') is None
+
+    def test_session_evaluate_number(self):
+        """Test Session.evaluate starting with a number."""
+        with Session() as s:
+            assert s.evaluate(b'1+1') == 2
 
     def test_session_bind_file(self):
         """test Session.bind_file."""
