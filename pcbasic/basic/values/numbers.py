@@ -670,8 +670,9 @@ class Float(Number):
             lim_bot = self.new().from_int(10**(digits-1))._just_under()
             lim_top = self.new().from_int(10**digits)._just_under()
         else:
+            # use values for digits == 0 also if digits < 0
             lim_bot = self.new().from_int(0)
-            lim_top = self.new().from_int(10**digits)._just_under()
+            lim_top = self.new().from_int(1)._just_under()
         tden = lim_top._denormalise()
         bden = lim_bot._denormalise()
         exp10 = 0
