@@ -420,11 +420,11 @@ _MODE_INFO = {
     ),
     'olivettitext40': dict(
         rows=25, columns=40, font_height=16, font_width=8, attr=7, max_pages=8, mono=False,
-        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
     'olivettitext80': dict(
         rows=25, columns=80, font_height=16, font_width=8, attr=7, max_pages=4, mono=False,
-        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16ColourMapper
+        cursor_shape=(15, 15), layout=TextMode, colourmap=EGA16TextColourMapper
     ),
 
     # graphics modes
