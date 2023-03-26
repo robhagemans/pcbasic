@@ -792,6 +792,7 @@ class Graphics(object):
         fill_attr = self._get_attr_index(fill_attr_index)
         border_attr = self._get_attr_index(border_index)
         self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
+        self._draw_current = None
 
     def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
         """Fill an area defined by a border attribute with a tiled pattern."""
@@ -876,7 +877,6 @@ class Graphics(object):
             if y % 4 == 0:
                 self._input_methods.wait()
         self._last_attr = fill_attr
-        self._draw_current = None
 
     def _scanline_until(self, element, y, x0, x1):
         """Get row until given element."""
