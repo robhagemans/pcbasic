@@ -571,12 +571,18 @@ class Graphics(object):
         attr_index = next(args)
         if attr_index is not None:
             attr_index = values.to_int(attr_index)
+        # the check is against a single precision rounded 2*pi
+        check_2pi = 6.283186
         start = next(args)
         if start is not None:
             start = values.to_single(start).to_value()
+            if abs(start) > check_2pi:
+                raise error.BASICError(error.IFC)
         stop = next(args)
         if stop is not None:
             stop = values.to_single(stop).to_value()
+            if abs(stop) > check_2pi:
+                raise error.BASICError(error.IFC)
         aspect = next(args)
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
@@ -1235,13 +1241,10 @@ def _get_octant(f, rx, ry):
     """Get the circle octant for a given coordinate."""
     neg = f < 0.
     f = abs(f)
-    octant = 0
-    comp = math.pi / 4.
-    while f > comp:
-        comp += math.pi / 4.
-        octant += 1
-        if octant >= 8:
-            raise error.BASICError(error.IFC)
+    octant = int(f / (math.pi / 4.))
+    # deal with values that should equal 2*pi but are a bit bigger due to Single precision math
+    if octant == 8:
+        octant = 7
     if octant in (0, 3, 4, 7):
         # running var is y
         coord = abs(int(round(ry * math.sin(f))))
