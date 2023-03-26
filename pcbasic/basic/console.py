@@ -55,7 +55,7 @@ FKEY_MACRO_REPLACE_CHARS = {
 class Console(object):
     """Console / interactive environment."""
 
-    def __init__(self, text_screen, cursor, keyboard, sound, io_streams, num_fn_keys):
+    def __init__(self, text_screen, cursor, keyboard, sound, io_streams, num_fn_keys, tandy_fn_keys):
         """Initialise environment."""
         self._text_screen = text_screen
         self._cursor = cursor
@@ -63,6 +63,7 @@ class Console(object):
         self._keyboard = keyboard
         self._io_streams = io_streams
         self._num_fn_keys = num_fn_keys
+        self._tandy_fn_keys = tandy_fn_keys
         # overwrite mode (instead of insert)
         self._overwrite_mode = True
         # needs to be set later due to init order
@@ -374,6 +375,13 @@ class Console(object):
 
     def set_macro(self, num, macro):
         """Set macro for given function key."""
+        # keys 30, 31 map to F11, F12 (which may or may not be definable)
+        # except on Tandy where this is keys 11, 12
+        if not self._tandy_fn_keys:
+            if num >= 30:
+                num -= 19
+            elif num > 10:
+                raise ValueError('Function key number out of range')
         if num > self._num_fn_keys:
             raise ValueError('Function key number out of range')
         # NUL terminates macro string, rest is ignored

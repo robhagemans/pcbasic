@@ -108,6 +108,9 @@ PRESETS = {
         u'prevent-close': u'True',
         u'ctrl-c-break': u'False',
     },
+    u'gwbasic': {
+        u'syntax': u'gwbasic',
+    },
     u'basica': {
         u'reserved-memory': u'789',
     },
@@ -293,7 +296,7 @@ ARGUMENTS = {
     u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
     u'resume': {u'type': u'bool', u'default': False,},
     u'syntax': {
-        u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
+        u'type': u'string', u'choices': (u'advanced', u'gwbasic', u'pcjr', u'tandy'),
         u'default': u'advanced',
     },
     u'term': {u'type': u'string', u'default': u'',},
