@@ -178,18 +178,20 @@ class Graphics(object):
         self._apagenum = None
         # last accessed coordinate, viewpoint-relative
         self._last_point = None
+        # when WINDOW is active, DRAW pointer gets reset by other commands but not vice versa
+        self._draw_current = None
         self._last_attr = None
         self._draw_scale = None
         self._draw_angle = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
-        self._colourmap = colourmap
 
-    def init_mode(self, mode, pages, num_attr):
+    def init_mode(self, mode, pages, colourmap):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._pages = pages
-        self._num_attr = num_attr
+        self._colourmap = colourmap
+        self._num_attr = colourmap.num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._pages[0].pixels)
         self._unset_window()
@@ -200,6 +202,7 @@ class Graphics(object):
         if self._mode.is_text_mode:
             return
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         self._last_attr = self._mode.attr
         self._draw_scale = 4
         self._draw_angle = 0
@@ -271,6 +274,7 @@ class Graphics(object):
             self._last_attr = border
         self.graph_view.set(x0, y0, x1, y1, absolute)
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         if self._window_bounds is not None:
             self._set_window(*self._window_bounds)
 
@@ -278,6 +282,7 @@ class Graphics(object):
         """Unset the graphics viewport."""
         self.graph_view.unset()
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         if self._window_bounds is not None:
             self._set_window(*self._window_bounds)
 
@@ -389,6 +394,7 @@ class Graphics(object):
         attr = self._get_attr_index(attr_index)
         # record viewpoint-relative physical coordinates
         self._last_point = x, y
+        self._draw_current = None
         self._last_attr = attr
         self.graph_view[y, x] = attr
 
@@ -422,6 +428,7 @@ class Graphics(object):
             x0, y0 = self._get_window_physical(*coord0)
         else:
             x0, y0 = self._last_point
+        self._last_point = x0, y0
         x1, y1 = self._get_window_physical(*coord1)
         attr = self._get_attr_index(attr_index)
         if not shape:
@@ -431,6 +438,7 @@ class Graphics(object):
         elif shape == b'BF':
             self._draw_box_filled(x0, y0, x1, y1, attr)
         self._last_point = x1, y1
+        self._draw_current = None
         self._last_attr = attr
 
     def _draw_line(self, x0, y0, x1, y1, attr, pattern=0xffff):
@@ -563,12 +571,18 @@ class Graphics(object):
         attr_index = next(args)
         if attr_index is not None:
             attr_index = values.to_int(attr_index)
+        # the check is against a single precision rounded 2*pi
+        check_2pi = 6.283186
         start = next(args)
         if start is not None:
             start = values.to_single(start).to_value()
+            if abs(start) > check_2pi:
+                raise error.BASICError(error.IFC)
         stop = next(args)
         if stop is not None:
             stop = values.to_single(stop).to_value()
+            if abs(stop) > check_2pi:
+                raise error.BASICError(error.IFC)
         aspect = next(args)
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
@@ -586,10 +600,10 @@ class Graphics(object):
             ry = rx
         elif aspect > 1.:
             _, ry = self._get_window_scale(0., r)
-            rx = int(round(r / aspect))
+            rx = int(round(ry / aspect))
         else:
             rx, _ = self._get_window_scale(r, 0.)
-            ry = int(round(r * aspect))
+            ry = int(round(rx * aspect))
         start_octant, start_coord, start_line = -1, -1, False
         if start is not None:
             start_octant, start_coord, start_line = _get_octant(start, rx, ry)
@@ -617,6 +631,7 @@ class Graphics(object):
             )
         self._last_attr = attr
         self._last_point = x0, y0
+        self._draw_current = None
 
     def _draw_circle(
             self, x0, y0, r, attr,
@@ -777,6 +792,7 @@ class Graphics(object):
         fill_attr = self._get_attr_index(fill_attr_index)
         border_attr = self._get_attr_index(border_index)
         self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
+        self._draw_current = None
 
     def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
         """Fill an area defined by a border attribute with a tiled pattern."""
@@ -961,6 +977,7 @@ class Graphics(object):
         elif operation_token == tk.XOR:
             rect = operator.ixor(self.graph_view[y0:y1+1, x0:x1+1], sprite)
         self.graph_view[y0:y1+1, x0:x1+1] = rect
+        self._draw_current = None
 
     def get_(self, args):
         """GET: Read a sprite from the screen."""
@@ -976,6 +993,7 @@ class Graphics(object):
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self._get_window_physical(x0, y0)
+        self._last_point = x0, y0
         x1, y1 = self._get_window_physical(x, y, step)
         self._last_point = x1, y1
         byte_array = self._memory.arrays.view_full_buffer(array_name)
@@ -996,6 +1014,7 @@ class Graphics(object):
         except ValueError:
             # cannot modify size of memoryview object - sprite larger than array
             raise error.BASICError(error.IFC)
+        self._draw_current = None
 
     ### DRAW statement
 
@@ -1011,6 +1030,8 @@ class Graphics(object):
         """Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, self._memory, self._values)
+        if not self._draw_current:
+            self._draw_current = self._last_point
         plot, goback = True, False
         while True:
             c = gmls.skip_blank_read().upper()
@@ -1068,7 +1089,7 @@ class Graphics(object):
                 step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
                 error.range_check(-99999, 99999, step)
-                x0, y0 = self._last_point
+                x0, y0 = self._draw_current
                 x1, y1 = 0, 0
                 if c in (b'U', b'E', b'H'):
                     y1 -= step
@@ -1092,15 +1113,15 @@ class Graphics(object):
                     gmls.read(1)
                 y = gmls.parse_number()
                 error.range_check(-9999, 9999, y)
-                x0, y0 = self._last_point
+                x0, y0 = self._draw_current
                 if relative:
                     self._draw_step(x0, y0, x, y, plot, goback)
                 else:
                     if plot:
                         self._draw_line(x0, y0, x, y, self._last_attr)
-                    self._last_point = x, y
+                    self._draw_current = x, y
                     if goback:
-                        self._last_point = x0, y0
+                        self._draw_current = x0, y0
                 plot = True
                 goback = False
             elif c == b'P':
@@ -1111,12 +1132,15 @@ class Graphics(object):
                     raise error.BASICError(error.IFC)
                 border_idx = gmls.parse_number()
                 error.range_check(0, 9999, border_idx)
-                x, y = self._get_window_logical(*self._last_point)
+                x, y = self._get_window_logical(*self._draw_current)
                 fill_attr = self._get_attr_index(fill_idx)
                 border_attr = self._get_attr_index(border_idx)
                 self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
             else:
                 raise error.BASICError(error.IFC)
+        # if WINDOW is set, the current position for non-DRAW commands does not track
+        if self._window_bounds is None:
+            self._last_point = self._draw_current
 
     def _draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
@@ -1150,9 +1174,10 @@ class Graphics(object):
         x1 += x0
         if plot:
             self._draw_line(x0, y0, x1, y1, self._last_attr)
-        self._last_point = x1, y1
         if goback:
-            self._last_point = x0, y0
+            self._draw_current = x0, y0
+        else:
+            self._draw_current = x1, y1
 
     ### POINT and PMAP
 
@@ -1170,10 +1195,13 @@ class Graphics(object):
             list(args)
             if self._mode.is_text_mode:
                 return self._values.new_single()
+            # if DRAW and other commands are out of sync, POINT is adjusted to the latest
+            # (if non-DRAW commands were executed, draw_current is set to None)
+            current = self._draw_current or self._last_point
             if fn in (0, 1):
-                point = self._last_point[fn]
+                point = current[fn]
             elif fn in (2, 3):
-                point = self._get_window_logical(*self._last_point)[fn - 2]
+                point = self._get_window_logical(*current)[fn - 2]
             return self._values.new_single().from_value(point)
         else:
             if self._mode.is_text_mode:
@@ -1219,13 +1247,10 @@ def _get_octant(f, rx, ry):
     """Get the circle octant for a given coordinate."""
     neg = f < 0.
     f = abs(f)
-    octant = 0
-    comp = math.pi / 4.
-    while f > comp:
-        comp += math.pi / 4.
-        octant += 1
-        if octant >= 8:
-            raise error.BASICError(error.IFC)
+    octant = int(f / (math.pi / 4.))
+    # deal with values that should equal 2*pi but are a bit bigger due to Single precision math
+    if octant == 8:
+        octant = 7
     if octant in (0, 3, 4, 7):
         # running var is y
         coord = abs(int(round(ry * math.sin(f))))
