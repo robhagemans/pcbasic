@@ -1064,7 +1064,7 @@ class Parser(object):
             for c in self._parse_pair(ins):
                 yield c
             if ins.skip_blank_read_if((b',',)):
-                yield self.parse_expression(ins)
+                yield self.parse_expression(ins, allow_empty=True)
             else:
                 yield None
             if ins.skip_blank_read_if((b',',)):
