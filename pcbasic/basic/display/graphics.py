@@ -185,13 +185,13 @@ class Graphics(object):
         self._draw_angle = None
         # screen aspect ratio: used to determine pixel aspect ratio, which is used by CIRCLE
         self._screen_aspect = aspect
-        self._colourmap = colourmap
 
-    def init_mode(self, mode, pages, num_attr):
+    def init_mode(self, mode, pages, colourmap):
         """Initialise for new graphics mode."""
         self._mode = mode
         self._pages = pages
-        self._num_attr = num_attr
+        self._colourmap = colourmap
+        self._num_attr = colourmap.num_attr
         # set graphics viewport
         self.graph_view = GraphicsViewPort(self._pages[0].pixels)
         self._unset_window()
