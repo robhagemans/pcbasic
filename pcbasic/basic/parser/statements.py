@@ -1064,12 +1064,16 @@ class Parser(object):
             for c in self._parse_pair(ins):
                 yield c
             if ins.skip_blank_read_if((b',',)):
-                yield self.parse_expression(ins, allow_empty=True)
+                fill_comma = True
+                fill = self.parse_expression(ins, allow_empty=True)
+                yield fill
             else:
+                fill_comma = False
                 yield None
             if ins.skip_blank_read_if((b',',)):
                 yield self.parse_expression(ins)
             else:
+                error.throw_if(fill_comma and not fill, error.MISSING_OPERAND)
                 yield None
 
     def _parse_line(self, ins):
