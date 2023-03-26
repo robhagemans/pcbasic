@@ -587,10 +587,10 @@ class Graphics(object):
             ry = rx
         elif aspect > 1.:
             _, ry = self._get_window_scale(0., r)
-            rx = int(round(r / aspect))
+            rx = int(round(ry / aspect))
         else:
             rx, _ = self._get_window_scale(r, 0.)
-            ry = int(round(r * aspect))
+            ry = int(round(rx * aspect))
         start_octant, start_coord, start_line = -1, -1, False
         if start is not None:
             start_octant, start_coord, start_line = _get_octant(start, rx, ry)
