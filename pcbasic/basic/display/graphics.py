@@ -422,6 +422,7 @@ class Graphics(object):
             x0, y0 = self._get_window_physical(*coord0)
         else:
             x0, y0 = self._last_point
+        self._last_point = x0, y0
         x1, y1 = self._get_window_physical(*coord1)
         attr = self._get_attr_index(attr_index)
         if not shape:
@@ -976,6 +977,7 @@ class Graphics(object):
         elif array_name[-1:] == values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
         x0, y0 = self._get_window_physical(x0, y0)
+        self._last_point = x0, y0
         x1, y1 = self._get_window_physical(x, y, step)
         self._last_point = x1, y1
         byte_array = self._memory.arrays.view_full_buffer(array_name)
