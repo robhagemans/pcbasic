@@ -289,7 +289,7 @@ class Values(object):
         if word[:2] == b'&H':
             return self.new_integer().from_hex(word[2:])
         elif word[:1] == b'&':
-            return self.new_integer().from_oct(word[2:] if word[1:2] == 'O' else word[1:])
+            return self.new_integer().from_oct(word[2:] if word[1:2] == b'O' else word[1:])
         # we need to try to convert to int first,
         # mainly so that the tokeniser can output the right token type
         try:
