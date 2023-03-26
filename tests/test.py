@@ -13,7 +13,8 @@ from contextlib import contextmanager
 try:
     from .unit import run_unit_tests
     from .basic import run_basic_tests
-except ModuleNotFoundError:
+except Exception:
+    # this is ModuleNotFoundError in Python3 but Python2 doesn't have that defined
     # enable running ./test.py from inside test directory
     from unit import run_unit_tests
     from basic import run_basic_tests
