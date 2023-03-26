@@ -857,8 +857,13 @@ class Implementation(object):
         try:
             self.console.set_macro(keynum, text)
         except ValueError:
-            # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+            pass
+        # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+        try:
             self.basic_events.key[keynum-1].set_trigger(text)
+        except IndexError:
+            # out of range key value
+            raise error.BASICError(error.IFC)
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
