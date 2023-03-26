@@ -132,13 +132,15 @@ class Implementation(object):
         )
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)
-        # 12 definable function keys for Tandy, 10 otherwise
-        num_fn_keys = 12 if syntax == 'tandy' else 10
+        # 12 definable function keys for Tandy, BASICA, PCjr
+        # regular GW-BASIC should only have 10
+        num_fn_keys = 10 if syntax == 'gwbasic' else 12
+        tandy_fn_keys = syntax == 'tandy'
         # initialise the console
         # Sound is needed for the beeps on \a
         self.console = console.Console(
             self.text_screen, self.display.cursor,
-            self.keyboard, self.sound, self.io_streams, num_fn_keys
+            self.keyboard, self.sound, self.io_streams, num_fn_keys, tandy_fn_keys
         )
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.console))
@@ -183,7 +185,7 @@ class Implementation(object):
         self.queues.add_handler(self.stick)
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
-            self.sound, self.clock, self.files, self.program, num_fn_keys
+            self.sound, self.clock, self.files, self.program, num_fn_keys, tandy_fn_keys
         )
         ######################################################################
         # extensions
@@ -856,9 +858,17 @@ class Implementation(object):
         list(args)
         try:
             self.console.set_macro(keynum, text)
+            return
         except ValueError:
-            # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+            pass
+        # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+        try:
             self.basic_events.key[keynum-1].set_trigger(text)
+        except IndexError:
+            # out of range key value
+            # if the text is  two letters long (as for a trigger definition), no error is raised
+            if len(text) != 2:
+                raise error.BASICError(error.IFC)
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""

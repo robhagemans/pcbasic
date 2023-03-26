@@ -136,5 +136,22 @@ HAN_YEONG = 0xF2
 
 
 # tandy scancodes
+# origin unclear, these came in with commit ce921e6 on 2014-08-18
+# they may have been found experimentally on DOSBox
 #F11 = 0xF9
 #F12 = 0xFA
+
+# Tandy 1000 scancodes per tandy_1k_basic_guide.pdf
+# also https://manualzz.com/doc/o/144gt5/tandy-1000-ms-dos-user-manual-keyboard-ascii-and-scan-codes
+# these scancodes are generally different to PC-XT from 0x29 onward
+#UP = 0x29
+#LEFT = 0x2B
+#BACKSLASH = 0x47
+#RIGHT = 0x4E
+#BREAK = 0x54
+#KPPLUS = 0x55; INSERT = 0x55
+#KPPOINT = 0x56
+#KPRETURN = 0x57 # this is not a defined constant in the XT list
+#HOME = 0x58
+#F11 = 0x59
+#F12 = 0x5A
