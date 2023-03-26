@@ -2,7 +2,7 @@
 """
 PC-BASIC test script
 
-(c) 2015--2022 Rob Hagemans
+(c) 2015--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
@@ -10,8 +10,14 @@ import os
 import sys
 from contextlib import contextmanager
 
-from .unit import run_unit_tests
-from .basic import run_basic_tests
+try:
+    from .unit import run_unit_tests
+    from .basic import run_basic_tests
+except ModuleNotFoundError:
+    # enable running ./test.py from inside test directory
+    from unit import run_unit_tests
+    from basic import run_basic_tests
+
 
 # specify locations relative to this file
 HERE = os.path.dirname(os.path.abspath(__file__))
