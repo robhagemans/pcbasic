@@ -178,6 +178,8 @@ class Graphics(object):
         self._apagenum = None
         # last accessed coordinate, viewpoint-relative
         self._last_point = None
+        # DRAW pointer gets reset by other commands but not vice versa
+        self._draw_current = None
         self._last_attr = None
         self._draw_scale = None
         self._draw_angle = None
@@ -200,6 +202,7 @@ class Graphics(object):
         if self._mode.is_text_mode:
             return
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         self._last_attr = self._mode.attr
         self._draw_scale = 4
         self._draw_angle = 0
@@ -271,6 +274,7 @@ class Graphics(object):
             self._last_attr = border
         self.graph_view.set(x0, y0, x1, y1, absolute)
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         if self._window_bounds is not None:
             self._set_window(*self._window_bounds)
 
@@ -278,6 +282,7 @@ class Graphics(object):
         """Unset the graphics viewport."""
         self.graph_view.unset()
         self._last_point = self.graph_view.get_mid()
+        self._draw_current = None
         if self._window_bounds is not None:
             self._set_window(*self._window_bounds)
 
@@ -389,6 +394,7 @@ class Graphics(object):
         attr = self._get_attr_index(attr_index)
         # record viewpoint-relative physical coordinates
         self._last_point = x, y
+        self._draw_current = None
         self._last_attr = attr
         self.graph_view[y, x] = attr
 
@@ -432,6 +438,7 @@ class Graphics(object):
         elif shape == b'BF':
             self._draw_box_filled(x0, y0, x1, y1, attr)
         self._last_point = x1, y1
+        self._draw_current = None
         self._last_attr = attr
 
     def _draw_line(self, x0, y0, x1, y1, attr, pattern=0xffff):
@@ -618,6 +625,7 @@ class Graphics(object):
             )
         self._last_attr = attr
         self._last_point = x0, y0
+        self._draw_current = None
 
     def _draw_circle(
             self, x0, y0, r, attr,
@@ -862,6 +870,7 @@ class Graphics(object):
             if y % 4 == 0:
                 self._input_methods.wait()
         self._last_attr = fill_attr
+        self._draw_current = None
 
     def _scanline_until(self, element, y, x0, x1):
         """Get row until given element."""
@@ -962,6 +971,7 @@ class Graphics(object):
         elif operation_token == tk.XOR:
             rect = operator.ixor(self.graph_view[y0:y1+1, x0:x1+1], sprite)
         self.graph_view[y0:y1+1, x0:x1+1] = rect
+        self._draw_current = None
 
     def get_(self, args):
         """GET: Read a sprite from the screen."""
@@ -998,6 +1008,7 @@ class Graphics(object):
         except ValueError:
             # cannot modify size of memoryview object - sprite larger than array
             raise error.BASICError(error.IFC)
+        self._draw_current = None
 
     ### DRAW statement
 
@@ -1013,6 +1024,8 @@ class Graphics(object):
         """Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, self._memory, self._values)
+        if not self._draw_current:
+            self._draw_current = self._last_point
         plot, goback = True, False
         while True:
             c = gmls.skip_blank_read().upper()
@@ -1070,7 +1083,7 @@ class Graphics(object):
                 step = gmls.parse_number(default=1)
                 # 100000 seems to be GW's limit
                 error.range_check(-99999, 99999, step)
-                x0, y0 = self._last_point
+                x0, y0 = self._draw_current
                 x1, y1 = 0, 0
                 if c in (b'U', b'E', b'H'):
                     y1 -= step
@@ -1094,15 +1107,15 @@ class Graphics(object):
                     gmls.read(1)
                 y = gmls.parse_number()
                 error.range_check(-9999, 9999, y)
-                x0, y0 = self._last_point
+                x0, y0 = self._draw_current
                 if relative:
                     self._draw_step(x0, y0, x, y, plot, goback)
                 else:
                     if plot:
                         self._draw_line(x0, y0, x, y, self._last_attr)
-                    self._last_point = x, y
+                    self._draw_current = x, y
                     if goback:
-                        self._last_point = x0, y0
+                        self._draw_current = x0, y0
                 plot = True
                 goback = False
             elif c == b'P':
@@ -1113,7 +1126,7 @@ class Graphics(object):
                     raise error.BASICError(error.IFC)
                 border_idx = gmls.parse_number()
                 error.range_check(0, 9999, border_idx)
-                x, y = self._get_window_logical(*self._last_point)
+                x, y = self._get_window_logical(*self._draw_current)
                 fill_attr = self._get_attr_index(fill_idx)
                 border_attr = self._get_attr_index(border_idx)
                 self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
@@ -1152,9 +1165,10 @@ class Graphics(object):
         x1 += x0
         if plot:
             self._draw_line(x0, y0, x1, y1, self._last_attr)
-        self._last_point = x1, y1
         if goback:
-            self._last_point = x0, y0
+            self._draw_current = x0, y0
+        else:
+            self._draw_current = x1, y1
 
     ### POINT and PMAP
 
