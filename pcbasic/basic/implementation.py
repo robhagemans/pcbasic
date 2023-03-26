@@ -856,6 +856,7 @@ class Implementation(object):
         list(args)
         try:
             self.console.set_macro(keynum, text)
+            return
         except ValueError:
             pass
         # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
