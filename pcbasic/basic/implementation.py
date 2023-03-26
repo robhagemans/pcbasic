@@ -789,7 +789,6 @@ class Implementation(object):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v
-            logging.error(self.memory.complete_name(name))
             typechar = self.memory.complete_name(name)[-1:]
             word, _ = finp.input_entry(typechar, allow_past_end=False)
             value = self.values.from_repr(word, allow_nonnum=True, typechar=typechar)
