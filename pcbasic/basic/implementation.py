@@ -863,7 +863,9 @@ class Implementation(object):
             self.basic_events.key[keynum-1].set_trigger(text)
         except IndexError:
             # out of range key value
-            raise error.BASICError(error.IFC)
+            # if the text is  two letters long (as for a trigger definition), no error is raised
+            if len(text) != 2:
+                raise error.BASICError(error.IFC)
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""
