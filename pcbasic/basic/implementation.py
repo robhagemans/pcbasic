@@ -2,7 +2,7 @@
 PC-BASIC - implementation.py
 Top-level implementation and main interpreter loop
 
-(c) 2013--2022 Rob Hagemans
+(c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 import io
@@ -789,8 +789,10 @@ class Implementation(object):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v
-            word, _ = finp.input_entry(name[-1:], allow_past_end=False)
-            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
+            logging.error(self.memory.complete_name(name))
+            typechar = self.memory.complete_name(name)[-1:]
+            word, _ = finp.input_entry(typechar, allow_past_end=False)
+            value = self.values.from_repr(word, allow_nonnum=True, typechar=typechar)
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
