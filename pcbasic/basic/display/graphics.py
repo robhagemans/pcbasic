@@ -178,7 +178,7 @@ class Graphics(object):
         self._apagenum = None
         # last accessed coordinate, viewpoint-relative
         self._last_point = None
-        # DRAW pointer gets reset by other commands but not vice versa
+        # when WINDOW is active, DRAW pointer gets reset by other commands but not vice versa
         self._draw_current = None
         self._last_attr = None
         self._draw_scale = None
@@ -1138,6 +1138,9 @@ class Graphics(object):
                 self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
             else:
                 raise error.BASICError(error.IFC)
+        # if WINDOW is set, the current position for non-DRAW commands does not track
+        if self._window_bounds is None:
+            self._last_point = self._draw_current
 
     def _draw_step(self, x0, y0, sx, sy, plot, goback):
         """Make a DRAW step, drawing a line and returning if requested."""
@@ -1192,10 +1195,13 @@ class Graphics(object):
             list(args)
             if self._mode.is_text_mode:
                 return self._values.new_single()
+            # if DRAW and other commands are out of sync, POINT is adjusted to the latest
+            # (if non-DRAW commands were executed, draw_current is set to None)
+            current = self._draw_current or self._last_point
             if fn in (0, 1):
-                point = self._last_point[fn]
+                point = current[fn]
             elif fn in (2, 3):
-                point = self._get_window_logical(*self._last_point)[fn - 2]
+                point = self._get_window_logical(*current)[fn - 2]
             return self._values.new_single().from_value(point)
         else:
             if self._mode.is_text_mode:
