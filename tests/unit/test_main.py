@@ -15,6 +15,7 @@ from tempfile import NamedTemporaryFile
 
 from pcbasic import main
 from pcbasic.compat import stdio
+from pcbasic.debug import DebugException
 from tests.unit.utils import TestCase, run_tests
 
 
@@ -290,7 +291,8 @@ class DebugTest(TestCase):
         with NamedTemporaryFile('w+b', delete=False) as state_file:
             with stdio.quiet():
                 main(
-                    '--debug', '-qe', '_CRASH', '-k', 'system\r'
+                    '--extension=crashtest',
+                    '-qe', '_CRASH', '-k', 'system\r'
                     '--state=%s' % state_file,
                 )
 
@@ -299,7 +301,8 @@ class DebugTest(TestCase):
         with NamedTemporaryFile('w+b', delete=False) as state_file:
             with stdio.quiet():
                 main(
-                    '--debug', '-k', '10 _crash\r20 system\rrun\r',
+                    '--extension=crashtest',
+                    '-k', '10 _crash\r20 system\rrun\r',
                     '--state=%s' % state_file,
                 )
 

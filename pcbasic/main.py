@@ -101,6 +101,7 @@ def _run_session(
             sys.exit(1)
     elif debug:
         session = DebugSession(**session_params)
+        exception_handler = nullcontext
     else:
         session = Session(**session_params)
     with exception_handler(session) as handler:
