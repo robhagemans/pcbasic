@@ -80,9 +80,33 @@ dpkg-deb --root-owner-group -b $DEBDIR
 mkdir dist
 mv $DEBDIR.deb dist/
 
-# build the rpm
-echo "building the .rpm package"
-cd dist
-# claims to need sudo but seem s to get root owner correct without
-alien --to-rpm --keep-version python3-pcbasic_"$VERSION"_all.deb
-cd ..
+# # RPM package disabled - even after removing the clashes with `filesystem` this does not work
+# # if someone can dedicate the time to setup and maintain an RPM build we can re-enable RPMs
+#
+# # build the rpm
+# echo "building the .rpm package"
+# cd dist
+# # claims to need sudo but seems to get root owner correct without
+# alien -g --to-rpm --keep-version python3-pcbasic_"$VERSION"_all.deb
+# # remove standard directories from spec to avoid clash with `filesystem` package
+# # discussions #211
+# # following https://www.electricmonk.nl/log/2017/02/23/how-to-solve-rpms-created-by-alien-having-file-conflicts/
+# # see also https://stackoverflow.com/questions/27172142/conflicts-with-file-from-package-filesystem-3-2
+# RPMDIR="python3-pcbasic-$VERSION"
+# cd "$RPMDIR"
+#
+# SPEC=`find python3-pcbasic-$VERSION-?.spec`
+# sed -i 's#%dir "/"##' "$SPEC"
+# sed -i 's#%dir "/usr/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/bin/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/lib/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/share/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/share/applications/"##' "$SPEC"
+# #sed -i 's#%dir "/usr/local/share/icons/"##' "$SPEC"
+# sed -i 's#%dir "/usr/local/share/man/"##' "$SPEC"
+#
+# rpmbuild --target=noarch --buildroot `pwd` -bb $SPEC
+# cd ..
+#
+# cd ..
