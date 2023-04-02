@@ -57,9 +57,12 @@ def _get_oem_encoding():
 
 
 # if starting from a console, shell will inherit its codepage
-# if starting from the gui (stdin.encoding == None), we're using OEM codepage
+# if starting from the gui (stdin is None), we're using OEM codepage
 OEM_ENCODING = _get_oem_encoding()
-SHELL_ENCODING = sys.stdin.encoding or OEM_ENCODING
+SHELL_ENCODING = None
+if sys.stdin:
+    SHELL_ENCODING = sys.stdin.encoding
+SHELL_ENCODING = SHELL_ENCODING or OEM_ENCODING
 # there's also an ACP codepage - this seems to be locale.getpreferredencoding()
 #_ACP_ENCODING = 'cp' + str(cdll.kernel32.GetACP())
 
