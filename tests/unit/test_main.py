@@ -99,11 +99,11 @@ class MainTest(TestCase):
                 main(
                     "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
                     '--mount=z:%s' % self.output_path(), '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=?#1,A:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -116,11 +116,11 @@ class MainTest(TestCase):
                 main(
                     "--exec=A=1:open\"z:output.txt\" for output as 1:?#1,2:SYSTEM",
                     '--mount=z:%s' % self.output_path(), '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=?#1,A:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -134,11 +134,11 @@ class MainTest(TestCase):
                     '-n',
                     "--exec=open\"z:test.txt\" for output as 1:?#1,1,2:close:open\"z:test.txt\" for input as 1:input#1,a:SYSTEM",
                     '--mount=z:%s' % self.output_path(),
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=input#1,B:close:open "output.txt" for output as 1:?#1, a; b:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -151,11 +151,11 @@ class MainTest(TestCase):
                 main(
                     '--exec=play"mbcdefgab>cdefgab"','-nq',
                     '--mount=z:%s' % self.output_path(),
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                     '-nk',
                     'q=play(0)\ropen"z:output.txt" for output as 1:?#1,q:close:system\r',
                 )
