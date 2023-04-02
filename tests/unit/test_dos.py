@@ -17,7 +17,7 @@ from pcbasic import Session
 from pcbasic.basic import BASICError
 from tests.unit.utils import TestCase, run_tests
 from pcbasic.data import read_codepage
-from pcbasic.compat import PY2
+from pcbasic.compat import PY2, WIN32
 
 def pythoncall(script):
     return '"{0}" "{1}"'.format(sys.executable, script)
@@ -29,6 +29,7 @@ class DosTest(TestCase):
     tag = u'dos'
 
     @unittest.skipIf(PY2, 'shell codepage agreement known not to work in Python 2.')
+    @unittest.skipIf(WIN32, 'shell codepage agreement known not to work on Windows.')
     def test_shell(self):
         """Test SHELL statement with commands."""
         helper = os.path.join(os.path.dirname(__file__), 'simple_shell_helper.py')
