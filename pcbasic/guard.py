@@ -198,8 +198,6 @@ def _write_crashlog(
 
     # create crash log
     crashlog = [
-        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
-        u'\uFEFF'
         u'PC-BASIC crash log',
         u'=' * 100,
         code_line, u'',
@@ -220,11 +218,14 @@ def _write_crashlog(
         mode='wb', suffix='.log', prefix=logname, dir=log_dir, delete=False,
     )
     with logfile as f:
+        # write UTF-8 Byte Order mark to ensure Notepad recognises encoding
+        f.write(b'\xef\xbb\xbf')
         for line in crashlog:
             if isinstance(line, bytes): # pragma: no cover
                 # for python 2 - show as cp437
                 line = line.decode('cp437')
-            f.write(line.encode('utf-8', 'replace'))
+            # convert CR and CRLF line endings to CRLF, for Notepad
+            f.write(line.encode('utf-8', 'replace').replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
             f.write(b'\r\n')
     # open text file
     webbrowser.open(logfile.name)
