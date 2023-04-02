@@ -17,6 +17,7 @@ from pcbasic import main
 from pcbasic.compat import stdio
 from pcbasic.debug import DebugException
 from tests.unit.utils import TestCase, run_tests
+from pcbasic.compat import PY2, WIN32
 
 
 class MainTest(TestCase):
@@ -247,7 +248,7 @@ class ConvertTest(TestCase):
             outstr = outfile.read()
             assert outstr == b'10 PRINT 1\r\n\x1a', outstr
 
-
+    @unittest.skipIf(PY2, 'NamedTemoraryFile has no encoding argument in Python 2.')
     def test_ascii_to_tokenised_encoding(self):
         """Test converting utf-8 text to tokenised."""
         with NamedTemporaryFile('w+b', delete=False) as outfile:
