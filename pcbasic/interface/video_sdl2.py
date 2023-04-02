@@ -2,7 +2,7 @@
 PC-BASIC - video_sdl2.py
 Graphical interface based on PySDL2
 
-(c) 2015--2022 Rob Hagemans
+(c) 2015--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 

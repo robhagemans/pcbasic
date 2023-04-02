@@ -4,7 +4,7 @@
 PC-BASIC test.main
 unit tests for main script
 
-(c) 2022 Rob Hagemans
+(c) 2022--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 

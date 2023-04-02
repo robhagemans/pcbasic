@@ -2,7 +2,7 @@
 PC-BASIC - compat.win32
 Interface for Windows system calls
 
-(c) 2018--2022 Rob Hagemans
+(c) 2018--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 

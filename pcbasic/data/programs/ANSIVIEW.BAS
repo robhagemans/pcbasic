@@ -1,6 +1,6 @@
 10 '  PC-BASIC - ANSIVIEW.BAS
 20 '  Shows text files with ANSI escape codes and plays ANSI music
-50 '  Copyright (c) 2015--2022 Rob Hagemans
+50 '  Copyright (c) 2015--2023 Rob Hagemans
 60 '  This file is released under the Expat MIT licence [https://opensource.org/licenses/MIT]
 70 '
 100 ' *** input file

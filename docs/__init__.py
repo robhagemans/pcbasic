@@ -2,7 +2,7 @@
 PC-BASIC - docs
 Documentation builder and source
 
-(c) 2013--2022 Rob Hagemans
+(c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
