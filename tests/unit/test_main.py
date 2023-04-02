@@ -17,6 +17,7 @@ from pcbasic import main
 from pcbasic.compat import stdio
 from pcbasic.debug import DebugException
 from tests.unit.utils import TestCase, run_tests
+from pcbasic.compat import PY2, WIN32
 
 
 class MainTest(TestCase):
@@ -99,11 +100,11 @@ class MainTest(TestCase):
                 main(
                     "--exec=A=1:open\"z:output.txt\" for output as 1:SYSTEM",
                     '--mount=z:%s' % self.output_path(), '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=?#1,A:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -116,11 +117,11 @@ class MainTest(TestCase):
                 main(
                     "--exec=A=1:open\"z:output.txt\" for output as 1:?#1,2:SYSTEM",
                     '--mount=z:%s' % self.output_path(), '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=?#1,A:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -134,11 +135,11 @@ class MainTest(TestCase):
                     '-n',
                     "--exec=open\"z:test.txt\" for output as 1:?#1,1,2:close:open\"z:test.txt\" for input as 1:input#1,a:SYSTEM",
                     '--mount=z:%s' % self.output_path(),
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume', '--keys=input#1,B:close:open "output.txt" for output as 1:?#1, a; b:close:system\\r', '-n',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
         with open(self.output_path('OUTPUT.TXT'), 'rb') as outfile:
             output = outfile.read()
@@ -151,11 +152,11 @@ class MainTest(TestCase):
                 main(
                     '--exec=play"mbcdefgab>cdefgab"','-nq',
                     '--mount=z:%s' % self.output_path(),
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                 )
                 main(
                     '--resume',
-                    '--state=%s' % state_file,
+                    '--state=%s' % state_file.name,
                     '-nk',
                     'q=play(0)\ropen"z:output.txt" for output as 1:?#1,q:close:system\r',
                 )
@@ -247,11 +248,11 @@ class ConvertTest(TestCase):
             outstr = outfile.read()
             assert outstr == b'10 PRINT 1\r\n\x1a', outstr
 
-
+    @unittest.skipIf(PY2, 'NamedTemoraryFile has no encoding argument in Python 2.')
     def test_ascii_to_tokenised_encoding(self):
         """Test converting utf-8 text to tokenised."""
         with NamedTemporaryFile('w+b', delete=False) as outfile:
-            with NamedTemporaryFile('w+', delete=False) as infile:
+            with NamedTemporaryFile('w+', delete=False, encoding='utf-8') as infile:
                 infile.write('10 ? "£"\r\n\x1a')
                 infile.seek(0)
                 main('--text-encoding=utf-8', '--convert=b', infile.name, outfile.name)

@@ -718,6 +718,7 @@ class StdIO(StdIOBase):
 
     def __init__(self, console):
         self._console = console
+        StdIOBase.__init__(self)
 
     if PY2: # pragma: no cover
 
