@@ -13,8 +13,7 @@ import os
 import io
 
 from ..compat import iterchar, iteritems, int2byte, unichr
-
-from .base.codestream import StreamWrapper
+from ..compat import StreamWrapper, is_readable_text_stream, is_writable_text_stream
 from .data import DEFAULT_CODEPAGE
 
 # characters in the printable ASCII range 0x20-0x7E cannot be redefined
@@ -130,8 +129,10 @@ class Codepage(object):
         self._inverse_substitutes = dict((reversed(_item) for _item in iteritems(self._substitutes)))
         # keep set of clusters of more than one unicode code point
         self._unicode_clusters = set(
-            _cluster for _cluster in self._unicode_to_cp if len(_cluster) > 0
+            _cluster for _cluster in self._unicode_to_cp if len(_cluster) > 1
         )
+        # ensure longest sequences get checked first (greedy clustering)
+        self._unicode_clusters = list(reversed(sorted(self._unicode_clusters, key=len)))
         # is the current codepage a double-byte codepage?
         self.dbcs = dbcs_num_chars > 0
 
@@ -164,7 +165,7 @@ class Codepage(object):
         ucs = unicodedata.normalize('NFC', ucs)
         clusters = []
         while ucs:
-            if ucs[0] == u'\0' and ord(ucs[1:2]) < 256:
+            if ucs[0] == u'\0' and ucs[1:2] and ord(ucs[1:2]) < 256:
                 # preserve e-ascii clusters
                 length = 2
             else:
@@ -175,6 +176,7 @@ class Codepage(object):
                 for cluster in self._unicode_clusters:
                     if ucs.startswith(cluster):
                         length = len(cluster)
+                        break
             clusters.append(ucs[:length])
             ucs = ucs[length:]
         return clusters
@@ -205,20 +207,14 @@ class Codepage(object):
     def wrap_output_stream(self, stream, preserve=()):
         """Wrap a stream so that we can write codepage bytes to it."""
         # check for file-like objects that expect unicode, raw output otherwise
-        if not isinstance(stream, (
-                io.TextIOWrapper, io.StringIO,
-                codecs.StreamReaderWriter, codecs.StreamWriter,
-            )):
+        if not is_writable_text_stream(stream):
             return stream
         return OutputStreamWrapper(stream, self, preserve)
 
     def wrap_input_stream(self, stream, replace_newlines=False):
         """Wrap a stream so that we can read codepage bytes from it."""
         # check for file-like objects that expect unicode, raw output otherwise
-        if isinstance(stream, (
-                io.TextIOWrapper, io.StringIO,
-                codecs.StreamReaderWriter, codecs.StreamReader,
-            )):
+        if is_readable_text_stream(stream):
             stream = InputStreamWrapper(stream, self)
         if replace_newlines:
             return NewlineWrapper(stream)

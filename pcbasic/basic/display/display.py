@@ -244,7 +244,7 @@ class Display(object):
         if not erase:
             self.mode.memorymap.set_memory(self, saved_addr, saved_buffer)
         # center graphics cursor, reset window, etc.
-        self.graphics.init_mode(self.mode, self.pages, self.colourmap.num_attr)
+        self.graphics.init_mode(self.mode, self.pages, self.colourmap)
         # set active page & visible page, counting from 0.
         self.set_page(new_vpagenum, new_apagenum)
         # set graphics attribute
@@ -294,11 +294,13 @@ class Display(object):
         self.colourmap.submit()
         # set the border
         self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
-        # rebuild cursor
-        self.cursor.rebuild()
         # redraw the text screen and submit to interface
         for page in self.pages:
             page.resubmit()
+        # rebuild cursor
+        # this should come *after* submission of the contents
+        # as video_cli waits for cursor position changes to show content
+        self.cursor.rebuild()
 
     ###########################################################################
     # memory accessible properties

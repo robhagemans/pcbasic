@@ -133,6 +133,7 @@ class Files(object):
         # screen device, for files_()
         current_device = self._normalise_current_device(current_device, device_params)
         self._console = console
+        self._keyboard = keyboard
         self._devices = {
             b'SCRN:': devicebase.SCRNDevice(display, console),
             # KYBD: device needs display as it can set the screen width
@@ -570,7 +571,7 @@ class Files(object):
         return self._values.new_integer().from_int(col % 256)
 
     def input_(self, args):
-        """INPUT$: read num chars from file."""
+        """INPUT$: read num chars from file or keyboard."""
         num = values.to_int(next(args))
         error.range_check(1, 255, num)
         filenum = next(args)
@@ -578,12 +579,12 @@ class Files(object):
             filenum = values.to_int(filenum)
             error.range_check(0, 255, filenum)
             # raise BAD FILE MODE (not BAD FILE NUMBER) if the file is not open
-            file_obj = self.get(filenum, mode=b'IR', not_open=error.BAD_FILE_MODE)
+            read = self.get(filenum, mode=b'IR', not_open=error.BAD_FILE_MODE).read
         else:
-            file_obj = self.kybd_file
+            read = self._keyboard.read_bytes_block
         list(args)
         # read the chars
-        word = file_obj.read(num)
+        word = read(num)
         if len(word) < num:
             # input past end
             raise error.BASICError(error.INPUT_PAST_END)

@@ -2,7 +2,7 @@
 PC-BASIC - implementation.py
 Top-level implementation and main interpreter loop
 
-(c) 2013--2022 Rob Hagemans
+(c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 import io
@@ -112,9 +112,9 @@ class Implementation(object):
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
         # prepare I/O streams
-        self.io_streams = iostreams.IOStreams(
-            self.queues, self.codepage, input_streams, output_streams,
-        )
+        self.io_streams = iostreams.IOStreams(self.queues, self.codepage)
+        self.io_streams.add_pipes(input=input_streams)
+        self.io_streams.add_pipes(output=output_streams)
         # initialise sound queue
         self.sound = sound.Sound(self.queues, self.values, self.memory, syntax)
         # initialise video
@@ -132,13 +132,15 @@ class Implementation(object):
         )
         self.pen = inputs.Pen()
         self.stick = inputs.Stick(self.values)
-        # 12 definable function keys for Tandy, 10 otherwise
-        num_fn_keys = 12 if syntax == 'tandy' else 10
+        # 12 definable function keys for Tandy, BASICA, PCjr
+        # regular GW-BASIC should only have 10
+        num_fn_keys = 10 if syntax == 'gwbasic' else 12
+        tandy_fn_keys = syntax == 'tandy'
         # initialise the console
         # Sound is needed for the beeps on \a
         self.console = console.Console(
             self.text_screen, self.display.cursor,
-            self.keyboard, self.sound, self.io_streams, num_fn_keys
+            self.keyboard, self.sound, self.io_streams, num_fn_keys, tandy_fn_keys
         )
         # initilise floating-point error message stream
         self.values.set_handler(values.FloatErrorHandler(self.console))
@@ -183,7 +185,7 @@ class Implementation(object):
         self.queues.add_handler(self.stick)
         # set up BASIC event handlers
         self.basic_events = basicevents.BasicEvents(
-            self.sound, self.clock, self.files, self.program, num_fn_keys
+            self.sound, self.clock, self.files, self.program, num_fn_keys, tandy_fn_keys
         )
         ######################################################################
         # extensions
@@ -252,11 +254,13 @@ class Implementation(object):
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         with self._handle_exceptions():
-            # attach print token so tokeniser has a whole statement to work with
+            # prefix expression with a PRINT token
+            # to avoid any number at the start to be taken as a line number
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
-            # skip : and print token and parse expression
+            # skip : and ? tokens and parse expression
             tokens.read(2)
-            return self.parser.parse_expression(tokens).to_value()
+            val =  self.parser.parse_expression(tokens)
+            return val.to_value()
         return None
 
     def set_variable(self, name, value):
@@ -355,6 +359,7 @@ class Implementation(object):
             self.program.store_line(self.interpreter.direct_line)
             return True
         elif c != b'':
+            self.interpreter.run_mode = False
             # it is a command, go and execute
             self.interpreter.set_parse_mode(True)
             return False
@@ -786,8 +791,9 @@ class Implementation(object):
         """INPUT: retrieve input from file."""
         for v in readvar:
             name, indices = v
-            word, _ = finp.input_entry(name[-1:], allow_past_end=False)
-            value = self.values.from_repr(word, allow_nonnum=True, typechar=name[-1:])
+            typechar = self.memory.complete_name(name)[-1:]
+            word, _ = finp.input_entry(typechar, allow_past_end=False)
+            value = self.values.from_repr(word, allow_nonnum=True, typechar=typechar)
             self.memory.set_variable(name, indices, value)
 
     def line_input_(self, args):
@@ -852,9 +858,17 @@ class Implementation(object):
         list(args)
         try:
             self.console.set_macro(keynum, text)
+            return
         except ValueError:
-            # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+            pass
+        # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
+        try:
             self.basic_events.key[keynum-1].set_trigger(text)
+        except IndexError:
+            # out of range key value
+            # if the text is  two letters long (as for a trigger definition), no error is raised
+            if len(text) != 2:
+                raise error.BASICError(error.IFC)
 
     def pen_fn_(self, args):
         """PEN: poll the light pen."""

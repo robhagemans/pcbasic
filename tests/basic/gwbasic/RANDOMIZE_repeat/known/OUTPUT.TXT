@@ -1,0 +1,26 @@
+Okÿ                                                                             
+randomize                                                                       
+Random number seed (-32768 to 32767)? x                                         
+Random number seed (-32768 to 32767)?                                           
+^C                                                                              
+Breakÿ                                                                          
+Okÿ                                                                             
+randomize                                                                       
+Random number seed (-32768 to 32767)? 1.1                                       
+Okÿ                                                                             
+?rnd(0)                                                                         
+ .4624451                                                                       
+Okÿ                                                                             
+run 1000                                                                        
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+

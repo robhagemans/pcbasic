@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 PC-BASIC test.session
 unit tests for session API
@@ -8,8 +10,10 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import io
+from io import open
+import unittest
 
-from pcbasic import Session, run
+from pcbasic import Session
 from tests.unit.utils import TestCase, run_tests
 
 
@@ -133,13 +137,21 @@ class SessionTest(TestCase):
                 s.set_variable('ARR2!()', [])
 
     def test_session_evaluate(self):
-        """Test Session.set_variable and Session.get_variable."""
+        """Test Session.evaluate."""
         with Session() as s:
             s.set_variable(b'A!', 1)
+            # variable, implicit sigil allowed. expression can be bytes or unicode
             assert s.evaluate(b'A') == 1
             assert s.evaluate(u'A') == 1
+            # expression
+            assert s.evaluate(u'A*2+1') == 3.0
             # syntax error
             assert s.evaluate(b'LOG+1') is None
+
+    def test_session_evaluate_number(self):
+        """Test Session.evaluate starting with a number."""
+        with Session() as s:
+            assert s.evaluate(b'1+1') == 2
 
     def test_session_bind_file(self):
         """test Session.bind_file."""
@@ -261,6 +273,62 @@ class SessionTest(TestCase):
             s.execute(b'print a')
         assert bi.getvalue() == b' 1 \r\n'
 
+    def test_session_inputstr_iostreams(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'ab\x80cd')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab\x80', abc
+
+    @unittest.skip('correct behaviour as yet undecided.')
+    def test_session_inputstr_iostreams_short(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'ab')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab', abc
+
+    def test_session_inputstr_iostreams_closed(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.BytesIO(b'abc')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'abc', abc
+
+    def test_session_inputstr_iostreams_unicode(self):
+        """Test Session with INPUT$ reading from pipe."""
+        bi = io.StringIO(u'ab£cd')
+        with Session(input_streams=bi, output_streams=None) as s:
+            abc = s.evaluate(b'input$(3)')
+        assert abc == b'ab\x9C', abc
+
+    def test_session_inputstr_iostreams_file(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+b') as f:
+            f.write(b'ab\x80cd')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab\x80', abc
+
+    @unittest.skip('correct behaviour as yet undecided.')
+    def test_session_inputstr_iostreams_file_short(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+b') as f:
+            f.write(b'ab')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab', abc
+
+    def test_session_inputstr_iostreams_unicode_file(self):
+        """Test Session with INPUT$ reading from pipe."""
+        with open(self.output_path('testfile'), 'w+') as f:
+            f.write(u'ab£cd')
+            f.seek(0)
+            with Session(input_streams=f, output_streams=None) as s:
+                abc = s.evaluate(b'input$(3)')
+            assert abc == b'ab\x9C', abc
 
     def test_session_bad_type_iostreams(self):
         """Test Session with iostreams of incorrect type."""

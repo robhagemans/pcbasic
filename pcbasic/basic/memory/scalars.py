@@ -34,7 +34,8 @@ class Scalars(object):
     def __repr__(self):
         """Debugging representation of variable dictionary."""
         return '\n'.join(
-            '%s: %s' % (n, self._values.from_bytes(v)) for n, v in iteritems(self._vars)
+            '%s: %s' % (n.decode('ascii'), self._values.from_bytes(v))
+            for n, v in iteritems(self._vars)
         )
 
     def clear(self):

@@ -9,6 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 # pylint: disable=no-name-in-module
 
 import os
+import io
 import sys
 import tty
 import time
@@ -18,6 +19,8 @@ import fcntl
 import array
 import struct
 import atexit
+import locale
+import logging
 from collections import deque
 from contextlib import contextmanager
 try:
@@ -227,7 +230,18 @@ class StdIO(StdIOBase):
             new_stream = self._wrap_output_stream(stream)
             setattr(self, stream_name, new_stream)
 
-stdio = StdIO()
+
+def init_stdio():
+    """Platform-specific initialisation."""
+    # set locale - this is necessary for curses and *maybe* for clipboard handling
+    # there's only one locale setting so best to do it all upfront here
+    # NOTE that this affects str.upper() etc.
+    # don't do this on Windows as it makes the console codepage different from the stdout encoding ?
+    try:
+        locale.setlocale(locale.LC_ALL, '')
+    except locale.Error as e:
+        # mis-configured locale can throw an error here, no need to crash
+        logging.error(e)
 
 
 # output buffer for ioctl call
@@ -237,12 +251,13 @@ _sock_size = array.array('i', [0])
 class PosixConsole(object):
     """POSIX-based console implementation."""
 
-    def __init__(self):
+    def __init__(self, stdio):
         """Set up the console."""
         # buffer to save termios state
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise EnvironmentError('Not a terminal')
         self._term_attr = termios.tcgetattr(sys.stdin.fileno())
+        self._stdio = stdio
         # preserve original terminal size
         self._orig_size = self.get_size()
         self._height, _ = self._orig_size
@@ -282,7 +297,7 @@ class PosixConsole(object):
     def start_screen(self):
         """Enter full-screen/application mode."""
         # suppress stderr to avoid log messages defacing the application screen
-        self._muffle = stdio.pause('stderr')
+        self._muffle = self._stdio.pause('stderr')
         self._muffle.__enter__()  # pylint: disable=no-member
         self.set_raw()
         # switch to alternate buffer
@@ -311,8 +326,8 @@ class PosixConsole(object):
 
     def write(self, unicode_str):
         """Write (unicode) text to console."""
-        stdio.stdout.write(unicode_str)
-        stdio.stdout.flush()
+        self._stdio.stdout.write(unicode_str)
+        self._stdio.stdout.flush()
 
     def _emit_ti(self, capability, *args):
         """Emit escape code."""
@@ -324,15 +339,15 @@ class PosixConsole(object):
             pattern = curses.tigetstr(capability)
         if pattern:
             ansistr = curses.tparm(pattern, *args).decode('ascii')
-            stdio.stdout.write(ansistr)
-            stdio.stdout.flush()
+            self._stdio.stdout.write(ansistr)
+            self._stdio.stdout.flush()
             return True
         return False
 
     def set_caption(self, caption):
         """Set terminal caption."""
         if self._emit_ti('tsl'):
-            stdio.stdout.write(caption)
+            self._stdio.stdout.write(caption)
             self._emit_ti('fsl')
 
     def resize(self, height, width):
@@ -425,7 +440,7 @@ class PosixConsole(object):
         Read keypress from console. Non-blocking.
         Returns tuple (unicode, keycode, set of mods)
         """
-        sequence = read_all_available(stdio.stdin)
+        sequence = read_all_available(self._stdio.stdin)
         if sequence is None:
             # stream closed, send ctrl-d
             return u'\x04', 'd', {'CTRL'}
@@ -450,38 +465,52 @@ def _is_console_app():
             return False
     return True
 
+
 IS_CONSOLE_APP = _is_console_app()
 
-try:
-    console = PosixConsole()
-except EnvironmentError:
-    console = None
 
-# don't crash into raw terminal
-atexit.register(lambda: console.unset_raw() if console else None)
 
 
 def read_all_available(stream):
-    """Read all available characters from a stream; nonblocking; None if closed."""
-    # this function works for everything on unix, and sockets on Windows
-    instr = []
-    # we're getting bytes counts for unicode which is pretty useless - so back to bytes
+    """Read all available bytes or unicode from a stream; nonblocking; None if closed."""
     try:
+        # select: check if buffer has characters/lines to read
+        # NOTE - select call works for files & sockets & character devices on unix; sockets only on Windows
+        has_bytes_available = select.select([stream], [], [], 0)[0]
+    except io.UnsupportedOperation:
+        # select needs an actual file or socket that has a fileno, BytesIO, StringIO etc not supported
+        return stream.read() or None
+    try:
+        # select gives bytes counts for unicode streams which is pretty useless
+        # so if provided with a unicode stream, take the buffer and decode back to unicode ourselves
         encoding = stream.encoding
         stream = stream.buffer
-    except:
+    except AttributeError as exception:
         encoding = None
-    # if buffer has characters/lines to read
-    if select.select([stream], [], [], 0)[0]:
-        # find number of bytes available
-        fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
-        count = _sock_size[0]
-        # and read them all
-        c = stream.read(count)
-        if not c and not instr:
-            # break out, we're closed
-            return None
-        instr.append(c)
+        # we might still have a unicode stream it just doesn't have the attributes
+        # raise an error here, otherwise we might try to read too many chars and block later
+        # we need to check type as b'' == u'' in python2
+        if type(stream.read(0)) == type(u''):
+            raise TypeError(
+                "Can't perform non-blocking read from this text stream: %s"
+                % (exception,)
+            )
+    if not has_bytes_available:
+        # nothing currently available to read.
+        # return an empty of the type the stream produces.
+        # fingers crossed this also works in Python 2
+        return stream.read(0)
+    # find number of bytes available (this always returns a count of *bytes*)
+    fcntl.ioctl(stream, termios.FIONREAD, _sock_size)
+    count = _sock_size[0]
+    # and read them all
+    # note that count should not be zero unless the stream is closed
+    # or the select call would have failed above. if we read nothing, the stream has closed.
+    c = stream.read(count)
+    if not c:
+        # report that stream has closed
+        return None
+    # if we were provided with a unicode stream *and* managed to get its buffer, convert back
     if encoding:
-        return b''.join(instr).decode(encoding, 'replace')
-    return b''.join(instr)
+        return c.decode(encoding, 'replace')
+    return c

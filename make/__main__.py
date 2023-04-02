@@ -15,7 +15,7 @@ import os
 import json
 import subprocess
 
-from .common import prepare, make_docs, make_clean, make_local
+from .common import make_ready, make_docs, make_clean, make_local
 
 
 if sys.platform == 'win32':
@@ -40,7 +40,7 @@ elif not sys.argv[2:]:
     elif sys.argv[1] == 'clean':
         make_clean()
     elif sys.argv[1] == 'ready':
-        prepare()
+        make_ready()
 else:
     sys.exit("""USAGE:
 

@@ -1,25 +1,25 @@
-# PC-BASIC default font
+# PC-BASIC default font version 2.1
 # 
 # This font contains glyphs from the following sources:
 # 
 # + CPIDOS v3.0
 #   Copyright (C) 2002-2011 by Henrique Peron (hperon@terra.com.br)
 #   This software is free software, and is distributed under the GNU-GPL license version 2.0 or later.
-#   http://www.freedos.org/software/?prog=cpidos
-#   http://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dos/cpi/
+#   https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/distributions/1.2/repos/pkg-html/cpidos.html
 # 
 # + UNI-VGA
 #   Copyright (c) 2001 Dmitry Bolkhovityanov, bolkhov@inp.nsk.su
 #   The UNI-VGA font can be distributed and modified freely, according to the X license.
 #   http://www.inp.nsk.su/~bolkhov/files/fonts/univga/
 # 
-# + GNU Unifont v13.0.03
-#   (c) 1998-2020 Roman Czyborra, Qianqian Fang, Paul Hardy et al.
+# + GNU Unifont v15.0.01
+#   (c) 1998-2022 Roman Czyborra, Qianqian Fang, Paul Hardy et al.
+#   Dual-licensed under the SIL Open Font License version 1.1,
+#   and under this GNU license:
 #   All glyphs are released under the GNU General Public License
 #   (GPL) version 2 or (at your option) a later version, with the
 #   GNU font embedding exception.
 #   http://unifoundry.com/unifont.html
-#   https://ftp.gnu.org/gnu/unifont/unifont-13.0.03/
 # 
 # + Glyphs drawn by Rob Hagemans
 # 
@@ -35,8 +35,7 @@
 # + Henrique Peron
 # 
 # LICENCE:
-# This file is distributed under the GNU GPL version 2.0 or, at your option, any later version.
-# 
+# This font is distributed under the GNU GPL version 2.0 or, at your option, any later version.
 
 0000:0000000000000000000000000000
 263A:0000007E81A58181BD99817E0000
@@ -518,7 +517,7 @@
 014E:C67C007CC6C6C6C6C6C6C67C0000
 014F:000000C67C007CC6C6C6C67C0000
 0150:66CC007CC6C6C6C6C6C6C67C0000
-0151:00003366CC007CC6C6C6C67C0000
+0151:00002266CC007CC6C6C6C67C0000
 0152:0000007ED8D8D8DED8D8D87E0000
 0153:0000000000006CB6B6BCB86E0000
 0154:0C1800FC6666667C6C6666E60000
@@ -554,7 +553,7 @@
 016E:386C38C6C6C6C6C6C6C6C67C0000
 016F:0000386C3800CCCCCCCCCC760000
 0170:66CC00C6C6C6C6C6C6C6C67C0000
-0171:00003366CC00CCCCCCCCCC760000
+0171:00002266CC00CCCCCCCCCC760000
 0172:000000C6C6C6C6C6C6C6C67C180E
 0172,0300:301800C6C6C6C6C6C6C6C67C180E
 0172,0301:0C1800C6C6C6C6C6C6C6C67C180E
@@ -831,7 +830,6 @@
 025B,0331,0308:00000000C6007CC670C0C67C00FE
 025C:0000000000007CC61C06C67C0000
 025D:0000000000007ACD390CCC780000
-025E:0000000000007CC6DCC6C67C0000
 025E:0000000000007CC6DCC6C67C0000
 025F:0000000000000E067F060666663C
 0260:00000000060D7CCCCCCCCC7C0C78

@@ -11,4 +11,4 @@ from . import compat
 from .basic import __version__
 from .basic import NAME, VERSION, AUTHOR, COPYRIGHT
 from .basic import Session, codepage, font
-from .main import run, main, script_entry_point_guard
+from .main import main, script_entry_point_guard

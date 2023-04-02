@@ -58,13 +58,15 @@ class Value(object):
 
     def __repr__(self):
         """String representation for debugging."""
+        sigil_repr = self.sigil.decode('ascii')
+        bytes_repr = binascii.hexlify(self.to_bytes()).decode('ascii')
         try:
             return '%s[%s %r]' % (
-                self.sigil, binascii.hexlify(self.to_bytes()),
+                sigil_repr, bytes_repr,
                 self.to_value()
             )
         except Exception:
-            return '%s[%s <detached>]' % (self.sigil, binascii.hexlify(self.to_bytes()))
+            return '%s[%s <detached>]' % (sigil_repr, bytes_repr)
 
     def __getstate__(self):
         # can't pickle memoryview
@@ -668,8 +670,9 @@ class Float(Number):
             lim_bot = self.new().from_int(10**(digits-1))._just_under()
             lim_top = self.new().from_int(10**digits)._just_under()
         else:
+            # use values for digits == 0 also if digits < 0
             lim_bot = self.new().from_int(0)
-            lim_top = self.new().from_int(10**digits)._just_under()
+            lim_top = self.new().from_int(1)._just_under()
         tden = lim_top._denormalise()
         bden = lim_bot._denormalise()
         exp10 = 0

@@ -153,11 +153,11 @@
                         <td>Pause. Press another key to resume. The latter key press will not be detected by BASIC.</td>
                     </tr>
                     <tr>
-                        <td><kbd>Ctrl</kbd>+<kbd>Prt Sc</kbd></td>
+                        <td><kbd>Ctrl</kbd>+<kbd>Print Screen</kbd></td>
                         <td>Toggle echoing screen output to the printer (or other device attached to <code>LPT1:</code>).</td>
                     </tr>
                     <tr>
-                        <td><kbd>Shift</kbd>+<kbd>Prt Sc</kbd></td>
+                        <td><kbd>Shift</kbd>+<kbd>Print Screen</kbd></td>
                         <td>Print the screen.</td>
                     </tr>
                     <tr>
@@ -429,7 +429,7 @@
                     Certain key combinations will be interpreted by the operating system or
                     window manager and cause special actions. For example, on most systems,
                     <kbd>Alt</kbd>+<kbd>F4</kbd> will terminate PC-BASIC unless
-                    the <a href="#--prevent_close"><code>prevent_close</code></a> option is set; <kbd>F1</kbd>
+                    the <a href="#--prevent-close"><code>prevent-close</code></a> option is set; <kbd>F1</kbd>
                     may open your operating system's help system. It may be possible to avoid
                     some of these effects by using the graphical interface in full-screen mode.
                 </li>
@@ -798,6 +798,14 @@
                 <table>
                     <tr>
                         <th>Preset</th><th>Emulation target</th>
+                    </tr>
+                    <tr>
+                        <td><code>gwbasic</code></td>
+                        <td>Microsoft GW-BASIC 3.23</td>
+                    </tr>
+                    <tr>
+                        <td><code>basica</code></td>
+                        <td>IBM BASICA.</td>
                     </tr>
                     <tr>
                         <td><code>pcjr</code></td>

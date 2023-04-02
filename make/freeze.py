@@ -15,7 +15,6 @@ from setuptools.command import sdist, build_py
 
 from .common import VERSION, AUTHOR
 from .common import HERE
-from .common import prepare, stamp_release
 
 
 SHORT_VERSION = u'.'.join(VERSION.split('.')[:2])

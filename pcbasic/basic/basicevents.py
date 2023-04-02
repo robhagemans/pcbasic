@@ -21,7 +21,7 @@ from . import values
 class BasicEvents(object):
     """Manage BASIC events."""
 
-    def __init__(self, sound, clock, files, program, num_fn_keys):
+    def __init__(self, sound, clock, files, program, num_fn_keys, tandy_fn_keys):
         """Initialise event triggers."""
         self._sound = sound
         self._clock = clock
@@ -29,8 +29,10 @@ class BasicEvents(object):
         self._files = files
         # for on_event_gosub_
         self._program = program
-        # 12 definable function keys for Tandy, 10 otherwise
+        # 10 or 12 definable function keys
         self._num_fn_keys = num_fn_keys
+        # key codes are shifted by 2 on Tandy
+        self._tandy_fn_keys = tandy_fn_keys
         self.reset()
 
     def reset(self):
@@ -39,11 +41,33 @@ class BasicEvents(object):
         keys = [
             scancode.F1, scancode.F2, scancode.F3, scancode.F4, scancode.F5,
             scancode.F6, scancode.F7, scancode.F8, scancode.F9, scancode.F10]
-        if self._num_fn_keys == 12:
+        # on late IBM BASICA and BASICJ versions:
+        # * KEY 30 and KEY 31 refer to F11 and F12, as in QBASIC
+        # * there are 10 definable functions 15-25
+        # on classic GW-BASIC:
+        # * F11 and F12 are not accessible
+        # * the definable range is 15-20
+        # on Tandy:
+        # * F11 and F12 are accessible trough keys 11 and 12,
+        # * the arrow keys codes are shifted by 2
+        # * the definable range is 17-20
+        if self._tandy_fn_keys:
             # Tandy only
             keys += [scancode.F11, scancode.F12]
-        keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
-        keys += [None] * (20 - self._num_fn_keys - 4)
+            keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
+            keys += [None] * 4
+        elif self._num_fn_keys == 12:
+            # keys 11-14
+            keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
+            # keys 15-25
+            keys += [None] * 11
+            # keys 26-29 - these should not be accessible but are
+            keys += [None] * 4
+            # non-Tandy F11 and F12 mapped to 30, 31
+            keys += [scancode.F11, scancode.F12]
+        else:
+            keys += [scancode.UP, scancode.LEFT, scancode.RIGHT, scancode.DOWN]
+            keys += [None] * 6
         self.key = [KeyHandler(sc) for sc in keys]
         # other events
         self.timer = TimerHandler(self._clock)
@@ -57,11 +81,15 @@ class BasicEvents(object):
             StrigHandler(joy, button)
             for joy in range(2) for button in range(2)
         ]
+        # key events are not handled FIFO but first arrow keys and definable keys, then function keys
+        if self._tandy_fn_keys:
+            ordered_keys = self.key[12:] + self.key[:12]
+        elif self._num_fn_keys == 12:
+            ordered_keys = self.key[10:29] + self.key[:10] + self.key[29:]
+        else:
+            ordered_keys = self.key[10:] + self.key[:10]
         # all handlers in order of handling; TIMER first
-        # key events are not handled FIFO but first 11-20 in that order, then 1-10
-        self.all = ([self.timer]
-            + [self.key[num] for num in (list(range(10, 20)) + list(range(10)))]
-            + [self.play] + self.com + [self.pen] + self.strig)
+        self.all = [self.timer] + ordered_keys + [self.play] + self.com + [self.pen] + self.strig
         # keep a list of enabled events
         self.enabled = set()
         # set suspension off
@@ -136,7 +164,7 @@ class BasicEvents(object):
         list(args)
         if token == tk.KEY:
             keynum = values.to_int(num)
-            error.range_check(1, 20, keynum)
+            error.range_check(1, len(self.key), keynum)
             self.key[keynum-1].set_jump(jumpnum)
         elif token == tk.TIMER:
             timeval = values.to_single(num).to_value()

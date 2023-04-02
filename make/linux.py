@@ -12,7 +12,7 @@ import subprocess
 
 import toml
 
-from .common import make_clean, build_icon, make_docs, mkdir, prepare
+from .common import make_clean, build_icon, make_docs, mkdir, make_ready
 from .common import VERSION, HERE, RESOURCE_PATH
 
 
@@ -76,7 +76,7 @@ def build_resources():
 
 def package():
     """Build Linux packages."""
-    prepare()
+    make_ready()
     subprocess.run([sys.executable, '-m', 'build'])
     build_resources()
     subprocess.run(f'make/makedeb.sh {VERSION}', shell=True)

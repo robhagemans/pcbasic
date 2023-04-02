@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 
-from pcbasic import Session, run
+from pcbasic import Session
 from tests.unit.utils import TestCase, run_tests
 
 

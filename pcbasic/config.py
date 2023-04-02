@@ -108,6 +108,9 @@ PRESETS = {
         u'prevent-close': u'True',
         u'ctrl-c-break': u'False',
     },
+    u'gwbasic': {
+        u'syntax': u'gwbasic',
+    },
     u'basica': {
         u'reserved-memory': u'789',
     },
@@ -293,7 +296,7 @@ ARGUMENTS = {
     u'mount': {u'type': u'string', u'list': u'*', u'default': [],},
     u'resume': {u'type': u'bool', u'default': False,},
     u'syntax': {
-        u'type': u'string', u'choices': (u'advanced', u'pcjr', u'tandy'),
+        u'type': u'string', u'choices': (u'advanced', u'gwbasic', u'pcjr', u'tandy'),
         u'default': u'advanced',
     },
     u'term': {u'type': u'string', u'default': u'',},
@@ -515,8 +518,10 @@ class Settings(object):
         if self._session_params:
             return self._session_params
         # don't parse any options on --resume
+        # except redirects
         if self.get('resume'):
-            return {}
+            params = self._add_implicit_redirects()
+            return params
         # preset PEEK values
         peek_values = {}
         try:
@@ -598,9 +603,8 @@ class Settings(object):
         return params
 
     def _get_redirects(self):
-        """Determine which i/o streams to attach."""
+        """Determine which i/o streams to attach based on config choices."""
         input_streams, output_streams = [], []
-        # explicit redirects
         # input redirects
         infile_params = self.get('input').split(u':')
         if infile_params[0].upper() in (u'STDIO', u'STDIN'):
@@ -635,7 +639,12 @@ class Settings(object):
                     output_streams.append(io.open(outfile, 'ab' if append else 'wb'))
                 except EnvironmentError as e:
                     logging.warning(u'Could not open output file `%s`: %s', outfile, e.strerror)
-        # implicit stdio redirects
+        return self._add_implicit_redirects(input_streams, output_streams)
+
+    def _add_implicit_redirects(self, input_streams=(), output_streams=()):
+        """Determine which i/o streams to attach implicitly."""
+        input_streams = list(input_streams)
+        output_streams = list(output_streams)
         # add stdio if redirected or no interface
         if stdio.stdin not in input_streams and stdio.stdin.buffer not in input_streams:
             if IS_CONSOLE_APP and not stdio.stdin.isatty():
@@ -940,6 +949,7 @@ class ArgumentParser(object):
         # apply shorthands
         for short_arg, replacement in iteritems(SHORTHAND):
             key = key.replace(short_arg, replacement)
+        long_arg_value = None
         for i, short_arg in enumerate(key[1:]):
             try:
                 long_arg, long_arg_value = SHORT_ARGS[short_arg]

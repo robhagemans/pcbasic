@@ -208,7 +208,7 @@ class VideoCLI(VideoTextBase):
         for ofs, unicode_list in enumerate(unicode_matrix):
             unicode_list = [(_c if _c != u'\0' else u' ') for _c in unicode_list]
             self._text[row-1+ofs][col-1:col-1+len(unicode_list)] = unicode_list
-        self._refresh(row)
+        self._refresh(row, row + ofs)
 
     def move_cursor(self, row, col, attr, width):
         """Move the cursor to a new position."""
@@ -253,6 +253,7 @@ class VideoCLI(VideoTextBase):
         """Initialise video mode """
         self._text = [[u' '] * text_width for _ in range(text_height)]
         self._refresh(1, text_height)
+        self._last_row = 1
 
     ###############################################################################
 

@@ -12,22 +12,7 @@ import io
 from . import error
 from . import tokens as tk
 from .tokens import DIGITS, HEXDIGITS, OCTDIGITS, LETTERS
-
-
-class StreamWrapper(object):
-    """Base class for delegated stream wrappers."""
-
-    def __init__(self, stream):
-        """Set up codec."""
-        self._stream = stream
-
-    def __getattr__(self, name):
-        """Delegate methods to stream."""
-        if '_stream' in self.__dict__ and name not in ('__getstate__', '__dict__'):
-            return getattr(self._stream, name)
-        else:
-            # this is needed for pickle to be able to reconstruct the class
-            raise AttributeError()
+from ...compat import StreamWrapper
 
 
 class CodeStream(StreamWrapper):

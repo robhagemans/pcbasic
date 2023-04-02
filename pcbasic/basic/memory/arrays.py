@@ -36,7 +36,11 @@ class Arrays(object):
     def __repr__(self):
         """Debugging representation of variable dictionary."""
         return '\n'.join(
-            '%s%s: %s' % (n, v, binascii.hexlify(bytes(self._buffers[n])))
+            '%s%s: %s' % (
+                n.decode('ascii'),
+                v,
+                binascii.hexlify(bytes(self._buffers[n])).decode('ascii')
+            )
             for n, v in iteritems(self._dims)
         )
 

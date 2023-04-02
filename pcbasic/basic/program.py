@@ -45,6 +45,7 @@ class Program(object):
         offset_val, p = 0, 0
         output = []
         for key in sorted(self.line_numbers.keys())[1:]:
+            next_p = self.line_numbers[key]
             offset, linum = code[p+1:p+3], code[p+3:p+5]
             last_offset = offset_val
             offset_val = struct.unpack('<H', offset)[0] - (self.code_start + 1)
@@ -55,9 +56,9 @@ class Program(object):
                 offset_val - last_offset,
                 binascii.hexlify(code[p+3:p+5]),
                 linum_val,
-                binascii.hexlify(code[p+5:])
+                binascii.hexlify(code[p+5:next_p])
             ))
-            p = self.line_numbers[key]
+            p = next_p
         output.append(b'%s %s (ENDS) %s %s' % (
             binascii.hexlify(code[p:p+1]),
             binascii.hexlify(code[p+1:p+3]),
