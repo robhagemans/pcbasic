@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import os
 import distutils
 import msilib
-
+import shutil
 import cx_Freeze
 from cx_Freeze import Executable
 
@@ -62,6 +62,8 @@ class BuildExeCommand(cx_Freeze.build_exe):
         remove(build_dir + 'lib/sdl2dll/dll/libopusfile-0.dll')
         remove(build_dir + 'lib/sdl2dll/dll/libogg-0.dll')
         remove(build_dir + 'lib/sdl2dll/dll/libmodplug-1.dll')
+        # add msvcr - we can't count on cx_freeze to do it even with include_msvcr=True set
+        shutil.copy('c:/windows/system32/vcruntime140.dll', build_dir)
 
 
 class BdistMsiCommand(cx_Freeze.bdist_msi):
