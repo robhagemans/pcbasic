@@ -251,7 +251,7 @@ class ConvertTest(TestCase):
     def test_ascii_to_tokenised_encoding(self):
         """Test converting utf-8 text to tokenised."""
         with NamedTemporaryFile('w+b', delete=False) as outfile:
-            with NamedTemporaryFile('w+', delete=False) as infile:
+            with NamedTemporaryFile('w+', delete=False, encoding='utf-8') as infile:
                 infile.write('10 ? "£"\r\n\x1a')
                 infile.seek(0)
                 main('--text-encoding=utf-8', '--convert=b', infile.name, outfile.name)
