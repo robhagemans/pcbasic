@@ -371,10 +371,15 @@ class Integer(Number):
             raise ZeroDivisionError(max_val)
         dividend = self.to_int()
         divisor = rhs.to_int()
-        # BASIC MOD has same sign as dividend, Python mod has same sign as divisor
+        # BASIC MOD has same sign as dividend, Python mod has issues here
+        is_negative_dividend = dividend < 0
+        if is_negative_dividend:
+            dividend = -dividend
+        if divisor < 0:
+            divisor = -divisor
         mod = dividend % divisor
-        if dividend < 0 or mod < 0:
-            mod -= divisor
+        if is_negative_dividend:
+            mod = -mod
         return self.from_int(mod)
 
     # relations
