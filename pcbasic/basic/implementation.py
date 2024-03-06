@@ -72,7 +72,7 @@ class Implementation(object):
         self._prompt = True
         # AUTO mode state
         self._auto_mode = False
-        self._auto_linenum = 10
+        self._auto_linenum = None
         self._auto_increment = 10
         # syntax error prompt and EDIT
         self._edit_prompt = False
@@ -587,9 +587,16 @@ class Implementation(object):
     def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
         linenum, increment = args
-        from_line, = self.program.explicit_lines(linenum)
+        # from_line, = self.program.explicit_lines(linenum)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        self._auto_linenum = linenum if linenum is not None else 10
+        if linenum == b'.':
+            if self._auto_linenum is None:
+                self._auto_linenum = 0
+            else:
+                self._auto_linenum = self._auto_linenum - self._auto_increment
+        else:
+            self._auto_linenum = linenum if linenum is not None else 10
+
         self._auto_increment = increment if increment is not None else 10
         # move program pointer to end
         self.interpreter.set_pointer(False)
