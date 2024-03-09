@@ -16,6 +16,7 @@ Bug fixes and guidance by
 - **WJB**
 - **Rutger van Bergen**
 - **Daniel Santana**
+- **Gregory Brodsky**
 
 Avid testers and bug hunters
 
