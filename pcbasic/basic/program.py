@@ -77,7 +77,9 @@ class Program(object):
         self.bytecode.write(b'\0\0\0')
         self.protected = False
         self.line_numbers = {65536: 0}
-        self.last_stored = None
+        # if nothing has been stored, the only place . does anything is auto
+        # and AUTO . starts from 0 in that case
+        self.last_stored = 0
         self.code_size = self.bytecode.tell()
         self.bytecode.truncate()
 

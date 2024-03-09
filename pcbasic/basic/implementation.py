@@ -587,9 +587,10 @@ class Implementation(object):
     def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
         linenum, increment = args
+        # linenum is None if unspecified, b'.' if given as `.`
         from_line, = self.program.explicit_lines(linenum)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        self._auto_linenum = linenum if linenum is not None else 10
+        self._auto_linenum = from_line if from_line is not None else 10
         self._auto_increment = increment if increment is not None else 10
         # move program pointer to end
         self.interpreter.set_pointer(False)
