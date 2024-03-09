@@ -375,14 +375,14 @@ class Converter(object):
                 out += self._process_case1(c)
             elif len(self._buf) == 2:
                 out += self._process_case2(c)
-            else: # pragma: no cover
+            else:  # pragma: no cover
                 # not allowed
                 logging.debug(b'DBCS buffer corrupted: %d %s', self._bset, repr(self._buf))
         elif len(self._buf) == 2:
             out += self._process_case3(c)
         elif not self._buf:
             out += self._process_case4(c)
-        else: # pragma: no cover
+        else:  # pragma: no cover
             # not allowed
             logging.debug(b'DBCS buffer corrupted: %d %s', self._bset, repr(self._buf))
         return out

@@ -5,45 +5,38 @@ Top-level implementation and main interpreter loop
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-import io
-import os
-import sys
 import math
-import logging
-from functools import partial
 from contextlib import contextmanager
+from functools import partial
 
-from ..compat import queue, text_type
-
-from .data import NAME, VERSION, COPYRIGHT
+from . import basicevents
+from . import clock
+from . import console
+from . import converter
+from . import display
+from . import dos
+from . import eventcycle
+from . import extensions
+from . import inputs
+from . import interpreter
+from . import iostreams
+from . import machine
+from . import memory
+from . import parser
+from . import program
+from . import sound
+from . import values
+from .base import codestream
 from .base import error
 from .base import tokens as tk
-from .base import signals
-from .base import codestream
+from .codepage import Codepage, CONTROL
+from .data import NAME, VERSION, COPYRIGHT
 from .devices import Files, InputTextFile
-from . import converter
-from . import eventcycle
-from . import basicevents
-from . import program
-from . import display
-from . import console
-from . import inputs
-from . import clock
-from . import dos
-from . import memory
-from . import machine
-from . import interpreter
-from . import sound
-from . import iostreams
-from . import codepage as cp
-from . import values
-from . import parser
-from . import extensions
-
+from ..compat import queue, text_type
 
 GREETING = (
-    b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
-    % tuple(s.encode('ascii') for s in (NAME, VERSION, COPYRIGHT))
+        b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
+        % tuple(s.encode('ascii') for s in (NAME, VERSION, COPYRIGHT))
 )
 
 
@@ -63,7 +56,7 @@ class Implementation(object):
             max_memory=65534, reserved_memory=3429, video_memory=262144,
             serial_buffer_size=128, max_reclen=128, max_files=3,
             extension=()
-        ):
+    ):
         """Initialise the interpreter session."""
         ######################################################################
         # session-level members
@@ -72,7 +65,7 @@ class Implementation(object):
         self._prompt = True
         # AUTO mode state
         self._auto_mode = False
-        self._auto_linenum = 10
+        self._auto_linenum = None
         self._auto_increment = 10
         # syntax error prompt and EDIT
         self._edit_prompt = False
@@ -107,7 +100,7 @@ class Implementation(object):
         # console
         ######################################################################
         # prepare codepage
-        self.codepage = cp.Codepage(codepage, box_protect)
+        self.codepage = Codepage(codepage, box_protect)
         # set up input event handler
         # no interface yet; use dummy queues
         self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
@@ -259,9 +252,8 @@ class Implementation(object):
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and ? tokens and parse expression
             tokens.read(2)
-            val =  self.parser.parse_expression(tokens)
+            val = self.parser.parse_expression(tokens)
             return val.to_value()
-        return None
 
     def set_variable(self, name, value):
         """Set a variable in memory."""
@@ -280,8 +272,8 @@ class Implementation(object):
         """Get a converter function; raise ValueError if not allowed"""
         if to_type is None or from_type == to_type:
             return lambda _x: _x
-        converter = {
-            (bytes, text_type): partial(self.codepage.bytes_to_unicode, preserve=cp.CONTROL),
+        converter_ = {
+            (bytes, text_type): partial(self.codepage.bytes_to_unicode, preserve=CONTROL),
             (text_type, bytes): self.codepage.unicode_to_bytes,
             (int, bool): bool,
             (float, bool): bool,
@@ -291,7 +283,7 @@ class Implementation(object):
             (bool, float): lambda _bool: (-1. if _bool else 0.),
         }
         try:
-            return converter[(from_type, to_type)]
+            return converter_[(from_type, to_type)]
         except KeyError:
             raise ValueError("BASIC can't convert %s to %s." % (from_type, to_type))
 
@@ -374,8 +366,8 @@ class Implementation(object):
                 prompt = numstr + b' '
             line = self.console.read_line(prompt, is_input=False)
             # remove *, if present
-            if line[:len(numstr)+1] == b'%s*' % (numstr,):
-                line = b'%s %s' % (numstr, line[len(numstr)+1:])
+            if line[:len(numstr) + 1] == b'%s*' % (numstr,):
+                line = b'%s %s' % (numstr, line[len(numstr) + 1:])
             # run or store it; don't clear lines or raise undefined line number
             self.interpreter.direct_line = self.tokeniser.tokenise_line(line)
             c = self.interpreter.direct_line.peek()
@@ -395,7 +387,6 @@ class Implementation(object):
             # ctrl+break, ctrl-c both stop background sound
             self.sound.stop_all_sound()
             self._auto_mode = False
-
 
     ##############################################################################
     # error handling
@@ -443,7 +434,7 @@ class Implementation(object):
         self.interpreter.error_num = 0
         if pos is not None and pos != -1:
             # line edit gadget appears
-            self._edit_prompt = (self.program.get_line_number(pos), pos+1)
+            self._edit_prompt = (self.program.get_line_number(pos), pos + 1)
 
     ###########################################################################
     # callbacks
@@ -484,7 +475,7 @@ class Implementation(object):
         self._clear_all()
 
     def _clear_all(self, close_files=False,
-              preserve_functions=False, preserve_base=False, preserve_deftype=False):
+                   preserve_functions=False, preserve_base=False, preserve_deftype=False):
         """Clear everything required for the CLEAR command."""
         if close_files:
             # close all files
@@ -558,15 +549,14 @@ class Implementation(object):
         lines = self.program.list_lines(*line_range)
         if out:
             with out:
-                for l in lines:
-                    out.write_line(l)
+                for line in lines:
+                    out.write_line(line)
         else:
-            for l in lines:
-                # flow of listing is visible on screen
-                # and interruptible
+            for line in lines:
+                # flow of listing is visible on screen and interruptible
                 self.queues.wait()
                 # LIST on screen is slightly different from just writing
-                self.console.list_line(l, newline=True)
+                self.console.list_line(line, newline=True)
         # return to direct mode
         self.interpreter.set_pointer(False)
 
@@ -587,9 +577,16 @@ class Implementation(object):
     def auto_(self, args):
         """AUTO: enter automatic line numbering mode."""
         linenum, increment = args
-        from_line, = self.program.explicit_lines(linenum)
+        # from_line, = self.program.explicit_lines(linenum)
         # reset linenum and increment on each call of AUTO (even in AUTO mode)
-        self._auto_linenum = linenum if linenum is not None else 10
+        if linenum == b'.':
+            if self._auto_linenum is None:
+                self._auto_linenum = 0
+            else:
+                self._auto_linenum = self._auto_linenum - self._auto_increment
+        else:
+            self._auto_linenum = linenum if linenum is not None else 10
+
         self._auto_increment = increment if increment is not None else 10
         # move program pointer to end
         self.interpreter.set_pointer(False)
@@ -634,9 +631,9 @@ class Implementation(object):
             # functions are cleared except when CHAIN ... ALL is specified
             # OPTION BASE is preserved when there are common variables
             self._clear_all(
-                    preserve_functions=preserve_all,
-                    preserve_base=(common_scalars or common_arrays or preserve_all),
-                    preserve_deftype=merge)
+                preserve_functions=preserve_all,
+                preserve_base=(common_scalars or common_arrays or preserve_all),
+                preserve_deftype=merge)
             # load new program
             with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
                 if delete_lines:
@@ -664,8 +661,8 @@ class Implementation(object):
         with self.files.open(
                 0, name, filetype=mode, mode=b'O',
                 seg=self.memory.data_segment, offset=self.memory.code_start,
-                length=len(self.program.bytecode.getvalue())-1
-            ) as f:
+                length=len(self.program.bytecode.getvalue()) - 1
+        ) as f:
             self.program.save(f)
         if mode == b'A':
             # return to direct mode
@@ -754,33 +751,33 @@ class Implementation(object):
             # we return a list of (name, indices, values) tuples
             while True:
                 line = self.console.read_line(prompt, write_endl=newline, is_input=True)
-                inputstream = InputTextFile(line)
+                input_stream = InputTextFile(line)
                 # read the values and group them and the separators
-                var, values, seps = [], [], []
+                var, val, seps = [], [], []
                 for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(
+                    word, sep = input_stream.input_entry(
                         name[-1:], allow_past_end=True, suppress_unquoted_linefeed=False
                     )
                     try:
                         value = self.values.from_repr(word, allow_nonnum=False, typechar=name[-1:])
-                    except error.BASICError as e:
+                    except error.BASICError:
                         # string entered into numeric field
                         value = None
                     stack.append(value)
                     var.append([name, indices])
-                    values.append(value)
+                    val.append(value)
                     seps.append(sep)
                 # last separator not empty: there were too many values or commas
                 # earlier separators empty: there were too few values
                 # empty values will be converted to zero by from_str
                 # None means a conversion error occurred
-                if (seps[-1] or b'' in seps[:-1] or None in values):
+                if seps[-1] or b'' in seps[:-1] or None in values:
                     # good old Redo!
                     self.console.write_line(b'?Redo from start')
                     readvar = var
                 else:
-                    varlist = [r + [v] for r, v in zip(var, values)]
+                    varlist = [r + [v] for r, v in zip(var, val)]
                     break
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
@@ -863,7 +860,7 @@ class Implementation(object):
             pass
         # if out of range of number of macros (12 on Tandy, else 10), it's a trigger definition
         try:
-            self.basic_events.key[keynum-1].set_trigger(text)
+            self.basic_events.key[keynum - 1].set_trigger(text)
         except IndexError:
             # out of range key value
             # if the text is  two letters long (as for a trigger definition), no error is raised
