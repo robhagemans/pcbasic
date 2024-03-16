@@ -1,0 +1,26 @@
+Okÿ                                                                             
+list .                                                                          
+Okÿ                                                                             
+renum .                                                                         
+Okÿ                                                                             
+edit .                                                                          
+Undefined line numberÿ                                                          
+Okÿ                                                                             
+delete .                                                                        
+Illegal function callÿ                                                          
+Okÿ                                                                             
+auto .                                                                          
+0                                                                               
+Okÿ                                                                             
+run "dumpscrn"                                                                  
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+
