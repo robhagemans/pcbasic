@@ -523,9 +523,14 @@ class DiskDevice(object):
     def _get_dirs_files(self, native_path):
         """Get native filenames for native path."""
         all_names = safe(os.listdir, native_path)
-        dirs = [n for n in all_names if os.path.isdir(os.path.join(native_path, n))]
-        fils = [n for n in all_names if not os.path.isdir(os.path.join(native_path, n))]
-        return dirs, fils
+        native_names = [os.path.join(native_path, _name) for _name in all_names]
+        dirs = [_name for _name in native_names if os.path.isdir(_name)]
+        files = [
+            _name for _name in native_names
+            if os.path.exists(_name)
+            and not os.path.isdir(_name)
+        ]
+        return dirs, files
 
     def listdir(self, pathmask):
         """Get directory listing."""

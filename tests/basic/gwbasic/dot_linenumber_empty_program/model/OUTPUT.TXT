@@ -1,18 +1,18 @@
-999*rem                                                                         
-1009                                                                            
 Okÿ                                                                             
-list                                                                            
-20 AUTO .                                                                       
-999 REM                                                                         
+list .                                                                          
+Okÿ                                                                             
+renum .                                                                         
+Okÿ                                                                             
+edit .                                                                          
+Undefined line numberÿ                                                          
+Okÿ                                                                             
+delete .                                                                        
+Illegal function callÿ                                                          
+Okÿ                                                                             
+auto .                                                                          
+0                                                                               
 Okÿ                                                                             
 run "dumpscrn"                                                                  
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
-                                                                                
                                                                                 
                                                                                 
                                                                                 
