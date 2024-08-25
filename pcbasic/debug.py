@@ -36,12 +36,12 @@ class DebugSession(api.Session):
         kwargs['extension'] = tuple(kwargs.get('extension', ())) + (self,)
         api.Session.__init__(self, *args, **kwargs)
 
-    def start(self):
+    async def start(self):
         """Start the session."""
         # initialise implementation
-        if api.Session.start(self):
+        if await api.Session.start(self):
             # replace dummy debugging step
-            self.set_hook(self._debug_step)
+            await self.set_hook(self._debug_step)
             self._do_trace = False
             self._watch_list = []
 

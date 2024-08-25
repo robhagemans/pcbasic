@@ -249,7 +249,7 @@ class MachinePorts(object):
                 elif addr == base_addr + 4:
                     com_port.set_pins(rts=val & 0x2, dtr=val & 0x1)
 
-    def wait_(self, args):
+    async def wait_(self, args):
         """WAIT: wait for a machine port."""
         addr = values.to_int(next(args), unsigned=True)
         ander = values.to_int(next(args))
@@ -262,7 +262,7 @@ class MachinePorts(object):
         error.range_check(0, 255, xorer)
         list(args)
         while (self.inp(addr) ^ xorer) & ander == 0:
-            self._queues.wait()
+            await self._queues.wait()
 
 
 ###############################################################################

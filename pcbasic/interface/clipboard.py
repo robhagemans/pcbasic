@@ -141,12 +141,12 @@ class ClipboardInterface(object):
             return
         if start[0] > stop[0] or (start[0] == stop[0] and start[1] > stop[1]):
             start, stop = stop, start
-        self._input_queue.put(signals.Event(
+        self._input_queue.put_nowait(signals.Event(
                 signals.CLIP_COPY, (start[0], start[1], stop[0], stop[1])))
 
     def paste(self, text):
         """Paste from clipboard into keyboard buffer."""
-        self._input_queue.put(signals.Event(signals.CLIP_PASTE, (text,)))
+        self._input_queue.put_nowait(signals.Event(signals.CLIP_PASTE, (text,)))
 
     def move(self, r, c):
         """Move the head of the selection and update feedback."""

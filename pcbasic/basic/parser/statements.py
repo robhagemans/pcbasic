@@ -5,8 +5,7 @@ Statement parser
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
-import logging
+import inspect
 import struct
 from functools import partial
 
@@ -53,7 +52,7 @@ class Parser(object):
         self.init_statements(session)
         self.expression_parser.init_functions(session)
 
-    def parse_statement(self, ins):
+    async def parse_statement(self, ins):
         """Parse and execute a single statement."""
         # read keyword token or one byte
         ins.skip_blank()
@@ -79,7 +78,9 @@ class Parser(object):
             else:
                 ins.require_end()
                 return
-        self._callbacks[c](parse_args(ins))
+        res = self._callbacks[c](parse_args(ins))
+        if inspect.iscoroutine(res):
+            await res
         # end-of-statement is checked at start of next statement in interpreter loop
 
     def parse_name(self, ins):

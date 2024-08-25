@@ -51,6 +51,6 @@ class ScreenCopyHandler(object):
             start_row=start_row, start_col=start_col, stop_row=stop_row, stop_col=stop_col-1
         ))
         clip_text = u'\n'.join(u''.join(_row) for _row in text)
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_CLIPBOARD_TEXT, (clip_text,)
         ))

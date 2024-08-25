@@ -5,7 +5,7 @@ Graphical interface based on PyGame
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import asyncio
 import logging
 import ctypes
 
@@ -149,7 +149,7 @@ class VideoPygame(VideoPlugin):
         # if a joystick is present, its axes report 128 for mid, not 0
         for joy in range(len(self.joysticks)):
             for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED, (joy, axis, 128)))
+                self._input_queue.put_nowait(signals.Event(signals.STICK_MOVED, (joy, axis, 128)))
         # mouse setups
         self._mouse_clip = mouse_clipboard
         self.cursor_row, self.cursor_col = 1, 1
@@ -218,18 +218,18 @@ class VideoPygame(VideoPlugin):
                     self.busy = True
                 if event.button == 1:
                     # right mouse button is a pen press
-                    self._input_queue.put(signals.Event(
+                    self._input_queue.put_nowait(signals.Event(
                         signals.PEN_DOWN, self._window_sizer.normalise_pos(*event.pos)
                     ))
             elif event.type == pygame.MOUSEBUTTONUP:
-                self._input_queue.put(signals.Event(signals.PEN_UP))
+                self._input_queue.put_nowait(signals.Event(signals.PEN_UP))
                 if self._mouse_clip and event.button == 1:
                     self.clipboard.copy()
                     self.clipboard.stop()
                     self.busy = True
             elif event.type == pygame.MOUSEMOTION:
                 pos = self._window_sizer.normalise_pos(*event.pos)
-                self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+                self._input_queue.put_nowait(signals.Event(signals.PEN_MOVED, pos))
                 if self.clipboard.active():
                     self.clipboard.move(
                         1 + pos[1] // self.font_height,
@@ -237,15 +237,15 @@ class VideoPygame(VideoPlugin):
                     )
                     self.busy = True
             elif event.type == pygame.JOYBUTTONDOWN:
-                self._input_queue.put(signals.Event(
+                self._input_queue.put_nowait(signals.Event(
                     signals.STICK_DOWN, (event.joy, event.button)
                 ))
             elif event.type == pygame.JOYBUTTONUP:
-                self._input_queue.put(signals.Event(
+                self._input_queue.put_nowait(signals.Event(
                     signals.STICK_UP, (event.joy, event.button)
                 ))
             elif event.type == pygame.JOYAXISMOTION:
-                self._input_queue.put(signals.Event(
+                self._input_queue.put_nowait(signals.Event(
                     signals.STICK_MOVED, (event.joy, event.axis, int(event.value*127 + 128))
                 ))
             elif event.type == pygame.VIDEORESIZE:
@@ -256,7 +256,7 @@ class VideoPygame(VideoPlugin):
                 if self._nokill:
                     self.set_caption_message(NOKILL_MESSAGE)
                 else:
-                    self._input_queue.put(signals.Event(signals.QUIT))
+                    self._input_queue.put_nowait(signals.Event(signals.QUIT))
 
     def _handle_key_down(self, e):
         """Handle key-down event."""
@@ -314,7 +314,7 @@ class VideoPygame(VideoPlugin):
                 except KeyError:
                     pass
             # insert into keyboard queue
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (c, scan, mod)))
 
     def _handle_key_up(self, e):
         """Handle key-up event."""
@@ -338,7 +338,7 @@ class VideoPygame(VideoPlugin):
             self.f11_active = False
         # last key released gets remembered
         try:
-            self._input_queue.put(signals.Event(signals.KEYB_UP, (KEY_TO_SCAN[e.key],)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_UP, (KEY_TO_SCAN[e.key],)))
         except KeyError:
             pass
 
@@ -346,9 +346,9 @@ class VideoPygame(VideoPlugin):
     ###########################################################################
     # screen drawing cycle
 
-    def sleep(self, ms):
+    async def sleep(self, ms):
         """Sleep a tick to avoid hogging the cpu."""
-        pygame.time.wait(ms)
+        await asyncio.sleep(ms)
 
     def _work(self):
         """Check screen and blink events; update screen if necessary."""

@@ -5,7 +5,6 @@ Session API
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
 import os
 import io
 
@@ -81,7 +80,7 @@ class Session(object):
         # not resolved, try to use/create as internal name
         return NameWrapper(self._impl.codepage, file_name_or_object)
 
-    def execute(self, command, as_type=None):
+    async def execute(self, command, as_type=None):
         """Execute a BASIC statement."""
         self.start()
         if as_type is None:
@@ -92,7 +91,7 @@ class Session(object):
             for cmd in command.splitlines():
                 if isinstance(cmd, text_type):
                     cmd = self._impl.codepage.unicode_to_bytes(cmd)
-                self._impl.execute(cmd)
+                await self._impl.execute(cmd)
             self.remove_pipes(output_streams=output)
         return output.getvalue()
 
@@ -153,16 +152,16 @@ class Session(object):
         self.start()
         return self._impl.display.vpage.pixels[:, :].to_rows()
 
-    def greet(self):
+    async def greet(self):
         """Emit the interpreter greeting and show the key bar."""
         self.start()
-        self._impl.execute(implementation.GREETING)
+        await self._impl.execute(implementation.GREETING)
 
-    def interact(self):
+    async def interact(self):
         """Interactive interpreter session."""
         self.start()
         with self._impl.io_streams.activate():
-            self._impl.interact()
+            await self._impl.interact()
 
     def suspend(self, session_filename):
         """Save session object to file."""

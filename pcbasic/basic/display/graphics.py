@@ -794,7 +794,7 @@ class Graphics(object):
         self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
         self._draw_current = None
 
-    def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
+    async def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions;
@@ -875,7 +875,7 @@ class Graphics(object):
                 self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
             if y % 4 == 0:
-                self._input_methods.wait()
+                await self._input_methods.wait()
         self._last_attr = fill_attr
 
     def _scanline_until(self, element, y, x0, x1):

@@ -224,7 +224,7 @@ class Display(object):
             for _pagenum in range(self.mode.num_pages)
         ]
         # submit the mode change to the interface
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.pixel_height, new_mode.pixel_width,
                 new_mode.height, new_mode.width
@@ -284,7 +284,7 @@ class Display(object):
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
         # set the screen mode
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_MODE, (
                 self.mode.pixel_height, self.mode.pixel_width,
                 self.mode.height, self.mode.width
@@ -293,7 +293,7 @@ class Display(object):
         # rebuild palette
         self.colourmap.submit()
         # set the border
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
+        self._queues.video.put_nowait(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         # redraw the text screen and submit to interface
         for page in self.pages:
             page.resubmit()
@@ -372,7 +372,7 @@ class Display(object):
         """Set the border attribute."""
         fore, _, _, _ = self.colourmap.split_attr(attr)
         self._border_attr = fore
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
+        self._queues.video.put_nowait(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
 
     def get_border_attr(self):
         """Get the border attribute, in range 0 <= attr < 16."""
@@ -455,7 +455,7 @@ class Display(object):
         if border is not None:
             self.set_border(border)
 
-    def palette_(self, args):
+    async def palette_(self, args):
         """PALETTE: assign colour to attribute."""
         attrib = next(args)
         if attrib is not None:
@@ -465,7 +465,7 @@ class Display(object):
             colour = values.to_int(colour)
         list(args)
         # wait a tick to make colour cycling loops work
-        self._queues.wait()
+        await self._queues.wait()
         if attrib is None and colour is None:
             self.colourmap.set_all(self.colourmap.default_palette)
         else:

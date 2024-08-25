@@ -107,13 +107,13 @@ class Sound(object):
         if not (self._beep_on or self._sound_on):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
-        self._queues.audio.put(tone)
-        self._voice_queue[voice].put(tone, None if loop else fill*duration, True)
+        self._queues.audio.put_nowait(tone)
+        self._voice_queue[voice].put_nowait(tone, None if loop else fill*duration, True)
         # separate gap event, except for legato (fill==1)
         if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, (voice, 0, (1-fill) * duration, 0, 0))
-            self._queues.audio.put(gap)
-            self._voice_queue[voice].put(gap, (1-fill) * duration, False)
+            self._queues.audio.put_nowait(gap)
+            self._voice_queue[voice].put_nowait(gap, (1-fill) * duration, False)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -125,10 +125,10 @@ class Sound(object):
         frequency = self._noise_freq[source]
         # if not SOUND ON an IFC was raised, so don't check here
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
-        self._queues.audio.put(noise)
-        self._voice_queue[3].put(noise, None if loop else duration, True)
+        self._queues.audio.put_nowait(noise)
+        self._voice_queue[3].put_nowait(noise, None if loop else duration, True)
 
-    def sound_(self, args):
+    async def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
         arg0 = next(args)
         if self._multivoice and arg0 in (tk.ON, tk.OFF):
@@ -173,17 +173,17 @@ class Sound(object):
         if dur < LOOP_THRESHOLD:
             # play indefinitely in background
             self.emit_tone(freq, dur_sec, fill=1, loop=True, voice=voice, volume=volume)
-            self._wait_background()
+            await self._wait_background()
         else:
             self.emit_tone(freq, dur_sec, fill=1, loop=False, voice=voice, volume=volume)
             if self._foreground:
                 # continue when last tone has started playing, both on tandy and gw
                 # this is different from what PLAY does!
-                self._wait(1)
+                await self._wait(1)
             else:
-                self._wait_background()
+                await self._wait_background()
 
-    def noise_(self, args):
+    async def noise_(self, args):
         """Generate a noise (NOISE statement)."""
         if not self._sound_on:
             raise error.BASICError(error.IFC)
@@ -199,28 +199,28 @@ class Sound(object):
         # loop if duration less than 1/44 == 0.02272727248
         self.emit_noise(source, volume, dur_sec, loop=(dur < LOOP_THRESHOLD))
         # noise is always background
-        self._wait_background()
+        await self._wait_background()
 
-    def _wait_background(self):
+    async def _wait_background(self):
         """Wait until the background queue becomes available."""
         # 32 plus one playing
-        self._wait(BACKGROUND_BUFFER_LENGTH+1)
+        await self._wait(BACKGROUND_BUFFER_LENGTH+1)
 
-    def _wait(self, wait_length):
+    async def _wait(self, wait_length):
         """Wait until queue is shorter than or equal to given length."""
         # top of queue is the currently playing tone or gap
         while max(len(queue) for queue in self._voice_queue) > wait_length:
-            self._queues.wait()
+            await self._queues.wait()
 
     def stop_all_sound(self):
         """Terminate all sounds immediately."""
         for q in self._voice_queue:
             q.clear()
-        self._queues.audio.put(signals.Event(signals.AUDIO_STOP))
+        self._queues.audio.put_nowait(signals.Event(signals.AUDIO_STOP))
 
     def persist(self, flag):
         """Set mixer persistence flag (runmode)."""
-        self._queues.audio.put(signals.Event(signals.AUDIO_PERSIST, (flag,)))
+        self._queues.audio.put_nowait(signals.Event(signals.AUDIO_PERSIST, (flag,)))
 
     def rebuild(self):
         """Rebuild tone queues."""
@@ -229,7 +229,7 @@ class Sound(object):
             for item, duration in q.items():
                 item.params = list(item.params)
                 item.params[2] = duration
-                self._queues.audio.put(item)
+                self._queues.audio.put_nowait(item)
 
     def play_fn_(self, args):
         """PLAY function: get length of music queue."""
@@ -255,8 +255,8 @@ class Sound(object):
                 # this takes up one spot in the buffer and thus affects timings
                 # which is intentional
                 balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
-                self._queues.audio.put(balloon)
-                self._voice_queue[voice].put(balloon, duration, None)
+                self._queues.audio.put_nowait(balloon)
+                self._voice_queue[voice].put_nowait(balloon, duration, None)
         self._synch = False
 
     def reset_play(self):
@@ -266,7 +266,7 @@ class Sound(object):
         # reset all PLAY state
         self._state = [PlayState(), PlayState(), PlayState()]
 
-    def play_(self,  args):
+    async def play_(self,  args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         # retrieve Music Macro Language string
         mml_list = [values.to_string_or_none(arg) for arg, _ in zip(args, range(3))]
@@ -406,9 +406,9 @@ class Sound(object):
         self._synch = False
         if self._foreground:
             # wait until fully done on Tandy/PCjr, continue early on GW
-            self._wait(0 if self._multivoice else 1)
+            await self._wait(0 if self._multivoice else 1)
         else:
-            self._wait_background()
+            await self._wait_background()
 
 
 class PlayState(object):

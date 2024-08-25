@@ -8,12 +8,9 @@ This file is released under the GNU GPL version 3 or later.
 
 import os
 import io
-import sys
 import logging
 import threading
-import time
 from collections import deque
-import subprocess
 from subprocess import Popen, PIPE
 
 from ..compat import OEM_ENCODING, HIDE_WINDOW, PY2
@@ -156,7 +153,7 @@ class Shell(object):
                 # the other thread already does
                 output.append(c)
 
-    def launch(self, command):
+    async def launch(self, command):
         """Run a SHELL subprocess."""
         logging.debug('Executing SHELL command `%r` with command interpreter `%s`', command, self._shell)
         if not self._shell:
@@ -195,7 +192,7 @@ class Shell(object):
         shell_output = self._launch_reader_thread(p.stdout)
         shell_cerr = self._launch_reader_thread(p.stderr)
         try:
-            self._communicate(p, shell_output, shell_cerr)
+            await self._communicate(p, shell_output, shell_cerr)
         except EnvironmentError as e:
             logging.warning(e)
         finally:
@@ -220,7 +217,7 @@ class Shell(object):
             shell_output.append(u'\n')
         self._show_output(shell_output, remove_echo)
 
-    def _communicate(self, p, shell_output, shell_cerr):
+    async def _communicate(self, p, shell_output, shell_cerr):
         """Communicate with launched shell."""
         word = []
         while p.poll() is None:
@@ -229,7 +226,7 @@ class Shell(object):
             self._show_output(shell_cerr, remove_echo=False)
             self._show_output(shell_output, remove_echo=True)
             try:
-                self._queues.wait()
+                await self._queues.wait()
                 # expand=False suppresses key macros
                 c = self._keyboard.get_fullchar(expand=False)
             except error.Break:

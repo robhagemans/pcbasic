@@ -5,7 +5,7 @@ BASIC interpreter
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import inspect
 import struct
 
 from .base import error
@@ -87,13 +87,13 @@ class Interpreter(object):
         # pointer to error trap
         self.on_error = None
 
-    def parse(self):
+    async def parse(self):
         """Parse from the current pointer in current codestream."""
         while True:
             # update what basic events need to be handled
             self._queues.set_basic_event_handlers(self._basic_events.enabled)
             # check input and BASIC events. may raise Break, Reset or Exit
-            self._queues.check_events()
+            await self._queues.check_events()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -120,17 +120,19 @@ class Interpreter(object):
                 elif c not in (b':', tk.THEN, tk.ELSE, tk.GOTO):
                     # new statement or branch of an IF statement allowed, nothing else
                     raise error.BASICError(error.STX)
-                self.parser.parse_statement(ins)
+                res = self.parser.parse_statement(ins)
+                if inspect.iscoroutine(res):
+                    await res
             except error.BASICError as e:
                 self.trap_error(e)
 
-    def loop(self):
+    async def loop(self):
         """Run commands until control returns to user."""
         if not self.parse_mode:
             return
         try:
             # parse until break or end
-            self.parse()
+            await self.parse()
         except error.Break as e:
             self._sound.stop_all_sound()
             self._handle_break(e)

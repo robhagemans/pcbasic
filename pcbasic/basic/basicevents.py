@@ -228,9 +228,9 @@ class PlayHandler(EventHandler):
         # set to a number higher than the maximum buffer length?
         self.last = 0 #34 if multivoice else 0
 
-    def check_input(self, signal):
+    async def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
-        play_now = self._sound.tones_waiting()
+        play_now = await self._sound.tones_waiting()
         if self._sound.multivoice:
             if (self.last > play_now and play_now < self.trig):
                 self.trigger()

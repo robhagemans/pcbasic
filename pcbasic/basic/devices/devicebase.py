@@ -552,7 +552,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         """Return only readahead buffer, no blocking peek."""
         return b''.join(self._readahead[:num])
 
-    def read(self, num):
+    async def read(self, num):
         """Read a number of characters (INPUT$)."""
         # take at most num chars out of readahead buffer (holds just one on KYBD but anyway)
         chars, self._readahead = b''.join(self._readahead[:num]), self._readahead[num:]
@@ -561,11 +561,11 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
             chars += b''.join(
                 # note that INPUT$ on KYBD files replaces some eascii with NUL
                 b'\0' if c in KYBD_REPLACE else c if len(c) == 1 else b''
-                for c in self._keyboard.read_bytes_kybd_file(num-len(chars))
+                for c in await self._keyboard.read_bytes_kybd_file(num-len(chars))
             )
         return chars
 
-    def read_one(self):
+    async def read_one(self):
         """Read a character with line ending replacement (INPUT and LINE INPUT)."""
         # take char out of readahead buffer, if present; blocking keyboard read otherwise
         if self._readahead:
@@ -578,7 +578,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
             return b''.join(
                 # INPUT and LINE INPUT on KYBD files replace some eascii with control sequences
                 KYBD_REPLACE.get(c, c)
-                for c in self._keyboard.read_bytes_kybd_file(1)
+                for c in await self._keyboard.read_bytes_kybd_file(1)
             )
 
     # read_line: inherited from TextFileBase, this calls peek()
@@ -591,12 +591,12 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         """LOC for KYBD: is 0."""
         return 0
 
-    def eof(self):
+    async def eof(self):
         """KYBD only EOF if ^Z is read."""
         if self.mode in (b'A', b'O'):
             return False
         # blocking peek
-        return (self._keyboard.peek_byte_kybd_file() == b'\x1A')
+        return (await self._keyboard.peek_byte_kybd_file() == b'\x1A')
 
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""

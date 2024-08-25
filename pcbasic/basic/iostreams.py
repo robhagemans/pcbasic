@@ -5,13 +5,10 @@ Input/output streams
 (c) 2014--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
-import logging
-import threading
-import sys
-import time
-import io
+import asyncio
+from asyncio import Task
 from contextlib import contextmanager
+from typing import Union
 
 from ..compat import WIN32, read_all_available, stdio, random_id, text_type
 from .base import signals
@@ -38,6 +35,8 @@ class IOStreams(object):
         self._input_streams = []
         self._output_streams = []
 
+        self._processing_task: Union[Task, None] = None
+
     def __getstate__(self):
         """Pickle the streams."""
         return self.__dict__
@@ -46,7 +45,7 @@ class IOStreams(object):
         """Unpickle and resume the streams."""
         self.__dict__.update(pickle_dict)
         if self._input_streams:
-            self._launch_input_thread()
+            self._process_input()
 
     def add_pipes(self, input=None, output=None):
         """Add input/output pipes."""
@@ -78,7 +77,7 @@ class IOStreams(object):
                 # include stdin stream at most once, others may be replicated
                 self._input_streams.append(stream)
         if first_streams and self._input_streams:
-            self._launch_input_thread()
+            self._processing_task = asyncio.create_task(self._process_input())
 
     def _remove_input_streams(self, *input_streams):
         """Detach output streams."""
@@ -149,6 +148,8 @@ class IOStreams(object):
     def close(self):
         """Kill threads before exit."""
         self._stop_threads = True
+        if self._processing_task:
+            self._processing_task.cancel()
 
     def flush(self):
         """Flush output streams."""
@@ -169,17 +170,10 @@ class IOStreams(object):
         finally:
             self._active = False
 
-
-    def _launch_input_thread(self):
-        """Launch a thread to allow nonblocking reads on both Windows and Unix."""
-        thread = threading.Thread(target=self._process_input, args=())
-        thread.daemon = True
-        thread.start()
-
-    def _process_input(self):
+    async def _process_input(self):
         """Process input from streams."""
         while True:
-            time.sleep(TICK)
+            await asyncio.sleep(TICK)
             if self._stop_threads:
                 return
             if not self._active:
@@ -189,7 +183,7 @@ class IOStreams(object):
                 if instr is None:
                     self._remove_closed_stream(stream)
                 elif instr:
-                    self._queues.inputs.put(signals.Event(signals.STREAM_CHAR, (instr,)))
+                    self._queues.inputs.put_nowait(signals.Event(signals.STREAM_CHAR, (instr,)))
 
     def _remove_closed_stream(self, stream):
         """
@@ -198,7 +192,7 @@ class IOStreams(object):
         if len(self._input_streams) == 1:
             # exit the interpreter instead of closing last input
             # the input is preserved for resume
-            self._queues.inputs.put(signals.Event(signals.STREAM_CLOSED))
+            self._queues.inputs.put_nowait(signals.Event(signals.STREAM_CLOSED))
         else:
             # input stream is closed, remove it
             self._input_streams.remove(stream)

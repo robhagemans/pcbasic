@@ -109,7 +109,7 @@ class Console(object):
     ##########################################################################
     # interaction
 
-    def read_line(self, prompt=b'', write_endl=True, is_input=False):
+    async def read_line(self, prompt=b'', write_endl=True, is_input=False):
         """Enter interactive mode and read string from console."""
         self.write(prompt)
         # disconnect the wrap between line with the prompt and previous line
@@ -119,7 +119,7 @@ class Console(object):
         prompt_width = 0 if not is_input else self._text_screen.current_col - 1
         try:
             # give control to user for interactive mode
-            prompt_row, left, right = self._interact(prompt_width, is_input=is_input)
+            prompt_row, left, right = await self._interact(prompt_width, is_input=is_input)
         except error.Break:
             # x0E CR LF is printed to redirects at break
             self._io_streams.write(b'\x0e')
@@ -148,7 +148,7 @@ class Console(object):
         outstr = outstr[:255].rstrip(b' \t\n')
         return outstr
 
-    def _interact(self, prompt_width, is_input=False):
+    async def _interact(self, prompt_width, is_input=False):
         """Manage the interactive mode."""
         # force cursor visibility in all case
         self._cursor.set_override(True)
@@ -161,7 +161,7 @@ class Console(object):
             furthest_right = self._text_screen.current_col
             while True:
                 # get one e-ASCII or dbcs code
-                d = self._keyboard.get_fullchar_block()
+                d = await self._keyboard.get_fullchar_block()
                 if not d:
                     # input stream closed
                     raise error.Exit()

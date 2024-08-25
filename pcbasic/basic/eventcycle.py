@@ -5,7 +5,8 @@ Event queue handling
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import asyncio
+import inspect
 import time
 
 from ..compat import queue
@@ -126,23 +127,20 @@ class EventQueues(object):
         """Set the handlers for BASIC events."""
         self._basic_handlers = tuple(event_check_input)
 
-    def wait(self):
+    async def wait(self):
         """Wait and check events."""
-        time.sleep(self.tick)
-        self.check_events()
+        await asyncio.sleep(self.tick)
+        await self.check_events()
 
-    def check_events(self):
+    async def check_events(self):
         """Main event cycle."""
         # sleep(0) is needed for responsiveness, e.g. event trapping in programs with tight loops
         # i.e. 100 goto 100 with event traps active) - needed to allow the input queue to fill
         # this also allows the screen to update between statements
         # it does slow the interpreter down by about 20% in FOR loops
         # note that we always have an input queue, either for the interface of for iostreams
-        time.sleep(0)
-        # bizarrely, we need sleep(0) twice. I don't know why.
-        # note that multiple sleep(0) calls doen't seem to cause more slowdown than just one.
-        time.sleep(0)
-        time.sleep(0)
+        await asyncio.sleep(0)
+
         # what I think is happening here is that the sdl2 interface thread,
         # in its loop to process a single queue item, calls C library functions
         # which do not need the GIL. so it releases it. this allows the engine thread to pick up
@@ -157,18 +155,18 @@ class EventQueues(object):
         # this allows the interface to catch up with video updates
         if self.video.qsize() > self.max_video_qsize:
             while self.video.qsize():
-                time.sleep(self.tick)
-        self._check_input()
+                await asyncio.sleep(self.tick)
+        await self._check_input()
 
-    def _check_input(self):
+    async def _check_input(self):
         """Handle input events."""
         while True:
             # pop input queues
             try:
-                signal = self.inputs.get(False)
-            except queue.Empty:
+                signal = self.inputs.get_nowait()
+            except (asyncio.QueueEmpty, queue.Empty):
                 if self._pause:
-                    time.sleep(self.tick)
+                    await asyncio.sleep(self.tick)
                     continue
                 else:
                     # we still need to handle basic events: not all are inputs
@@ -185,7 +183,11 @@ class EventQueues(object):
                     [self._handle_trappable_interrupts] +
                     [e.check_input for e in self._handlers]
                 ):
-                if handle_input(signal):
+                res = handle_input(signal)
+                if inspect.iscoroutine(res):
+                    res = await res
+
+                if res:
                     break
 
     def _handle_non_trappable_interrupts(self, signal):

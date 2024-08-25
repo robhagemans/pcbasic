@@ -5,7 +5,7 @@ Devices, Files and I/O operations
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import inspect
 import os
 import sys
 import logging
@@ -570,7 +570,7 @@ class Files(object):
             col = 1
         return self._values.new_integer().from_int(col % 256)
 
-    def input_(self, args):
+    async def input_(self, args):
         """INPUT$: read num chars from file or keyboard."""
         num = values.to_int(next(args))
         error.range_check(1, 255, num)
@@ -585,6 +585,10 @@ class Files(object):
         list(args)
         # read the chars
         word = read(num)
+
+        if inspect.isawaitable(word):
+            word = await word
+
         if len(word) < num:
             # input past end
             raise error.BASICError(error.INPUT_PAST_END)
@@ -734,7 +738,7 @@ class Files(object):
         dev, path = self._get_diskdevice_and_path(name)
         dev.kill(path)
 
-    def files_(self, args):
+    async def files_(self, args):
         """FILES: output directory listing to screen."""
         pathmask = values.next_string(args)
         list(args)
@@ -757,6 +761,6 @@ class Files(object):
             self._console.write_line(b' '.join(cols))
             if not (i % 4):
                 # allow to break during dir listing & show names flowing on screen
-                self._queues.wait()
+                await self._queues.wait()
             i += 1
         self._console.write_line(b' %d Bytes free\n' % dev.get_free())

@@ -7,8 +7,10 @@ PC-BASIC - GW-BASIC/BASICA/Cartridge BASIC compatible interpreter
 This file is released under the GNU GPL version 3 or later.
 """
 
+import asyncio
+
 from pcbasic import main, script_entry_point_guard
 
 if __name__ == '__main__':
     with script_entry_point_guard():
-        main()
+        asyncio.run(main())

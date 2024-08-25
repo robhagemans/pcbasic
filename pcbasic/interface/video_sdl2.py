@@ -5,7 +5,7 @@ Graphical interface based on PySDL2
 (c) 2015--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import asyncio
 import logging
 import ctypes
 import os
@@ -413,7 +413,7 @@ class VideoSDL2(VideoPlugin):
             sdl2.SDL_JoystickOpen(stick)
             # if a joystick is present, its axes report 128 for mid, not 0
             for axis in (0, 1):
-                self._input_queue.put(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
+                self._input_queue.put_nowait(signals.Event(signals.STICK_MOVED, (stick, axis, 128)))
 
     def __enter__(self):
         """Complete SDL2 interface initialisation."""
@@ -557,7 +557,7 @@ class VideoSDL2(VideoPlugin):
         if self._nokill:
             self.set_caption_message(NOKILL_MESSAGE)
         else:
-            self._input_queue.put(signals.Event(signals.QUIT))
+            self._input_queue.put_nowait(signals.Event(signals.QUIT))
 
     # window events
 
@@ -609,11 +609,11 @@ class VideoSDL2(VideoPlugin):
             self.busy = True
         if event.button.button == sdl2.SDL_BUTTON_LEFT:
             # pen press
-            self._input_queue.put(signals.Event(signals.PEN_DOWN, pos))
+            self._input_queue.put_nowait(signals.Event(signals.PEN_DOWN, pos))
 
     def _handle_mouse_up(self, event):
         """Handle mouse-up event."""
-        self._input_queue.put(signals.Event(signals.PEN_UP))
+        self._input_queue.put_nowait(signals.Event(signals.PEN_UP))
         if self._mouse_clip and event.button.button == sdl2.SDL_BUTTON_LEFT:
             self._clipboard_interface.copy()
             self._clipboard_interface.stop()
@@ -622,7 +622,7 @@ class VideoSDL2(VideoPlugin):
     def _handle_mouse_motion(self, event):
         """Handle mouse-motion event."""
         pos = self._window_sizer.normalise_pos(event.motion.x, event.motion.y)
-        self._input_queue.put(signals.Event(signals.PEN_MOVED, pos))
+        self._input_queue.put_nowait(signals.Event(signals.PEN_MOVED, pos))
         if self._clipboard_interface.active():
             self._clipboard_interface.move(
                 1 + pos[1] // self._font_height,
@@ -634,21 +634,21 @@ class VideoSDL2(VideoPlugin):
 
     def _handle_stick_down(self, event):
         """Handle joystick button-down event."""
-        self._input_queue.put(signals.Event(
+        self._input_queue.put_nowait(signals.Event(
             signals.STICK_DOWN,
             (event.jbutton.which, event.jbutton.button)
         ))
 
     def _handle_stick_up(self, event):
         """Handle joystick button-up event."""
-        self._input_queue.put(signals.Event(
+        self._input_queue.put_nowait(signals.Event(
             signals.STICK_UP,
             (event.jbutton.which, event.jbutton.button)
         ))
 
     def _handle_stick_motion(self, event):
         """Handle joystick axis-motion event."""
-        self._input_queue.put(signals.Event(
+        self._input_queue.put_nowait(signals.Event(
             signals.STICK_MOVED,
             (event.jaxis.which, event.jaxis.axis, int((event.jaxis.value/32768.)*127 + 128))
         ))
@@ -703,7 +703,7 @@ class VideoSDL2(VideoPlugin):
         if self._last_keypress is not None:
             # insert into keyboard queue; no text event
             char, scan, mod, _ = self._last_keypress
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
             self._last_keypress = None
 
     def _handle_key_up(self, event):
@@ -719,7 +719,7 @@ class VideoSDL2(VideoPlugin):
             self._f11_active = False
         # last key released gets remembered
         try:
-            self._input_queue.put(signals.Event(signals.KEYB_UP, (scan,)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_UP, (scan,)))
         except KeyError:
             pass
 
@@ -740,7 +740,7 @@ class VideoSDL2(VideoPlugin):
         # the text input event follows the key down event immediately
         elif self._last_keypress is None:
             # no key down event waiting: other input method
-            self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, None, None)))
         else:
             eascii, scan, mod, timestamp = self._last_keypress
             # timestamps for kepdown and textinput may differ by one on mac
@@ -750,18 +750,18 @@ class VideoSDL2(VideoPlugin):
                     # filter out chars being sent with alt+key on Linux
                     if scancode.ALT not in mod:
                         # with IME, the text is sent together with the final Enter keypress.
-                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
+                        self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, None, None)))
                     else:
                         # final keypress such as space, CR have IME meaning, we should ignore them
-                        self._input_queue.put(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
+                        self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (eascii, scan, mod)))
                 else:
-                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
+                    self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, scan, mod)))
             else:
                 # two separate events
                 # previous keypress has no corresponding textinput
                 self._flush_keypress()
                 # current textinput has no corresponding keypress
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, None)))
+                self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, None, None)))
             self._last_keypress = None
 
     def _toggle_fullscreen(self):
@@ -775,9 +775,10 @@ class VideoSDL2(VideoPlugin):
     ###########################################################################
     # screen drawing cycle
 
-    def sleep(self, ms):
+    async def sleep(self, ms):
         """Sleep a tick to avoid hogging the cpu."""
-        sdl2.SDL_Delay(ms)
+        await asyncio.sleep(ms)
+        # sdl2.SDL_Delay(ms)
 
     def _work(self):
         """Check screen and blink events; update screen if necessary."""

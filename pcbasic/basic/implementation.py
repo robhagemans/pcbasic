@@ -5,11 +5,8 @@ Top-level implementation and main interpreter loop
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-import io
-import os
-import sys
+import asyncio
 import math
-import logging
 from functools import partial
 from contextlib import contextmanager
 
@@ -18,7 +15,6 @@ from ..compat import queue, text_type
 from .data import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
-from .base import signals
 from .base import codestream
 from .devices import Files, InputTextFile
 from . import converter
@@ -110,7 +106,7 @@ class Implementation(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # set up input event handler
         # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
+        self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=asyncio.Queue())
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(self.queues, self.codepage)
         self.io_streams.add_pipes(input=input_streams)
@@ -245,11 +241,11 @@ class Implementation(object):
             # but an input queue should be operational for I/O streams
             self.queues.set(inputs=queue.Queue())
 
-    def execute(self, command):
+    async def execute(self, command):
         """Execute a BASIC statement."""
         with self._handle_exceptions():
             self._store_line(command)
-            self.interpreter.loop()
+            await self.interpreter.loop()
 
     def evaluate(self, expression):
         """Evaluate a BASIC expression."""
@@ -310,17 +306,17 @@ class Implementation(object):
             convert = self.get_converter(type(value), as_type)
             return convert(value)
 
-    def interact(self):
+    async def interact(self):
         """Interactive interpreter session."""
         while True:
             with self._handle_exceptions():
-                self.interpreter.loop()
+                await self.interpreter.loop()
                 if self._auto_mode:
-                    self._auto_step()
+                    await self._auto_step()
                 else:
                     self._show_prompt()
                     # input loop, checks events
-                    line = self.console.read_line(is_input=False)
+                    line = await self.console.read_line(is_input=False)
                     self._prompt = not self._store_line(line)
 
     def close(self):
@@ -364,7 +360,7 @@ class Implementation(object):
             self.interpreter.set_parse_mode(True)
             return False
 
-    def _auto_step(self):
+    async def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
         try:
             numstr = b'%d' % (self._auto_linenum,)
@@ -372,7 +368,7 @@ class Implementation(object):
                 prompt = numstr + b'*'
             else:
                 prompt = numstr + b' '
-            line = self.console.read_line(prompt, is_input=False)
+            line = await self.console.read_line(prompt, is_input=False)
             # remove *, if present
             if line[:len(numstr)+1] == b'%s*' % (numstr,):
                 line = b'%s %s' % (numstr, line[len(numstr)+1:])
@@ -508,7 +504,7 @@ class Implementation(object):
         # reset stacks & pointers
         self.interpreter.clear()
 
-    def shell_(self, args):
+    async def shell_(self, args):
         """SHELL: open OS shell and optionally execute command."""
         cmd = values.next_string(args)
         list(args)
@@ -517,7 +513,7 @@ class Implementation(object):
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
         # run the os-specific shell
-        self.shell.launch(cmd)
+        await self.shell.launch(cmd)
         # reset cursor visibility to its previous state
         self.display.cursor.set_override(False)
 
@@ -548,7 +544,7 @@ class Implementation(object):
         # clear all variables
         self._clear_all()
 
-    def list_(self, args):
+    async def list_(self, args):
         """LIST: output program lines."""
         line_range = next(args)
         out = values.next_string(args)
@@ -564,7 +560,7 @@ class Implementation(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.queues.wait()
+                await self.queues.wait()
                 # LIST on screen is slightly different from just writing
                 self.console.list_line(l, newline=True)
         # return to direct mode
@@ -731,7 +727,7 @@ class Implementation(object):
         self.interpreter.error_resume = None
         self.files.close_all()
 
-    def input_(self, args):
+    async def input_(self, args):
         """INPUT: request input from user or read from file."""
         file_number = next(args)
         if file_number is not None:
@@ -741,9 +737,9 @@ class Implementation(object):
             self._input_file(finp, args)
         else:
             newline, prompt, following = next(args)
-            self._input_console(newline, prompt, following, args)
+            await self._input_console(newline, prompt, following, args)
 
-    def _input_console(self, newline, prompt, following, readvar):
+    async def _input_console(self, newline, prompt, following, readvar):
         """INPUT: request input from user."""
         if following == b';':
             prompt += b'? '
@@ -754,7 +750,7 @@ class Implementation(object):
             # readvar is a list of (name, indices) tuples
             # we return a list of (name, indices, values) tuples
             while True:
-                line = self.console.read_line(prompt, write_endl=newline, is_input=True)
+                line = await self.console.read_line(prompt, write_endl=newline, is_input=True)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []
@@ -797,7 +793,7 @@ class Implementation(object):
             value = self.values.from_repr(word, allow_nonnum=True, typechar=typechar)
             self.memory.set_variable(name, indices, value)
 
-    def line_input_(self, args):
+    async def line_input_(self, args):
         """LINE INPUT: request line of input from user."""
         file_number = next(args)
         if file_number is None:
@@ -823,12 +819,12 @@ class Implementation(object):
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
-            line = self.console.read_line(prompt, write_endl=newline, is_input=True)
+            line = await self.console.read_line(prompt, write_endl=newline, is_input=True)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
-    def randomize_(self, args):
+    async def randomize_(self, args):
         """RANDOMIZE: set random number generator seed."""
         val, = args
         if val is not None:
@@ -837,7 +833,7 @@ class Implementation(object):
         else:
             # prompt for random seed if not specified
             while True:
-                seed = self.console.read_line(
+                seed = await self.console.read_line(
                     b'Random number seed (-32768 to 32767)? ', is_input=True
                 )
                 try:

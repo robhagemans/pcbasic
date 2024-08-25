@@ -274,7 +274,7 @@ class _ColourMapper(object):
         """Submit to interface."""
         # all attributes split into foreground RGB, background RGB, blink and underline
         rgb_table, compo_parms = self._get_rgb_table()
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_PALETTE, (rgb_table, compo_parms)
         ))
 

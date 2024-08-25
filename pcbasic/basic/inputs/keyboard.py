@@ -87,7 +87,7 @@ class KeyboardBuffer(object):
                 # when buffer is full, GW-BASIC inserts a \r at the end but doesn't count it
                 self._buffer[self._start-1] = (b'\r', scancode.RETURN)
                 # emit a sound signal; keystroke is dropped
-                self._queues.audio.put(signals.Event(signals.AUDIO_TONE, FULL_TONE))
+                self._queues.audio.put_nowait(signals.Event(signals.AUDIO_TONE, FULL_TONE))
             else:
                 self._buffer.append((cp_c, scan))
 
@@ -318,7 +318,7 @@ class Keyboard(object):
 
     # character retrieval
 
-    def wait_char(self, keyboard_only=False):
+    async def wait_char(self, keyboard_only=False):
         """Block until character appears in keyboard queue or stream."""
         # if input stream has closed, don't wait but return empty
         # which will tell the Editor to close
@@ -328,7 +328,7 @@ class Keyboard(object):
                     keyboard_only or (not self._input_closed and not self._stream_buffer)
                 )
             ):
-            self._queues.wait()
+            await self._queues.wait()
 
     def _read_kybd_byte(self, expand=True):
         """Read one byte from keyboard buffer, expanding macros if required."""
@@ -348,39 +348,39 @@ class Keyboard(object):
             # e.g. KEY 1, "" enables catching F1 with INKEY$
             return c
 
-    def inkey_(self, args):
+    async def inkey_(self, args):
         """INKEY$: read one byte from keyboard or stream; nonblocking."""
         list(args)
-        inkey = self.read_byte()
+        inkey = await self.read_byte()
         return self._values.new_string().from_str(inkey)
 
-    def read_byte(self):
+    async def read_byte(self):
         """Read one byte from keyboard or stream; nonblocking."""
         # wait a tick to reduce load in loops
-        self._queues.wait()
+        await self._queues.wait()
         inkey = self._read_kybd_byte()
         if not inkey and self._stream_buffer:
             inkey = self._stream_buffer.popleft()
         return inkey
 
-    def read_bytes_block(self, n):
+    async def read_bytes_block(self, n):
         """Read bytes from keyboard or stream; blocking."""
         word = []
         for _ in range(n):
-            self.wait_char(keyboard_only=False)
-            word.append(self.read_byte())
+            await self.wait_char(keyboard_only=False)
+            word.append(await self.read_byte())
         return b''.join(word)
 
-    def peek_byte_kybd_file(self):
+    async def peek_byte_kybd_file(self):
         """Peek from keyboard only; for KYBD: files; blocking."""
-        self.wait_char(keyboard_only=True)
+        await self.wait_char(keyboard_only=True)
         return self.buf.peek()
 
-    def read_bytes_kybd_file(self, num):
+    async def read_bytes_kybd_file(self, num):
         """Read num bytes from keyboard only; for KYBD: files; blocking."""
         word = []
         for _ in range(num):
-            self.wait_char(keyboard_only=True)
+            await self.wait_char(keyboard_only=True)
             word.append(self._read_kybd_byte(expand=False))
         return word
 
@@ -397,7 +397,7 @@ class Keyboard(object):
                 c += self._stream_buffer.popleft()
         return c
 
-    def get_fullchar_block(self, expand=True):
+    async def get_fullchar_block(self, expand=True):
         """Read one (sbcs or dbcs) full character; blocking."""
-        self.wait_char()
+        await self.wait_char()
         return self.get_fullchar(expand)
