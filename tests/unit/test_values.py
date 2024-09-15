@@ -69,7 +69,7 @@ class ValuesTest(TestCase):
         with self.assertRaises(TypeError):
             values.match_types(None, None)
 
-    def test_call_float_function_errors(self):
+    async def test_call_float_function_errors(self):
         """Test call_float_function error cases."""
         vm = values.Values(None, False)
         vm.set_handler(values.FloatErrorHandler(None))
@@ -78,7 +78,7 @@ class ValuesTest(TestCase):
         with self.assertRaises(error.BASICError):
             values._call_float_function(itimes, vm.new_single().from_int(1))
 
-    def test_float_error_handler_errors(self):
+    async def test_float_error_handler_errors(self):
         """Test FloatErrorHandler error cases."""
         vm = values.Values(None, False)
         vm.set_handler(values.FloatErrorHandler(None))
@@ -88,7 +88,7 @@ class ValuesTest(TestCase):
         with self.assertRaises(TypeError):
             values._call_float_function(typerr, vm.new_single().from_int(1))
 
-    def test_float_error_handler_soft(self):
+    async def test_float_error_handler_soft(self):
         """Test FloatErrorHandler."""
         class MockConsole(object):
             def write_line(self, s):
@@ -104,7 +104,7 @@ class ValuesTest(TestCase):
             Single
         )
 
-    def test_float_error_handler_soft_double(self):
+    async def test_float_error_handler_soft_double(self):
         """Test FloatErrorHandler."""
         class MockConsole(object):
             def write_line(self, s):

@@ -104,7 +104,7 @@ class LPTFile(TextFileBase):
         """Set file width."""
         self.width = new_width
 
-    def write(self, s, can_break=True):
+    async def write(self, s, can_break=True):
         """Write a string to the printer buffer."""
         if not isinstance(s, bytes):
             raise TypeError("LPTFile writes require bytes, not '%s'" % (type(s),))
@@ -133,10 +133,10 @@ class LPTFile(TextFileBase):
                             self._settings.col = 2
         self.col = self._settings.col
 
-    def write_line(self, s=b''):
+    async def write_line(self, s=b''):
         """Write string or bytearray and newline to file."""
         assert isinstance(s, bytes), type(s)
-        self.write(s + b'\r\n')
+        await self.write(s + b'\r\n')
 
     def lof(self):
         """LOF: bad file mode """

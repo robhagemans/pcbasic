@@ -16,55 +16,55 @@ class NotImplementedTest(TestCase):
 
     tag = u'not_implemented'
 
-    def test_call(self):
+    async def test_call(self):
         """Exercise CALL statement."""
         with Session() as s:
             # well-formed calls
-            s.execute('call a%(b)')
-            s.execute('call a(b!, c$)')
-            s.execute('call a(b!, c$, d(0))')
-            s.execute('call a#')
-            s.execute('call a!')
-            s.execute('call a%')
+            await s.execute('call a%(b)')
+            await s.execute('call a(b!, c$)')
+            await s.execute('call a(b!, c$, d(0))')
+            await s.execute('call a#')
+            await s.execute('call a!')
+            await s.execute('call a%')
         assert self.get_text_stripped(s) == [b''] * 25
 
-    def test_call_wrong(self):
+    async def test_call_wrong(self):
         """Exercise CALL statement with badly-formed arguments."""
         with Session() as s:
             # type mismatch
-            s.execute('call a$(b)')
+            await s.execute('call a$(b)')
             # syntax error
-            s.execute('call a(b!, c$())')
+            await s.execute('call a(b!, c$())')
             # syntax error
-            s.execute('call')
+            await s.execute('call')
             # syntax error
-            s.execute('call 0')
+            await s.execute('call 0')
             # syntax error
-            s.execute('call "a"')
+            await s.execute('call "a"')
         assert self.get_text_stripped(s)[:5] == [b'Type mismatch\xff'] + [b'Syntax error\xff'] * 4
 
-    def test_calls(self):
+    async def test_calls(self):
         """Exercise CALLS statement."""
         with Session() as s:
             # well-formed calls
-            s.execute('calls a%(b)')
-            s.execute('calls a(b!, c$)')
-            s.execute('calls a(b!, c$, d(0))')
+            await s.execute('calls a%(b)')
+            await s.execute('calls a(b!, c$)')
+            await s.execute('calls a(b!, c$, d(0))')
         assert self.get_text_stripped(s) == [b''] * 25
 
-    def test_calls_wrong(self):
+    async def test_calls_wrong(self):
         """Exercise CALLS statement with badly-formed arguments."""
         with Session() as s:
             # type mismatch
-            s.execute('calls a$(b)')
+            await s.execute('calls a$(b)')
             # syntax error
-            s.execute('calls a(b!, c$())')
+            await s.execute('calls a(b!, c$())')
             # syntax error
-            s.execute('calls')
+            await s.execute('calls')
             # syntax error
-            s.execute('calls 0')
+            await s.execute('calls 0')
             # syntax error
-            s.execute('calls "a"')
+            await s.execute('calls "a"')
         assert self.get_text_stripped(s)[:5] == [b'Type mismatch\xff'] + [b'Syntax error\xff'] * 4
 
 

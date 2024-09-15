@@ -5,7 +5,7 @@ Expression stack
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import inspect
 from collections import deque
 from functools import partial
 import logging
@@ -230,12 +230,12 @@ class ExpressionParser(object):
         self.__dict__.update(pickle_dict)
         self._init_syntax()
 
-    def parse_expression(self, ins):
+    async def parse_expression(self, ins):
         """Parse and evaluate tokenised expression."""
         self._memory.strings.reset_temporaries()
-        return self.parse(ins)
+        return await self.parse(ins)
 
-    def parse(self, ins):
+    async def parse(self, ins):
         """Parse and evaluate tokenised (sub-)expression."""
         operations = deque()
         with self._memory.get_stack() as units:
@@ -286,17 +286,17 @@ class ExpressionParser(object):
                     # we need to create a new object or we'll overwrite our own stacks
                     # this will not be needed if we localise stacks in the expression parser
                     # either a separate class of just as local variables
-                    units.append(self.parse(ins))
+                    units.append(await self.parse(ins))
                     ins.require_read((b')',))
                 elif d and d in LETTERS:
                     name = ins.read_name()
                     error.throw_if(not name, error.STX)
-                    indices = self.parse_indices(ins)
+                    indices = await self.parse_indices(ins)
                     view = self._memory.view_or_create_variable(name, indices)
                     # should make a shallow copy? but .clone here breaks circular MID$
                     units.append(view)
                 elif d in self._functions:
-                    units.append(self._parse_function(ins, d))
+                    units.append(await self._parse_function(ins, d))
                     #if not isinstance(units[-1], values.String):
                     #    self._memory.strings.reset_temporaries()
                 elif d in tk.END_STATEMENT:
@@ -359,13 +359,13 @@ class ExpressionParser(object):
         else:
             raise error.BASICError(error.STX)
 
-    def parse_indices(self, ins):
+    async def parse_indices(self, ins):
         """Parse array indices."""
         indices = []
         if ins.skip_blank_read_if((b'[', b'(')):
             # it's an array, read indices
             while True:
-                expr = self.parse(ins)
+                expr = await self.parse(ins)
                 indices.append(values.to_int(expr))
                 if not ins.skip_blank_read_if((b',',)):
                     break
@@ -375,7 +375,7 @@ class ExpressionParser(object):
     ###########################################################################
     # function and argument handling
 
-    def _parse_function(self, ins, token):
+    async def _parse_function(self, ins, token):
         """Parse a function starting with the given token."""
         ins.read(len(token))
         if token in self._simple:
@@ -401,7 +401,17 @@ class ExpressionParser(object):
             fn = function.evaluate
         else:
             fn = self._callbacks[token]
-        return fn(parse_args(ins))
+
+        parsed_args = parse_args(ins)
+        if inspect.iscoroutine(parsed_args):
+            parsed_args = await parsed_args
+
+        res = fn(parsed_args)
+        if inspect.iscoroutine(res):
+            res = await res
+        return res
+
+
 
     ###########################################################################
     # argument generators
@@ -411,44 +421,44 @@ class ExpressionParser(object):
         return
         yield # pragma: no cover
 
-    def _gen_parse_arguments(self, ins, length=1):
+    async def _gen_parse_arguments(self, ins, length=1):
         """Parse a comma-separated list of arguments."""
         if not length:
             return
         ins.require_read((b'(',))
         for i in range(length-1):
-            yield self.parse(ins)
+            yield await self.parse(ins)
             ins.require_read((b',',))
-        yield self.parse(ins)
+        yield await self.parse(ins)
         ins.require_read((b')',))
 
-    def _gen_parse_arguments_optional(self, ins, length):
+    async def _gen_parse_arguments_optional(self, ins, length):
         """Parse a comma-separated list of arguments, last one optional."""
         ins.require_read((b'(',))
-        yield self.parse(ins)
+        yield await self.parse(ins)
         for _ in range(length-2):
             ins.require_read((b',',))
-            yield self.parse(ins)
+            yield await self.parse(ins)
         if ins.skip_blank_read_if((b',',)):
-            yield self.parse(ins)
+            yield await self.parse(ins)
         else:
             yield None
         ins.require_read((b')',))
 
-    def _gen_parse_one_optional_argument(self, ins):
+    async def _gen_parse_one_optional_argument(self, ins):
         """Parse a single, optional argument."""
         if ins.skip_blank_read_if((b'(',)):
-            yield self.parse(ins)
+            yield await self.parse(ins)
             ins.require_read((b')',))
         else:
             yield None
 
-    def _gen_parse_call_extension(self, ins):
+    async def _gen_parse_call_extension(self, ins):
         """Parse an extension function."""
         yield ins.read_name()
         if ins.skip_blank_read_if((b'(',)):
             while True:
-                yield self.parse(ins)
+                yield await self.parse(ins)
                 if not ins.skip_blank_read_if((b',',)):
                     break
             ins.require_read((b')',))
@@ -458,50 +468,50 @@ class ExpressionParser(object):
     ###########################################################################
     # special cases
 
-    def _gen_parse_ioctl(self, ins):
+    async def _gen_parse_ioctl(self, ins):
         """Parse IOCTL$ syntax."""
         ins.require_read((b'(',))
         ins.skip_blank_read_if((b'#',))
-        yield self.parse(ins)
+        yield await self.parse(ins)
         ins.require_read((b')',))
 
-    def _gen_parse_instr(self, ins):
+    async def _gen_parse_instr(self, ins):
         """Parse INSTR syntax."""
         ins.require_read((b'(',))
         # followed by comma so empty will raise STX
-        s = self.parse(ins)
+        s = await self.parse(ins)
         yield s
         if isinstance(s, values.Number):
             ins.require_read((b',',))
-            yield self.parse(ins)
+            yield await self.parse(ins)
         ins.require_read((b',',))
-        yield self.parse(ins)
+        yield await self.parse(ins)
         ins.require_read((b')',))
 
-    def _gen_parse_input(self, ins):
+    async def _gen_parse_input(self, ins):
         """Parse INPUT$ syntax."""
         ins.require_read((b'(',))
-        yield self.parse(ins)
+        yield await self.parse(ins)
         if ins.skip_blank_read_if((b',',)):
             ins.skip_blank_read_if((b'#',))
-            yield self.parse(ins)
+            yield await self.parse(ins)
         else:
             yield None
         ins.require_read((b')',))
 
-    def _gen_parse_varptr_str(self, ins):
+    async def _gen_parse_varptr_str(self, ins):
         """Parse VARPTR$ syntax."""
         ins.require_read((b'(',))
         yield ins.read_name()
-        yield self.parse_indices(ins)
+        yield await self.parse_indices(ins)
         ins.require_read((b')',))
 
-    def _gen_parse_varptr(self, ins):
+    async def _gen_parse_varptr(self, ins):
         """Parse VARPTR syntax."""
         ins.require_read((b'(',))
         if ins.skip_blank_read_if((b'#',)):
-            yield self.parse(ins)
+            yield await self.parse(ins)
         else:
             yield ins.read_name()
-            yield self.parse_indices(ins)
+            yield await self.parse_indices(ins)
         ins.require_read((b')',))

@@ -27,19 +27,19 @@ class SessionTest(TestCase):
 
     tag = u'session'
 
-    def test_session(self):
+    async def test_session(self):
         """Test basic Session API."""
         with Session() as s:
-            s.execute('a=1')
-            assert s.evaluate('a+2') == 3.
-            assert s.evaluate('"abc"+"d"') == b'abcd'
-            assert s.evaluate('string$(a+2, "@")') == b'@@@'
+            await s.execute('a=1')
+            assert await s.evaluate('a+2') == 3.
+            assert await s.evaluate('"abc"+"d"') == b'abcd'
+            assert await s.evaluate('string$(a+2, "@")') == b'@@@'
             # string variable
             s.set_variable('B$', 'abcd')
             assert s.get_variable('B$') == b'abcd'
-            assert istypeval(s.evaluate('LEN(B$)'), 4)
+            assert istypeval(await s.evaluate('LEN(B$)'), 4)
             # unset variable
-            assert s.evaluate('C!') == 0.
+            assert await s.evaluate('C!') == 0.
             assert istypeval(s.get_variable('D%'), 0)
             # unset array
             s.set_variable('A%()', [[0,0,5], [0,0,6]])
@@ -51,13 +51,13 @@ class SessionTest(TestCase):
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             ]
-            assert s.evaluate('A%(0,2)') == 5
-            assert s.evaluate('A%(1,2)') == 6
-            assert s.evaluate('A%(1,7)') == 0
-            assert s.evaluate('FRE(0)') == 60020.
-            assert s.evaluate('CSRLIN') == 1
-            s.execute('print b$')
-            assert s.evaluate('CSRLIN') == 2
+            assert await s.evaluate('A%(0,2)') == 5
+            assert await s.evaluate('A%(1,2)') == 6
+            assert await s.evaluate('A%(1,7)') == 0
+            assert await s.evaluate('FRE(0)') == 60020.
+            assert await s.evaluate('CSRLIN') == 1
+            await s.execute('print b$')
+            assert await s.evaluate('CSRLIN') == 2
 
     def test_session_convert(self):
         """Test Session.convert(variable)."""
@@ -136,24 +136,24 @@ class SessionTest(TestCase):
             with self.assertRaises(ValueError):
                 s.set_variable('ARR2!()', [])
 
-    def test_session_evaluate(self):
+    async def test_session_evaluate(self):
         """Test Session.evaluate."""
         with Session() as s:
             s.set_variable(b'A!', 1)
             # variable, implicit sigil allowed. expression can be bytes or unicode
-            assert s.evaluate(b'A') == 1
-            assert s.evaluate(u'A') == 1
+            assert await s.evaluate(b'A') == 1
+            assert await s.evaluate(u'A') == 1
             # expression
-            assert s.evaluate(u'A*2+1') == 3.0
+            assert await s.evaluate(u'A*2+1') == 3.0
             # syntax error
-            assert s.evaluate(b'LOG+1') is None
+            assert await s.evaluate(b'LOG+1') is None
 
-    def test_session_evaluate_number(self):
+    async def test_session_evaluate_number(self):
         """Test Session.evaluate starting with a number."""
         with Session() as s:
-            assert s.evaluate(b'1+1') == 2
+            assert await s.evaluate(b'1+1') == 2
 
-    def test_session_bind_file(self):
+    async def test_session_bind_file(self):
         """test Session.bind_file."""
         # open file object
         with open(self.output_path('testfile'), 'wb') as f:
@@ -162,7 +162,7 @@ class SessionTest(TestCase):
                 # can use name as string
                 assert len(str(name)) <= 12
                 # write to file
-                s.execute('open "{0}" for output as 1: print#1, "x"'.format(name))
+                await s.execute('open "{0}" for output as 1: print#1, "x"'.format(name))
         with open(self.output_path('testfile'), 'rb') as f:
             output = f.read()
         assert output == b'x\r\n\x1a'
@@ -170,8 +170,8 @@ class SessionTest(TestCase):
         with Session() as s:
             name = s.bind_file(self.output_path('testfile'))
             # write to file
-            s.execute('open "{0}" for input as 1'.format(name))
-            s.execute('input#1, a$')
+            await s.execute('open "{0}" for input as 1'.format(name))
+            await s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
         # create file by name
         native_name = self.output_path(u'new-test-file')
@@ -181,7 +181,7 @@ class SessionTest(TestCase):
             pass
         with Session() as s:
             name = s.bind_file(native_name, create=True)
-            s.execute('open "{0}" for output as 1: print#1, "test";: close'.format(name))
+            await s.execute('open "{0}" for output as 1: print#1, "test";: close'.format(name))
         with open(native_name, 'rb') as f:
             output = f.read()
         assert output == b'test\x1a'
@@ -189,8 +189,8 @@ class SessionTest(TestCase):
         with Session(devices={b'Z': self.output_path()}) as s:
             name = s.bind_file(b'Z:TESTFILE')
             # write to file
-            s.execute('open "{0}" for input as 1'.format(name))
-            s.execute('input#1, a$')
+            await s.execute('open "{0}" for input as 1'.format(name))
+            await s.execute('input#1, a$')
             assert s.get_variable('A$') == b'x'
         # create file by name, provide BASIC name (bytes)
         native_name = self.output_path(u'new-test-file').encode('ascii')
@@ -200,7 +200,7 @@ class SessionTest(TestCase):
             pass
         with Session() as s:
             name = s.bind_file(native_name, name=b'A B C', create=True)
-            s.execute(b'open "@:A B C" for output as 1: print#1, "test";: close')
+            await s.execute(b'open "@:A B C" for output as 1: print#1, "test";: close')
         with open(native_name, 'rb') as f:
             output = f.read()
         assert output == b'test\x1a'
@@ -212,15 +212,15 @@ class SessionTest(TestCase):
             pass
         with Session() as s:
             name = s.bind_file(native_name, name=u'A B C', create=True)
-            s.execute(u'open "@:A B C" for output as 1: print#1, "test";: close')
+            await s.execute(u'open "@:A B C" for output as 1: print#1, "test";: close')
         with open(native_name, 'rb') as f:
             output = f.read()
         assert output == b'test\x1a'
 
-    def test_session_greeting(self):
+    async def test_session_greeting(self):
         """Test welcome screen."""
         with Session() as s:
-            s.greet()
+            await s.greet()
             output = [_row.strip() for _row in self.get_text(s)]
         assert output[0].startswith(b'PC-BASIC ')
         assert output[1].startswith(b'(C) Copyright 2013--')
@@ -231,103 +231,103 @@ class SessionTest(TestCase):
             b'  6,"LPT1 7TRON\x1b  8TROFF\x1b 9KEY    0SCREEN'
         )
 
-    def test_session_press_keys(self):
+    async def test_session_press_keys(self):
         """Test Session.press_keys."""
         with Session() as s:
             # eascii: up, esc, SYSTEM, enter
             s.press_keys(u'\0\x48\x1bSYSTEM\r')
-            s.interact()
+            await s.interact()
             # note that SYSTEM raises an exception absorbed by the context manager
             # no nothing further in this block will be executed
         output = [_row.strip() for _row in self.get_text(s)]
         # OK prompt should have been overwritten
         assert output[0] == b'SYSTEM'
 
-    def test_session_execute(self):
+    async def test_session_execute(self):
         """Test Session.execute."""
         with Session() as s:
             # statement
-            s.execute(b'?LOG(1)')
+            await s.execute(b'?LOG(1)')
             # break
-            s.execute(b'STOP')
+            await s.execute(b'STOP')
             # error
-            s.execute(b'A')
+            await s.execute(b'A')
         output = [_row.strip() for _row in self.get_text(s)]
         # \xff checked against DOSbox/GW-BASIC
         assert output[:3] == [b'0', b'Break\xff', b'Syntax error\xff']
         assert output[3:] == [b''] * 22
 
-    def test_session_no_streams(self):
+    async def test_session_no_streams(self):
         """Test Session without stream copy."""
         with Session(input_streams=None, output_streams=None) as s:
-            s.execute(b'a=1')
-            s.execute(b'print a')
+            await s.execute(b'a=1')
+            await s.execute(b'print a')
         output = self.get_text_stripped(s)
         assert output[:1] == [b' 1']
 
-    def test_session_iostreams(self):
+    async def test_session_iostreams(self):
         """Test Session with copy to BytesIO."""
         bi = io.BytesIO()
         with Session(input_streams=None, output_streams=bi) as s:
-            s.execute(b'a=1')
-            s.execute(b'print a')
+            await s.execute(b'a=1')
+            await s.execute(b'print a')
         assert bi.getvalue() == b' 1 \r\n'
 
-    def test_session_inputstr_iostreams(self):
+    async def test_session_inputstr_iostreams(self):
         """Test Session with INPUT$ reading from pipe."""
         bi = io.BytesIO(b'ab\x80cd')
         with Session(input_streams=bi, output_streams=None) as s:
-            abc = s.evaluate(b'input$(3)')
+            abc = await s.evaluate(b'input$(3)')
         assert abc == b'ab\x80', abc
 
     @unittest.skip('correct behaviour as yet undecided.')
-    def test_session_inputstr_iostreams_short(self):
+    async def test_session_inputstr_iostreams_short(self):
         """Test Session with INPUT$ reading from pipe."""
         bi = io.BytesIO(b'ab')
         with Session(input_streams=bi, output_streams=None) as s:
-            abc = s.evaluate(b'input$(3)')
+            abc = await s.evaluate(b'input$(3)')
         assert abc == b'ab', abc
 
-    def test_session_inputstr_iostreams_closed(self):
+    async def test_session_inputstr_iostreams_closed(self):
         """Test Session with INPUT$ reading from pipe."""
         bi = io.BytesIO(b'abc')
         with Session(input_streams=bi, output_streams=None) as s:
-            abc = s.evaluate(b'input$(3)')
+            abc = await s.evaluate(b'input$(3)')
         assert abc == b'abc', abc
 
-    def test_session_inputstr_iostreams_unicode(self):
+    async def test_session_inputstr_iostreams_unicode(self):
         """Test Session with INPUT$ reading from pipe."""
         bi = io.StringIO(u'ab£cd')
         with Session(input_streams=bi, output_streams=None) as s:
-            abc = s.evaluate(b'input$(3)')
+            abc = await s.evaluate(b'input$(3)')
         assert abc == b'ab\x9C', abc
 
-    def test_session_inputstr_iostreams_file(self):
+    async def test_session_inputstr_iostreams_file(self):
         """Test Session with INPUT$ reading from pipe."""
         with open(self.output_path('testfile'), 'w+b') as f:
             f.write(b'ab\x80cd')
             f.seek(0)
             with Session(input_streams=f, output_streams=None) as s:
-                abc = s.evaluate(b'input$(3)')
+                abc = await s.evaluate(b'input$(3)')
             assert abc == b'ab\x80', abc
 
     @unittest.skip('correct behaviour as yet undecided.')
-    def test_session_inputstr_iostreams_file_short(self):
+    async def test_session_inputstr_iostreams_file_short(self):
         """Test Session with INPUT$ reading from pipe."""
         with open(self.output_path('testfile'), 'w+b') as f:
             f.write(b'ab')
             f.seek(0)
             with Session(input_streams=f, output_streams=None) as s:
-                abc = s.evaluate(b'input$(3)')
+                abc = await s.evaluate(b'input$(3)')
             assert abc == b'ab', abc
 
-    def test_session_inputstr_iostreams_unicode_file(self):
+    async def test_session_inputstr_iostreams_unicode_file(self):
         """Test Session with INPUT$ reading from pipe."""
         with open(self.output_path('testfile'), 'w+') as f:
             f.write(u'ab£cd')
             f.seek(0)
             with Session(input_streams=f, output_streams=None) as s:
-                abc = s.evaluate(b'input$(3)')
+                abc = await s.evaluate(b'input$(3)')
             assert abc == b'ab\x9C', abc
 
     def test_session_bad_type_iostreams(self):
@@ -337,7 +337,7 @@ class SessionTest(TestCase):
         with self.assertRaises(TypeError):
             Session(output_streams=2).start()
 
-    def test_session_printcopy(self):
+    async def test_session_printcopy(self):
         """Test Session with ctrl print-screen copy."""
         with Session(
                 input_streams=None, output_streams=None,
@@ -346,12 +346,12 @@ class SessionTest(TestCase):
             # ctrl+printscreen
             s.press_keys(u'\0\x72')
             s.press_keys(u'system\r')
-            s.interact()
+            await s.interact()
         with open(self.output_path('print.txt'), 'rb') as f:
             output = f.read()
             assert output == b'system\r\n', repr(output)
 
-    def test_session_no_printcopy(self):
+    async def test_session_no_printcopy(self):
         """Test Session switching off ctrl print-screen copy."""
         with Session(
                 input_streams=None, output_streams=None,
@@ -360,11 +360,11 @@ class SessionTest(TestCase):
             # ctrl+printscreen
             s.press_keys(u'\0\x72\0\x72')
             s.press_keys(u'system\r')
-            s.interact()
+            await s.interact()
         with open(self.output_path('print.txt')) as f:
             assert f.read() == ''
 
-    def test_gosub_from_direct_line(self):
+    async def test_gosub_from_direct_line(self):
         """Test for issue#184: GOSUB from direct line should not RETURN into program."""
         SOURCE = """\
         10 PRINT "Main"
@@ -375,14 +375,14 @@ class SessionTest(TestCase):
         70 RETURN
         """
         with Session() as session:
-            session.execute(SOURCE)
-            session.execute("GOSUB 60")
-            assert session.evaluate('A') == 42
+            await session.execute(SOURCE)
+            await session.execute("GOSUB 60")
+            assert await session.evaluate('A') == 42
 
-    def test_to_list_off_by_one(self):
+    async def test_to_list_off_by_one(self):
         """Test for issue #182: range off by one in to_list."""
         with Session() as session:
-            session.execute("""
+            await session.execute("""
             DIM J2(5,2)
             J2(1,1)=-1
             J2(1,2)=-1

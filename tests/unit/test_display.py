@@ -19,10 +19,10 @@ class DisplayTest(TestCase):
 
     tag = u'display'
 
-    def test_pixels(self):
+    async def test_pixels(self):
         """Display all characters in default font."""
         with Session() as s:
-            s.execute(b'''
+            await s.execute(b'''
                 10 KEY OFF: SCREEN 0: WIDTH 80: CLS
                 20 DEF SEG = &HB800
                 30 FOR B = 0 TO 255
@@ -34,10 +34,10 @@ class DisplayTest(TestCase):
                 model_pix = model.read()
             assert bytes(bytearray(_c for _r in s.get_pixels() for _c in _r)) == model_pix
 
-    def test_characters(self):
+    async def test_characters(self):
         """Display all characters."""
         with Session() as s:
-            s.execute(b'''
+            await s.execute(b'''
                 10 KEY OFF: SCREEN 0: WIDTH 80: CLS
                 20 DEF SEG = &HB800
                 30 FOR B = 0 TO 255

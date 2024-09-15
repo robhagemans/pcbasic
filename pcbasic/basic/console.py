@@ -111,7 +111,7 @@ class Console(object):
 
     async def read_line(self, prompt=b'', write_endl=True, is_input=False):
         """Enter interactive mode and read string from console."""
-        self.write(prompt)
+        await self.write(prompt)
         # disconnect the wrap between line with the prompt and previous line
         if self._text_screen.current_row > 1:
             self._text_screen.set_wrap(self._text_screen.current_row-1, False)
@@ -124,7 +124,7 @@ class Console(object):
             # x0E CR LF is printed to redirects at break
             self._io_streams.write(b'\x0e')
             # while only a line break appears on the console
-            self.write_line()
+            await self.write_line()
             raise
         # get contents of the logical line
         if not is_input:
@@ -142,7 +142,7 @@ class Console(object):
         self._text_screen.move_to_end()
         # echo the CR, if requested
         if write_endl:
-            self.write_line()
+            await self.write_line()
         # to the parser/INPUT, only the first 255 chars are returned
         # with trailing whitespace removed
         outstr = outstr[:255].rstrip(b' \t\n')
@@ -179,7 +179,7 @@ class Console(object):
                     break
                 elif d == b'\a':
                     # BEL, CTRL+G
-                    self._sound.beep()
+                    await self._sound.beep()
                 elif d == b'\b':
                     # BACKSPACE, CTRL+H
                     self._text_screen.backspace(start_row, furthest_left)
@@ -264,7 +264,7 @@ class Console(object):
     ##########################################################################
     # output
 
-    def write(self, s, do_echo=True):
+    async def write(self, s, do_echo=True):
         """Write a string to the screen at the current position."""
         if not s:
             # don't disconnect line wrap if no output
@@ -293,7 +293,7 @@ class Console(object):
                     self._text_screen.newline(wrap=False)
                 elif c == b'\a':
                     # BEL
-                    self._sound.beep()
+                    await self._sound.beep()
                 elif c == b'\x0B':
                     # HOME
                     self._text_screen.set_pos(1, 1, scroll_ok=False)
@@ -318,11 +318,11 @@ class Console(object):
             last = c
         self._text_screen.write_chars(b''.join(out_chars), do_scroll_down=False)
 
-    def write_line(self, s=b'', do_echo=True):
+    async def write_line(self, s=b'', do_echo=True):
         """Write a string to the screen and end with a newline."""
-        self.write(b'%s\r' % (s,), do_echo)
+        await self.write(b'%s\r' % (s,), do_echo)
 
-    def list_line(self, line, newline, set_text_position=None):
+    async def list_line(self, line, newline, set_text_position=None):
         """Print a line from a program listing or EDIT prompt."""
         # no wrap if 80-column line, clear row before printing.
         # replace LF CR with LF
@@ -335,9 +335,9 @@ class Console(object):
                 # when using LIST, we *do* print LF as a wrap
                 self._text_screen.newline(wrap=True)
             self._text_screen.clear_line(self._text_screen.current_row, 1)
-            self.write(l)
+            await self.write(l)
         if newline:
-            self.write_line()
+            await self.write_line()
         # remove wrap after 80-column program line
         if len(line) == self.width and self._text_screen.current_row > 2:
             self._text_screen.set_wrap(self._text_screen.current_row-2, False)

@@ -6,19 +6,19 @@ Cassette Tape Device
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
 import io
-import math
-import struct
 import logging
+import os
+import struct
 from chunk import Chunk
+from typing import TYPE_CHECKING
 
+from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
+from ..base import error
 from ...compat import int2byte, iterchar, zip
 
-from ..base import error
-from ..base import tokens as tk
-from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
-
+if TYPE_CHECKING:
+    from ..console import Console
 
 # file types (data, bsaved memory, protected, ascii, tokenised)
 TOKEN_TO_TYPE = {
@@ -49,7 +49,7 @@ class CASDevice(object):
     # control characters not allowed in file name on tape
     _illegal_chars = set(int2byte(_i) for _i in range(0x20))
 
-    def __init__(self, arg, console):
+    def __init__(self, arg, console: 'Console'):
         """Initialise tape device."""
         addr, val = parse_protocol_string(arg)
         ext = val.split(u'.')[-1].upper()
@@ -81,7 +81,7 @@ class CASDevice(object):
         if self.tapestream:
             self.tapestream.close_tape()
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
+    async def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on tape."""
         if not self.tapestream:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -94,7 +94,7 @@ class CASDevice(object):
             if mode == b'O':
                 self.tapestream.open_write(param, filetype, seg, offset, length)
             elif mode == b'I':
-                _, filetype, seg, offset, length = self._search(param, filetype)
+                _, filetype, seg, offset, length = await self._search(param, filetype)
             else:
                 raise error.BASICError(error.BAD_FILE_MODE)
         except EnvironmentError:
@@ -106,7 +106,7 @@ class CASDevice(object):
         else:
             return CASBinaryFile(self.tapestream, filetype, mode, seg, offset, length)
 
-    def _search(self, trunk_req=None, filetypes_req=None):
+    async def _search(self, trunk_req=None, filetypes_req=None):
         """Play until a file header record is found for the given filename."""
         try:
             while True:
@@ -114,16 +114,16 @@ class CASDevice(object):
                 if (
                         (not trunk_req or trunk.rstrip() == trunk_req.rstrip()) and
                         (not filetypes_req or filetype in filetypes_req)
-                    ):
+                ):
                     message = b'%s.%s Found.' % (trunk, filetype)
                     if not self.is_quiet:
-                        self.console.write_line(message)
+                        await self.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
                     return trunk, filetype, seg, offset, length
                 else:
                     message = b'%s.%s Skipped.' % (trunk, filetype)
                     if not self.is_quiet:
-                        self.console.write_line(message)
+                        await self.console.write_line(message)
                     logging.debug(timestamp(self.tapestream.counter()) + message)
         except EndOfTape:
             # reached end-of-tape without finding appropriate file
@@ -808,7 +808,7 @@ class WAVBitStream(TapeBitStream):
         """Read the next bit."""
         try:
             length_up, length_dn = next(self.read_half), next(self.read_half)
-        except StopIteration:
+        except (StopIteration, StopAsyncIteration):
             self.read_half = self._gen_read_halfpulse()
             raise EndOfTape()
         if (length_up > self.halflength_max or length_dn > self.halflength_max or
@@ -991,7 +991,7 @@ class WAVBitStream(TapeBitStream):
                             '%s Error in sync byte after %d pulses: %s',
                             timestamp(self.counter()), counter, e
                         )
-        except (EndOfTape, StopIteration):
+        except (EndOfTape, StopIteration, StopAsyncIteration):
             self.read_half = self._gen_read_halfpulse()
             return False
 

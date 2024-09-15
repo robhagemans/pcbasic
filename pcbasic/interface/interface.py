@@ -72,7 +72,7 @@ class Interface(object):
         finally:
             if self._wait:
                 await self.pause(WAIT_MESSAGE)
-            await self.quit_output()
+            self.quit_output()
 
     async def run(self):
         """Start the main interface event loop."""

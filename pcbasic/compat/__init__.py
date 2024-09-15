@@ -42,6 +42,7 @@ from .streams import StreamWrapper, fix_stdio, is_readable_text_stream, is_writa
 
 from .console import console, read_all_available, IS_CONSOLE_APP
 from .console import stdio, init_stdio
+from .asyncio import azip
 
 
 if PY2: # pragma: no cover

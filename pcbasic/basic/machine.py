@@ -59,15 +59,15 @@ class MachinePorts(object):
         self.com_baud_divisor = [0, 0]
         self.com_break = [False, False]
 
-    def usr_(self, args):
+    async def usr_(self, args):
         """USR: get value of machine-code function; not implemented."""
-        num, = args
+        num, = [_ async for _ in args]
         logging.warning('USR function not implemented.')
         raise error.BASICError(error.IFC)
 
-    def inp_(self, args):
+    async def inp_(self, args):
         """INP: get value from machine port."""
-        num, = args
+        num, = [_ async for _ in args]
         port = values.to_int(num, unsigned=True)
         inp = self.inp(port)
         # return as unsigned int
@@ -147,12 +147,12 @@ class MachinePorts(object):
             # addr isn't one of the covered ports
             return 0
 
-    def out_(self, args):
+    async def out_(self, args):
         """OUT: send a byte to a machine port."""
-        addr = values.to_int(next(args), unsigned=True)
-        val = values.to_int(next(args))
+        addr = values.to_int(await anext(args), unsigned=True)
+        val = values.to_int(await anext(args))
         error.range_check(0, 255, val)
-        list(args)
+        [_ async for _ in args]
         if addr == 0x201:
             # game port reset
             self._stick.reset_decay()
@@ -251,16 +251,17 @@ class MachinePorts(object):
 
     async def wait_(self, args):
         """WAIT: wait for a machine port."""
-        addr = values.to_int(next(args), unsigned=True)
-        ander = values.to_int(next(args))
+        addr = values.to_int(await anext(args), unsigned=True)
+        ander = values.to_int(await anext(args))
         error.range_check(0, 255, ander)
-        xorer = next(args)
+        xorer = await anext(args)
         if xorer is None:
             xorer = 0
         else:
             xorer = values.to_int(xorer)
         error.range_check(0, 255, xorer)
-        list(args)
+        # noinspection PyStatementEffect
+        (e async for e in args)
         while (self.inp(addr) ^ xorer) & ander == 0:
             await self._queues.wait()
 
@@ -312,9 +313,9 @@ class Memory(object):
         # tandy syntax
         self._syntax = syntax
 
-    def peek_(self, args):
+    async def peek_(self, args):
         """PEEK: Retrieve the value at an emulated memory location."""
-        addr, = args
+        addr, = [_ async for _ in args]
         # no peeking the program code (or anywhere) in protected mode
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.BASICError(error.IFC)
@@ -322,12 +323,12 @@ class Memory(object):
         addr += self.segment * 0x10
         return self._values.new_integer().from_int(self._get_memory(addr))
 
-    def poke_(self, args):
+    async def poke_(self, args):
         """POKE: Set the value at an emulated memory location."""
-        addr = values.to_int(next(args), unsigned=True)
+        addr = values.to_int(await anext(args), unsigned=True)
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.BASICError(error.IFC)
-        val, = args
+        val = await anext(args)
         val = values.to_int(val)
         error.range_check(0, 255, val)
         if addr < 0:
@@ -335,16 +336,16 @@ class Memory(object):
         addr += self.segment * 0x10
         self._set_memory(addr, val)
 
-    def bload_(self, args):
+    async def bload_(self, args):
         """BLOAD: Load a file into a block of memory."""
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.BASICError(error.IFC)
-        name = values.next_string(args)
-        offset = next(args)
+        name = await values.next_string(args)
+        offset = await anext(args)
         if offset is not None:
             offset = values.to_int(offset, unsigned=True)
-        list(args)
-        with self._files.open(0, name, filetype=b'M', mode=b'I') as g:
+        [_ async for _ in args]
+        with await self._files.open(0, name, filetype=b'M', mode=b'I') as g:
             # size gets ignored; even the \x1a at the end gets dumped onto the screen.
             seg = g.seg
             if offset is None:
@@ -359,15 +360,15 @@ class Memory(object):
             addr = seg * 0x10 + offset
             self._set_memory_block(addr, buf)
 
-    def bsave_(self, args):
+    async def bsave_(self, args):
         """BSAVE: Save a block of memory into a file."""
         if self._memory.program.protected and not self.interpreter.run_mode:
             raise error.BASICError(error.IFC)
-        name = values.next_string(args)
-        offset = values.to_int(next(args), unsigned=True)
-        length = values.to_int(next(args), unsigned=True)
-        list(args)
-        with self._files.open(
+        name = await values.next_string(args)
+        offset = values.to_int(await anext(args), unsigned=True)
+        length = values.to_int(await anext(args), unsigned=True)
+        [_ async for _ in args]
+        with await self._files.open(
                     0, name, filetype=b'M', mode=b'O',
                     seg=self.segment, offset=offset, length=length
                 ) as g:
@@ -379,8 +380,9 @@ class Memory(object):
                     devices.TYPE_TO_MAGIC[b'M'] + struct.pack('<HHH', self.segment, offset, length)
                 )
 
-    def def_seg_(self, args):
+    async def def_seg_(self, args):
         """DEF SEG: Set segment."""
+        args = [_ async for _ in args]
         segment, = args
         # &hb800: text screen buffer; &h13d: data segment
         if segment is None:
@@ -391,21 +393,21 @@ class Memory(object):
             if self.segment < 0:
                 self.segment += 0x10000
 
-    def def_usr_(self, args):
+    async def def_usr_(self, args):
         """DEF USR: Define machine language function."""
-        usr, addr = args
+        usr, addr = [_ async for _ in args]
         addr = values.to_integer(addr, unsigned=True)
         logging.warning('DEF USR statement not implemented')
 
-    def call_(self, args):
+    async def call_(self, args):
         """CALL or CALLS: Call machine language procedure."""
-        addr_var = next(args)
+        addr_var = await anext(args)
         # call procedure address must be numeric
         if self._memory.complete_name(addr_var)[-1:] == values.STR:
             # type mismatch
             raise error.BASICError(error.TYPE_MISMATCH)
         # ignore well-shaped arguments
-        list(args)
+        [_ async for _ in args]
         logging.warning('CALL/CALLS statement not implemented')
 
     ###########################################################################

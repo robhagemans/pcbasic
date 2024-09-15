@@ -15,6 +15,7 @@ class StreamWrapper(object):
     def __init__(self, stream):
         """Set up codec."""
         self._stream = stream
+        self.writable = False
 
     def __getattr__(self, attr):
         return getattr(self._stream, attr)

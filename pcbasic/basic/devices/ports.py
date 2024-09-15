@@ -55,7 +55,7 @@ class COMDevice(Device):
         # only one file open at a time
         self._file = None
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
+    async def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on COMn: """
         if not self._serial:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -65,7 +65,7 @@ class COMDevice(Device):
         if self._file and self._file.is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
-            self._open_serial(rs, cs, ds, cd)
+            await self._open_serial(rs, cs, ds, cd)
         try:
             self.set_params(speed, parity, bytesize, stop)
         except Exception:
@@ -344,20 +344,20 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         logging.debug('Reading from serial port %s: %r', self._fhandle.port, b''.join(s))
         return b''.join(s)
 
-    def read_one(self):
+    async def read_one(self):
         """Read a character, replacing CR LF with CR."""
         c = self.read(1)
         # report CRLF as CR
         # are we correct to ignore self._linefeed on input?
         if (c == b'\n' and self._previous == b'\r'):
-            c = self.read(1)
+            c = await self.read(1)
         return c
 
-    def read_line(self):
+    async def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""
         out = []
         while len(out) < 255:
-            c = self.read_one()
+            c = await self.read_one()
             if c == b'\r':
                 break
             if c:

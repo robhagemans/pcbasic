@@ -45,7 +45,7 @@ class IOStreams(object):
         """Unpickle and resume the streams."""
         self.__dict__.update(pickle_dict)
         if self._input_streams:
-            self._process_input()
+            self._processing_task = asyncio.create_task(self._process_input())
 
     def add_pipes(self, input=None, output=None):
         """Add input/output pipes."""

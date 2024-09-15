@@ -235,6 +235,7 @@ class OutputStreamWrapper(StreamWrapper):
         """Set up codec."""
         self._conv = codepage.get_converter(preserve)
         self._stream = stream
+        self.writable = True
 
     def write(self, s):
         """Write bytes to codec stream."""
@@ -253,6 +254,7 @@ class InputStreamWrapper(StreamWrapper):
         self._codepage = codepage
         self._stream = stream
         self._buffer = b''
+        self.writable = False
 
     def read(self, n=-1):
         """Read n bytes from stream with codepage conversion."""

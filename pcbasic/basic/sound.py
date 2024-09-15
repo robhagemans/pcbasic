@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 from collections import deque
 import datetime
 
-from ..compat import iterchar, zip
+from ..compat import iterchar, zip, azip
 from .base import error
 from .base import signals
 from .base import tokens as tk
@@ -78,19 +78,19 @@ class Sound(object):
         """We have multivoice capability."""
         return bool(self._multivoice)
 
-    def beep_(self, args):
+    async def beep_(self, args):
         """BEEP: produce an alert sound or switch internal speaker on/off."""
         command, = args
         if command:
             self._beep_on = (command == tk.ON)
         else:
-            self.beep()
+            await self.beep()
 
-    def beep(self):
+    async def beep(self):
         """Produce an alert sound."""
         self.emit_tone(800, 0.25, fill=1, loop=False, voice=0, volume=15)
         # at most 16 notes in the sound queue with gaps, or 32 without gaps
-        self._wait_background()
+        await self._wait_background()
 
     def emit_tone(self, frequency, duration, fill, loop, voice, volume):
         """Play a sound on the tone generator."""
@@ -108,12 +108,12 @@ class Sound(object):
             volume = 0
         tone = signals.Event(signals.AUDIO_TONE, (voice, frequency, fill*duration, loop, volume))
         self._queues.audio.put_nowait(tone)
-        self._voice_queue[voice].put_nowait(tone, None if loop else fill*duration, True)
+        self._voice_queue[voice].put(tone, None if loop else fill*duration, True)
         # separate gap event, except for legato (fill==1)
         if fill != 1 and not loop:
             gap = signals.Event(signals.AUDIO_TONE, (voice, 0, (1-fill) * duration, 0, 0))
             self._queues.audio.put_nowait(gap)
-            self._voice_queue[voice].put_nowait(gap, (1-fill) * duration, False)
+            self._voice_queue[voice].put(gap, (1-fill) * duration, False)
         if voice == 2 and frequency != 0:
             # reset linked noise frequencies
             # /2 because we're using a 0x4000 rotation rather than 0x8000
@@ -126,19 +126,19 @@ class Sound(object):
         # if not SOUND ON an IFC was raised, so don't check here
         noise = signals.Event(signals.AUDIO_NOISE, (source > 3, frequency, duration, loop, volume))
         self._queues.audio.put_nowait(noise)
-        self._voice_queue[3].put_nowait(noise, None if loop else duration, True)
+        self._voice_queue[3].put(noise, None if loop else duration, True)
 
     async def sound_(self, args):
         """SOUND: produce a sound or switch external speaker on/off."""
-        arg0 = next(args)
+        arg0 = await anext(args)
         if self._multivoice and arg0 in (tk.ON, tk.OFF):
             command = arg0
         else:
             command = None
             freq = values.to_int(arg0)
-            dur = values.to_single(next(args)).to_value()
+            dur = values.to_single(await anext(args)).to_value()
             error.range_check(-65535, 65535, dur)
-            volume = next(args)
+            volume = await anext(args)
             if volume is None:
                 volume = 15
             else:
@@ -146,7 +146,7 @@ class Sound(object):
                 error.range_check(-1, 15, volume)
                 if volume == -1:
                     volume = 15
-            voice = next(args)
+            voice = await anext(args)
             if voice is None:
                 voice = 0
             else:
@@ -155,7 +155,7 @@ class Sound(object):
                     raise error.BASICError(error.IFC)
                 voice = values.to_int(voice)
                 error.range_check(0, 2, voice) # can't address noise channel here
-        list(args)
+        [_ async for _ in args]
         if command is not None:
             self._sound_on = (command == tk.ON)
             self.stop_all_sound()
@@ -187,13 +187,13 @@ class Sound(object):
         """Generate a noise (NOISE statement)."""
         if not self._sound_on:
             raise error.BASICError(error.IFC)
-        source = values.to_int(next(args))
+        source = values.to_int(await anext(args))
         error.range_check(0, 7, source)
-        volume = values.to_int(next(args))
+        volume = values.to_int(await anext(args))
         error.range_check(0, 15, volume)
-        dur = values.to_single(next(args)).to_value()
+        dur = values.to_single(await anext(args)).to_value()
         error.range_check(-65535, 65535, dur)
-        list(args)
+        [_ async for _ in args]
         # calculate duration in seconds
         dur_sec = dur / TICK_LENGTH
         # loop if duration less than 1/44 == 0.02272727248
@@ -231,10 +231,10 @@ class Sound(object):
                 item.params[2] = duration
                 self._queues.audio.put_nowait(item)
 
-    def play_fn_(self, args):
+    async def play_fn_(self, args):
         """PLAY function: get length of music queue."""
-        voice = values.to_int(next(args))
-        list(args)
+        voice = values.to_int(await anext(args))
+        [_ async for _ in args]
         error.range_check(0, 255, voice)
         if not(self._multivoice and voice in (1, 2)):
             voice = 0
@@ -256,7 +256,7 @@ class Sound(object):
                 # which is intentional
                 balloon = signals.Event(signals.AUDIO_TONE, (voice, 0, duration, False, 0))
                 self._queues.audio.put_nowait(balloon)
-                self._voice_queue[voice].put_nowait(balloon, duration, None)
+                self._voice_queue[voice].put(balloon, duration, None)
         self._synch = False
 
     def reset_play(self):
@@ -269,8 +269,8 @@ class Sound(object):
     async def play_(self,  args):
         """Parse a list of Music Macro Language strings (PLAY statement)."""
         # retrieve Music Macro Language string
-        mml_list = [values.to_string_or_none(arg) for arg, _ in zip(args, range(3))]
-        list(args)
+        mml_list = [values.to_string_or_none(arg) async for arg, _ in azip(args, range(3))]
+        [_ async for _ in args]
         # at least one string must be specified
         if not any(mml_list):
             raise error.BASICError(error.MISSING_OPERAND)

@@ -105,13 +105,13 @@ class Session(object):
         self.start()
         self._impl.io_streams.remove_pipes(input_streams, output_streams)
 
-    def evaluate(self, expression):
+    async def evaluate(self, expression):
         """Evaluate a BASIC expression."""
         self.start()
         with self._impl.io_streams.activate():
             if isinstance(expression, text_type):
                 expression = self._impl.codepage.unicode_to_bytes(expression)
-            return self._impl.evaluate(expression)
+            return await self._impl.evaluate(expression)
 
     def set_variable(self, name, value):
         """Set a variable in memory."""

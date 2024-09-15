@@ -810,9 +810,9 @@ class TextScreen(object):
     ###########################################################################
     # text screen callbacks
 
-    def locate_(self, args):
+    async def locate_(self, args):
         """LOCATE: Set cursor position, shape and visibility."""
-        args = list(None if arg is None else values.to_int(arg) for arg in args)
+        args = [None if arg is None else values.to_int(arg) async for arg in args]
         args = args + [None] * (5-len(args))
         row, col, cursor, start, stop = args
         row = self.current_row if row is None else row
@@ -853,9 +853,9 @@ class TextScreen(object):
             csrlin = self.current_row
         return self._values.new_integer().from_int(csrlin)
 
-    def pos_(self, args):
+    async def pos_(self, args):
         """POS: get the current screen column."""
-        list(args)
+        [_ async for _ in args]
         if self.current_col == self.mode.width and self.overflow:
             # in overflow position, return column 1.
             pos = 1
@@ -863,11 +863,11 @@ class TextScreen(object):
             pos = self.current_col
         return self._values.new_integer().from_int(pos)
 
-    def screen_fn_(self, args):
+    async def screen_fn_(self, args):
         """SCREEN: get char or attribute at a location."""
-        row = values.to_integer(next(args))
-        col = values.to_integer(next(args))
-        want_attr = next(args)
+        row = values.to_integer(await anext(args))
+        col = values.to_integer(await anext(args))
+        want_attr = await anext(args)
         if want_attr is not None:
             want_attr = values.to_integer(want_attr)
             want_attr = want_attr.to_int()
@@ -876,7 +876,7 @@ class TextScreen(object):
         error.range_check(0, self.mode.height, row)
         error.range_check(0, self.mode.width, col)
         error.throw_if(row == 0 and col == 0)
-        list(args)
+        [_ async for _ in args]
         row = row or 1
         col = col or 1
         if self.scroll_area.active:
@@ -890,9 +890,9 @@ class TextScreen(object):
             result = self._apage.get_byte(row, col)
         return self._values.new_integer().from_int(result)
 
-    def view_print_(self, args):
+    async def view_print_(self, args):
         """VIEW PRINT: set scroll region."""
-        start, stop = (None if arg is None else values.to_int(arg) for arg in args)
+        start, stop = [None if arg is None else values.to_int(arg) async for arg in args]
         if start is None and stop is None:
             self.scroll_area.unset()
         else:

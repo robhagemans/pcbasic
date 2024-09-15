@@ -70,9 +70,9 @@ class Stick(object):
         on, = args
         self.is_on = (on == tk.ON)
 
-    def stick_(self, args):
+    async def stick_(self, args):
         """STICK: poll the joystick axes."""
-        fn, = args
+        fn, = [_ async for _ in args]
         fn = values.to_int(fn)
         error.range_check(0, 3, fn)
         joy, axis = fn // 2, fn % 2
@@ -83,9 +83,9 @@ class Stick(object):
             result = 0
         return self._values.new_integer().from_int(result)
 
-    def strig_(self, args):
+    async def strig_(self, args):
         """STRIG: poll the joystick fire button."""
-        fn, = args
+        fn, = [_ async for _ in args]
         fn = values.to_int(fn)
         error.range_check(0, 7, fn)
         # [stick][button]

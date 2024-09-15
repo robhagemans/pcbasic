@@ -58,9 +58,9 @@ class Randomiser(object):
         self._seed += n * self._step
         self._seed %= self._period
 
-    def rnd_(self, args):
+    async def rnd_(self, args):
         """Get a value from the random number generator."""
-        f, = args
+        f, = [_ async for _ in args]
         if f is None:
             # RND
             self._cycle()

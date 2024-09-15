@@ -117,18 +117,18 @@ class BasicEvents(object):
         command, = args
         self.command(self.pen, command)
 
-    def strig_(self, args):
+    async def strig_(self, args):
         """STRIG: switch on/off fire button event handling."""
-        num = values.to_int(next(args))
-        command, = args
+        num = values.to_int(await anext(args))
+        command, = [_ async for _ in args]
         error.range_check(0, 255, num)
         if num in (0, 2, 4, 6):
             self.command(self.strig[num//2], command)
 
-    def com_(self, args):
+    async def com_(self, args):
         """COM: switch on/off serial port event handling."""
-        num = values.to_int(next(args))
-        command, = args
+        num = values.to_int(await anext(args))
+        command, = [_ async for _ in args]
         error.range_check(0, 2, num)
         if num > 0:
             self.command(self.com[num-1], command)
@@ -138,11 +138,11 @@ class BasicEvents(object):
         command, = args
         self.command(self.timer, command)
 
-    def key_(self, args):
+    async def key_(self, args):
         """KEY: switch on/off keyboard events."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(0, 255, num)
-        command, = args
+        command, = [_ async for _ in args]
         # others are ignored
         if num >= 1 and num <= 20:
             self.command(self.key[num-1], command)
@@ -152,16 +152,16 @@ class BasicEvents(object):
         command, = args
         self.command(self.play, command)
 
-    def on_event_gosub_(self, args):
+    async def on_event_gosub_(self, args):
         """ON .. GOSUB: define event trapping subroutine."""
-        token = next(args)
-        num = next(args)
-        jumpnum = next(args)
+        token = await anext(args)
+        num = await anext(args)
+        jumpnum = await anext(args)
+        print(token, num, jumpnum)
         if jumpnum == 0:
             jumpnum = None
         elif jumpnum not in self._program.line_numbers:
             raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
-        list(args)
         if token == tk.KEY:
             keynum = values.to_int(num)
             error.range_check(1, len(self.key), keynum)
@@ -228,14 +228,14 @@ class PlayHandler(EventHandler):
         # set to a number higher than the maximum buffer length?
         self.last = 0 #34 if multivoice else 0
 
-    async def check_input(self, signal):
+    def check_input(self, signal):
         """Check and trigger PLAY (music queue) events."""
-        play_now = await self._sound.tones_waiting()
+        play_now = self._sound.tones_waiting()
         if self._sound.multivoice:
-            if (self.last > play_now and play_now < self.trig):
+            if self.last > play_now and play_now < self.trig:
                 self.trigger()
         else:
-            if (self.last >= self.trig and play_now < self.trig):
+            if self.last >= self.trig and play_now < self.trig:
                 self.trigger()
         self.last = play_now
         return False

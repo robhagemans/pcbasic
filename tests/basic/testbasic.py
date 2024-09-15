@@ -8,6 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 from __future__ import print_function
 
+import asyncio
 import sys
 import os
 import shutil
@@ -312,7 +313,7 @@ def run_tests(tests, all, fast, loud, reraise, **dummy):
                             # for it to find extension modules
                             sys.path = PYTHONPATH + [os.path.abspath('.')]
                             # run PC-BASIC
-                            pcbasic.main('--interface=none')
+                            asyncio.run(pcbasic.main('--interface=none'))
             # update test time
             if test_frame.exists and not test_frame.skip and not test_frame.crash:
                 times[fullname] = timer.wall_time

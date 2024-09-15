@@ -6,19 +6,22 @@ Operating system shell and environment
 This file is released under the GNU GPL version 3 or later.
 """
 
-import os
 import io
 import logging
+import os
 import threading
 from collections import deque
 from subprocess import Popen, PIPE
+from typing import TYPE_CHECKING
 
+from . import values
+from .base import error
+from .codepage import CONTROL
 from ..compat import OEM_ENCODING, HIDE_WINDOW, PY2
 from ..compat import which, split_quoted, getenvu, setenvu, iterenvu
-from .codepage import CONTROL
-from .base import error
-from . import values
 
+if TYPE_CHECKING:
+    from .console import Console
 
 # command interpreter must support command.com convention
 # to be able to use SHELL "dos-command"
@@ -77,9 +80,9 @@ class Environment(object):
             value = self._codepage.unicode_to_bytes(getenvu(ukey, u''))
             return b'%s=%s' % (key, value)
 
-    def environ_(self, args):
+    async def environ_(self, args):
         """ENVIRON$: get environment string."""
-        expr, = args
+        expr, = [_ async for _ in args]
         if isinstance(expr, values.String):
             key = expr.to_str()
             if not key:
@@ -88,17 +91,17 @@ class Environment(object):
         else:
             index = values.to_int(expr)
             error.range_check(1, 255, index)
-            result = self._getenv_item(index-1)
+            result = self._getenv_item(index - 1)
         return self._values.new_string().from_str(result)
 
-    def environ_statement_(self, args):
+    async def environ_statement_(self, args):
         """ENVIRON: set environment string."""
-        envstr = values.next_string(args)
-        list(args)
+        envstr = await values.next_string(args)
+        [_ async for _ in args]
         eqs = envstr.find(b'=')
         if eqs <= 0:
             raise error.BASICError(error.IFC)
-        self._setenv(envstr[:eqs], envstr[eqs+1:])
+        self._setenv(envstr[:eqs], envstr[eqs + 1:])
 
 
 #########################################
@@ -107,7 +110,7 @@ class Environment(object):
 class Shell(object):
     """Launcher for command shell."""
 
-    def __init__(self, queues, keyboard, console, files, codepage, shell):
+    def __init__(self, queues, keyboard, console: 'Console', files, codepage, shell):
         """Initialise the shell."""
         self._shell = shell
         self._queues = queues
@@ -117,7 +120,7 @@ class Shell(object):
         self._codepage = codepage
         self._last_command = u''
 
-    if PY2: # pragma: no cover
+    if PY2:  # pragma: no cover
         def _process_stdout(self, stream, output):
             """Retrieve SHELL output and write to console."""
             # hack for python 2: use latin-1 as a passthrough encoding
@@ -209,13 +212,13 @@ class Shell(object):
         outp.start()
         return shell_output
 
-    def _drain_final(self, shell_output, remove_echo):
+    async def _drain_final(self, shell_output, remove_echo):
         """Drain final output from shell."""
         if not shell_output:
             return
         if not shell_output[-1] == u'\n':
             shell_output.append(u'\n')
-        self._show_output(shell_output, remove_echo)
+        await self._show_output(shell_output, remove_echo)
 
     async def _communicate(self, p, shell_output, shell_cerr):
         """Communicate with launched shell."""
@@ -223,8 +226,8 @@ class Shell(object):
         while p.poll() is None:
             # stderr output should come first
             # e.g. first print the error message (tsderr), then the prompt (stdout)
-            self._show_output(shell_cerr, remove_echo=False)
-            self._show_output(shell_output, remove_echo=True)
+            await self._show_output(shell_cerr, remove_echo=False)
+            await self._show_output(shell_output, remove_echo=True)
             try:
                 await self._queues.wait()
                 # expand=False suppresses key macros
@@ -234,7 +237,7 @@ class Shell(object):
             if not c:
                 continue
             elif c in (b'\r', b'\n'):
-                self._console.write(c)
+                await self._console.write(c)
                 # send the command
                 self._send_input(p.stdin, word)
                 word = []
@@ -242,14 +245,14 @@ class Shell(object):
                 # handle backspace
                 if word:
                     word.pop()
-                    self._console.write(b'\x1D \x1D')
+                    await self._console.write(b'\x1D \x1D')
             elif not c.startswith(b'\0'):
                 # exclude e-ascii (arrow keys not implemented)
                 word.append(c)
-                self._console.write(c)
+                await self._console.write(c)
         # drain final output
-        self._drain_final(shell_cerr, remove_echo=False)
-        self._drain_final(shell_output, remove_echo=True)
+        await self._drain_final(shell_cerr, remove_echo=False)
+        await self._drain_final(shell_output, remove_echo=True)
 
     def _send_input(self, pipe, word):
         """Write keyboard input to pipe."""
@@ -267,7 +270,7 @@ class Shell(object):
         # explicit flush as pipe may not be line buffered. blocks in python 3 without
         pipe.flush()
 
-    def _show_output(self, shell_output, remove_echo):
+    async def _show_output(self, shell_output, remove_echo):
         """Write shell output to console."""
         if shell_output and u'\n' in shell_output:
             # can't do a comprehension as it will crash if the deque is accessed by the thread
@@ -285,7 +288,7 @@ class Shell(object):
             outstr = outstr.replace(u'\n', u'\r')
             # encode to codepage
             outbytes = self._codepage.unicode_to_bytes(outstr, errors='replace')
-            self._console.write(outbytes)
+            await self._console.write(outbytes)
 
     def _remove_echo(self, unicode_reply):
         """Detect if output was an echo of the input and remove."""

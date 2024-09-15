@@ -240,7 +240,7 @@ class Program(object):
         # update line number dict
         self.update_line_dict(startpos, afterpos, 0, deleteable, beyond)
 
-    def edit(self, console, from_line, target_bytepos):
+    async def edit(self, console, from_line, target_bytepos):
         """Output program line to console and position cursor."""
         if self.protected:
             console.write(b'%d\r' % (from_line,))
@@ -258,9 +258,9 @@ class Program(object):
                 if target_bytepos <= _bytepos
             )
         # no newline to avoid scrolling on line 24
-        console.list_line(bytes(output), newline=False, set_text_position=textpos)
+        await console.list_line(bytes(output), newline=False, set_text_position=textpos)
 
-    def renum(self, console, new_line, start_line, step):
+    async def renum(self, console, new_line, start_line, step):
         """Renumber stored program."""
         new_line = 10 if new_line is None else new_line
         start_line = 0 if start_line is None else start_line
@@ -308,7 +308,7 @@ class Program(object):
                 # not redefined, exists in program?
                 if jumpnum not in self.line_numbers:
                     linum = self.get_line_number(ins.tell()-1)
-                    console.write_line(b'Undefined line %d in %d' % (jumpnum, linum))
+                    await console.write_line(b'Undefined line %d in %d' % (jumpnum, linum))
                 newjump = jumpnum
             ins.seek(-2, 1)
             ins.write(struct.pack('<H', newjump))
@@ -320,7 +320,7 @@ class Program(object):
         self.line_numbers.update(new_lines)
         return old_to_new
 
-    def load(self, g):
+    async def load(self, g):
         """Load program from ascii, bytecode or protected stream."""
         self.erase()
         if g.filetype == b'B':
@@ -339,7 +339,7 @@ class Program(object):
             # or it'll end up after the new code in memory
             self.bytecode.truncate()
             # anything but numbers or whitespace: Direct Statement in File
-            self.merge(g)
+            await self.merge(g)
         else:
             logging.debug('Incorrect file type `%s` on LOAD', g.filetype)
         # rebuild line number dict and offsets
@@ -347,7 +347,7 @@ class Program(object):
             self.rebuild_line_dict()
         self.code_size = self.bytecode.tell()
 
-    def merge(self, g):
+    async def merge(self, g):
         """Merge program from ascii or utf8 (if utf8_files is True) stream."""
         while True:
             line, cr = g.read_line()
@@ -366,7 +366,7 @@ class Program(object):
                 if linebuf.skip_blank() not in tk.END_LINE:
                     raise error.BASICError(error.DIRECT_STATEMENT_IN_FILE)
 
-    def save(self, g):
+    async def save(self, g):
         """Save the program to stream g in (A)scii, (B)ytecode or (P)rotected mode."""
         mode = g.filetype
         if self.protected and mode != b'P':
@@ -386,7 +386,7 @@ class Program(object):
                 current_line, output, _ = self.lister.detokenise_line(self.bytecode)
                 if current_line == -1 or (current_line > self.max_list_line):
                     break
-                g.write_line(bytes(output))
+                await g.write_line(bytes(output))
         self.bytecode.seek(current)
 
     def list_lines(self, from_line, to_line):
