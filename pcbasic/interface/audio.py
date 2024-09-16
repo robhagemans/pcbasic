@@ -5,6 +5,7 @@ Base class for audio plugins
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
+import asyncio
 
 from ..compat import queue
 from ..basic.base import signals
@@ -41,8 +42,8 @@ class AudioPlugin(object):
         """Drain audio queue."""
         while True:
             try:
-                signal = self._audio_queue.get(False)
-            except queue.Empty:
+                signal = self._audio_queue.get_nowait()
+            except (queue.Empty, asyncio.QueueEmpty):
                 return
             self._audio_queue.task_done()
             if signal.event_type == signals.QUIT:

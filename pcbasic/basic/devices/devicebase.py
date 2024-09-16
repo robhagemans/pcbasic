@@ -5,17 +5,22 @@ Devices, Files and I/O operations
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import inspect
 import io
-import os
-import struct
 import logging
+import os
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
-from ...compat import iterchar
+from .. import values
 from ..base import error
 from ..base.eascii import as_bytes as ea
-from .. import values
+from ...compat import iterchar
+
+if TYPE_CHECKING:
+    from ..display import Display
+    from ..console import Console
+
 
 def nullstream():
     return open(os.devnull, 'r+b')
@@ -82,10 +87,10 @@ class Device(object):
         """Set up device."""
         self.device_file = None
 
-    def open(
+    async def open(
             self, number, param, filetype, mode, access, lock,
             reclen, seg, offset, length, field
-        ):
+    ):
         """Open a file on the device."""
         if not self.device_file:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -109,18 +114,18 @@ class SCRNDevice(Device):
 
     allowed_modes = b'OR'
 
-    def __init__(self, display, console):
+    def __init__(self, display: 'Display', console: 'Console'):
         """Initialise screen device."""
         # open a master file on the screen
         Device.__init__(self)
-        self.device_file = SCRNFile(display, console)
+        self.device_file: SCRNFile = SCRNFile(display, console)
 
-    def open(
+    async def open(
             self, number, param, filetype, mode, access, lock,
             reclen, seg, offset, length, field
-        ):
+    ):
         """Open a file on the device."""
-        new_file = Device.open(
+        new_file = await Device.open(
             self, number, param, filetype, mode, access, lock,
             reclen, seg, offset, length, field
         )
@@ -134,7 +139,7 @@ class KYBDDevice(Device):
 
     allowed_modes = b'IR'
 
-    def __init__(self, keyboard, display):
+    def __init__(self, keyboard: 'Keyboard', display: 'Display'):
         """Initialise keyboard device."""
         # open a master file on the keyboard
         Device.__init__(self)
@@ -363,7 +368,7 @@ class TextFileBase(RawFile):
 class InputMixin(object):
     """Support for INPUT#."""
 
-    def _skip_whitespace(self, whitespace):
+    async def _skip_whitespace(self, whitespace):
         """Skip spaces and line feeds and NUL; return last whitespace char """
         c = b''
         while True:
@@ -372,25 +377,36 @@ class InputMixin(object):
                 break
             # drop whitespace char
             c = self.read_one()
+            if inspect.iscoroutine(c):
+                c = await c
+
             # LF causes following CR to be dropped
             if c == b'\n' and self.peek(1) == b'\r':
                 # LFCR: drop the CR, report as LF
                 # on disk devices, this means LFCRLF is reported as LF
-                self.read_one()
+                res = self.read_one()
+                if inspect.iscoroutine(res):
+                    await res
         return c
 
-    def input_entry(self, typechar, allow_past_end, suppress_unquoted_linefeed=True):
+    async def input_entry(self, typechar, allow_past_end, suppress_unquoted_linefeed=True):
         """Read a number or string entry for INPUT """
         word, blanks = b'', b''
         # fix readahead buffer (self.next_char)
-        last = self._skip_whitespace(INPUT_WHITESPACE)
+        last = await self._skip_whitespace(INPUT_WHITESPACE)
         # read first non-whitespace char
         c = self.read_one()
+        if inspect.iscoroutine(c):
+            c = await c
+
         # LF escapes quotes
         # may be true if last == '', hence "in ('\n', '\0')" not "in '\n0'"
         quoted = (c == b'"' and typechar == values.STR and last not in (b'\n', b'\0'))
         if quoted:
             c = self.read_one()
+            if inspect.iscoroutine(c):
+                c = await c
+
         # LF escapes end of file, return empty string
         if not c and not allow_past_end and last not in (b'\n', b'\0'):
             raise error.BASICError(error.INPUT_PAST_END)
@@ -406,8 +422,12 @@ class InputMixin(object):
             elif suppress_unquoted_linefeed and (c == b'\n' and not quoted):
                 # LF, LFCR are dropped entirely
                 c = self.read_one()
+                if inspect.iscoroutine(c):
+                    c = await c
                 if c == b'\r':
                     c = self.read_one()
+                    if inspect.iscoroutine(c):
+                        c = await c
                 continue
             elif c == b'\0':
                 # NUL is dropped even within quotes
@@ -424,15 +444,21 @@ class InputMixin(object):
                 break
             if not quoted:
                 c = self.read_one()
+                if inspect.iscoroutine(c):
+                    c = await c
             else:
                 # no CRLF replacement inside quotes.
                 c = self.read(1)
+                if inspect.iscoroutine(c):
+                    c = await c
         # if separator was a whitespace char or closing quote
         # skip trailing whitespace before any comma or hard separator
         if c and c in INPUT_WHITESPACE or (quoted and c == b'"'):
-            self._skip_whitespace(b' ')
+            await self._skip_whitespace(b' ')
             if self.peek(1) in b',\r':
                 c = self.read_one()
+                if inspect.iscoroutine(c):
+                    c = await c
         # file position is at one past the separator char
         return word, c
 
@@ -459,14 +485,14 @@ class InputTextFile(TextFileBase, InputMixin):
 class RealTimeInputMixin(object):
     """Support for INPUT# on non-seekable KYBD and COM files."""
 
-    def input_entry(self, typechar, allow_past_end):
+    async def input_entry(self, typechar, allow_past_end):
         """Read a number or string entry from KYBD: or COMn: for INPUT#."""
         word, blanks = b'', b''
-        c = self.read_one()
+        c = await self.read_one()
         # LF escapes quotes
         quoted = (c == b'"' and typechar == values.STR)
         if quoted:
-            c = self.read_one()
+            c = await self.read_one()
         # LF escapes end of file, return empty string
         if not c and not allow_past_end:
             raise error.BASICError(error.INPUT_PAST_END)
@@ -478,9 +504,9 @@ class RealTimeInputMixin(object):
                 parsing_trail = True
             elif c == b'\n' and not quoted:
                 # LF, LFCR are dropped entirely
-                c = self.read_one()
+                c = await self.read_one()
                 if c == b'\r':
-                    c = self.read_one()
+                    c = await self.read_one()
                 continue
             elif c == b'\0':
                 # NUL is dropped even within quotes
@@ -497,7 +523,7 @@ class RealTimeInputMixin(object):
                 break
             # there should be KYBD: control char replacement here even if quoted
             save_prev = self._previous
-            c = self.read_one()
+            c = await self.read_one()
             if parsing_trail:
                 if c not in INPUT_WHITESPACE:
                     # un-read the character if it's not a separator
@@ -528,7 +554,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 
     col = 0
 
-    def __init__(self, keyboard, display):
+    def __init__(self, keyboard: 'Keyboard', display: 'Display'):
         """Initialise keyboard file."""
         TextFileBase.__init__(self, nullstream(), filetype=b'D', mode=b'I')
         # buffer for the separator character that broke the last INPUT# field
@@ -552,7 +578,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         """Return only readahead buffer, no blocking peek."""
         return b''.join(self._readahead[:num])
 
-    def read(self, num):
+    async def read(self, num):
         """Read a number of characters (INPUT$)."""
         # take at most num chars out of readahead buffer (holds just one on KYBD but anyway)
         chars, self._readahead = b''.join(self._readahead[:num]), self._readahead[num:]
@@ -561,11 +587,11 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
             chars += b''.join(
                 # note that INPUT$ on KYBD files replaces some eascii with NUL
                 b'\0' if c in KYBD_REPLACE else c if len(c) == 1 else b''
-                for c in self._keyboard.read_bytes_kybd_file(num-len(chars))
+                for c in await self._keyboard.read_bytes_kybd_file(num - len(chars))
             )
         return chars
 
-    def read_one(self):
+    async def read_one(self):
         """Read a character with line ending replacement (INPUT and LINE INPUT)."""
         # take char out of readahead buffer, if present; blocking keyboard read otherwise
         if self._readahead:
@@ -578,7 +604,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
             return b''.join(
                 # INPUT and LINE INPUT on KYBD files replace some eascii with control sequences
                 KYBD_REPLACE.get(c, c)
-                for c in self._keyboard.read_bytes_kybd_file(1)
+                for c in await self._keyboard.read_bytes_kybd_file(1)
             )
 
     # read_line: inherited from TextFileBase, this calls peek()
@@ -591,12 +617,12 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
         """LOC for KYBD: is 0."""
         return 0
 
-    def eof(self):
+    async def eof(self):
         """KYBD only EOF if ^Z is read."""
         if self.mode in (b'A', b'O'):
             return False
         # blocking peek
-        return (self._keyboard.peek_byte_kybd_file() == b'\x1A')
+        return (await self._keyboard.peek_byte_kybd_file() == b'\x1A')
 
     def set_width(self, new_width=255):
         """Setting width on KYBD device (not files) changes screen width."""
@@ -609,7 +635,7 @@ class KYBDFile(TextFileBase, RealTimeInputMixin):
 class SCRNFile(RawFile):
     """SCRN: file, allows writing to the screen as a text file."""
 
-    def __init__(self, display, console):
+    def __init__(self, display: 'Display', console: 'Console'):
         """Initialise screen file."""
         RawFile.__init__(self, nullstream(), filetype=b'D', mode=b'O')
         # need display object as WIDTH can change graphics mode
@@ -621,7 +647,7 @@ class SCRNFile(RawFile):
         # on master-file devices, this is the master file.
         self._is_master = True
 
-    def open_clone(self, filetype, mode, reclen=128):
+    def open_clone(self, filetype, mode, reclen=128) -> 'SCRNFile':
         """Clone screen file."""
         inst = SCRNFile(self._display, self.console)
         inst.mode = mode
@@ -630,7 +656,7 @@ class SCRNFile(RawFile):
         inst._is_master = False
         return inst
 
-    def write(self, s, can_break=True):
+    async def write(self, s, can_break=True):
         """Write string s to SCRN: """
         if not s:
             return
@@ -656,30 +682,30 @@ class SCRNFile(RawFile):
                 # nonprinting characters including tabs are not counted for WIDTH
                 s_width += 1
         if can_break and (self.width != 255 and self.console.current_row != self.console.height
-                and self.col != 1 and self.col-1 + s_width > self.width and not newline):
-            self.console.write_line(do_echo=do_echo)
+                          and self.col != 1 and self.col - 1 + s_width > self.width and not newline):
+            await self.console.write_line(do_echo=do_echo)
             self._col = 1
         cwidth = self.console.width
         output = []
         for c in iterchar(s):
             if self.width <= cwidth and self.col > self.width:
-                self.console.write_line(b''.join(output), do_echo=do_echo)
+                await self.console.write_line(b''.join(output), do_echo=do_echo)
                 output = []
                 self._col = 1
             if self.col <= cwidth or self.width <= cwidth:
                 output.append(c)
             if c in (b'\n', b'\r'):
-                self.console.write(b''.join(output), do_echo=do_echo)
+                await self.console.write(b''.join(output), do_echo=do_echo)
                 output = []
                 self._col = 1
             else:
                 self._col += 1
-        self.console.write(b''.join(output), do_echo=do_echo)
+        await self.console.write(b''.join(output), do_echo=do_echo)
 
-    def write_line(self, inp=b''):
+    async def write_line(self, inp=b''):
         """Write a string to the screen and follow by CR."""
-        self.write(inp)
-        self.console.write_line(do_echo=self._is_master)
+        await self.write(inp)
+        await self.console.write_line(do_echo=self._is_master)
 
     @property
     def col(self):

@@ -31,18 +31,18 @@ class PickleTest(TestCase):
         ts2 = pickle.loads(ps)
         assert ts2.read() == b'123'
 
-    def test_pickle_session(self):
+    async def test_pickle_session(self):
         """Pickle Session object."""
         with Session() as s:
-            s.execute('a=1')
+            await s.execute('a=1')
         ps = pickle.dumps(s)
         s2 = pickle.loads(ps)
         assert s2.get_variable('a!') == 1
 
-    def test_pickle_session_open_file(self):
+    async def test_pickle_session_open_file(self):
         """Pickle Session object with open file."""
         s = Session(devices={'a': self.output_path()})
-        s.execute('open "A:TEST" for output as 1')
+        await s.execute('open "A:TEST" for output as 1')
         ps = pickle.dumps(s)
         s2 = pickle.loads(ps)
         s2.execute('print#1, "test"')
@@ -50,12 +50,12 @@ class PickleTest(TestCase):
         with open(self.output_path('TEST')) as f:
             assert f.read() == u'test\n\x1a'
 
-    def test_pickle_session_running(self):
+    async def test_pickle_session_running(self):
         """Pickle Session object with running program."""
         s = Session()
-        s.execute('10 for i%=1 to 10: system: next')
+        await s.execute('10 for i%=1 to 10: system: next')
         try:
-            s.execute('run')
+            await s.execute('run')
         except Exit:
             pass
         ps = pickle.dumps(s)

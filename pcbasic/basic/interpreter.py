@@ -5,23 +5,27 @@ BASIC interpreter
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import inspect
 import struct
+from typing import TYPE_CHECKING
 
+from . import values
+from .base import codestream
 from .base import error
 from .base import tokens as tk
 from .base.tokens import DIGITS
-from .base import codestream
-from . import values
+
+if TYPE_CHECKING:
+    from .console import Console
 
 
 class Interpreter(object):
     """BASIC interpreter."""
 
     def __init__(
-            self, queues, console, cursor, files, sound,
+            self, queues, console: 'Console', cursor, files, sound,
             values, memory, program, parser, basic_events
-        ):
+    ):
         """Initialise interpreter."""
         self._queues = queues
         self._basic_events = basic_events
@@ -87,13 +91,13 @@ class Interpreter(object):
         # pointer to error trap
         self.on_error = None
 
-    def parse(self):
+    async def parse(self):
         """Parse from the current pointer in current codestream."""
         while True:
             # update what basic events need to be handled
             self._queues.set_basic_event_handlers(self._basic_events.enabled)
             # check input and BASIC events. may raise Break, Reset or Exit
-            self._queues.check_events()
+            await self._queues.check_events()
             try:
                 self.handle_basic_events()
                 ins = self.get_codestream()
@@ -109,31 +113,33 @@ class Interpreter(object):
                             # unfinished error handler: no RESUME (don't trap this)
                             self.error_handle_mode = True
                             # get line number right
-                            raise error.BASICError(error.NO_RESUME, ins.tell()-len(token)-2)
+                            raise error.BASICError(error.NO_RESUME, ins.tell() - len(token) - 2)
                         # stream has ended
                         self.set_pointer(False)
                         return
                     if self.tron:
                         linenum = struct.unpack_from('<H', token, 2)
-                        self._console.write(b'[%i]' % linenum)
+                        await self._console.write(b'[%i]' % linenum)
                     self.step(token)
                 elif c not in (b':', tk.THEN, tk.ELSE, tk.GOTO):
                     # new statement or branch of an IF statement allowed, nothing else
                     raise error.BASICError(error.STX)
-                self.parser.parse_statement(ins)
+                res = self.parser.parse_statement(ins)
+                if inspect.iscoroutine(res):
+                    await res
             except error.BASICError as e:
                 self.trap_error(e)
 
-    def loop(self):
+    async def loop(self):
         """Run commands until control returns to user."""
         if not self.parse_mode:
             return
         try:
             # parse until break or end
-            self.parse()
+            await self.parse()
         except error.Break as e:
             self._sound.stop_all_sound()
-            self._handle_break(e)
+            await self._handle_break(e)
         # move pointer to the start of direct line (for both on and off!)
         self.set_pointer(False, 0)
         # return control to user
@@ -144,11 +150,11 @@ class Interpreter(object):
         self.parse_mode = on
         self._cursor.set_direct(not on)
 
-    def _handle_break(self, e):
+    async def _handle_break(self, e):
         """Handle a Break event."""
         # print ^C at current position
         if not self.input_mode and not e.stop:
-            self._console.write(b'^C')
+            await self._console.write(b'^C')
         # if we're in a program, save pointer
         pos = -1
         if self.run_mode:
@@ -167,7 +173,7 @@ class Interpreter(object):
                 e.trapped_error_pos = self._program.line_numbers[line]
             else:
                 e.trapped_error_pos = self.error_pos
-            #self.error_handle_mode = False
+            # self.error_handle_mode = False
         # ensure we can handle the break like an error
         e.err = 0
         e.pos = pos
@@ -211,7 +217,6 @@ class Interpreter(object):
         self.for_stack = []
         self.while_stack = []
 
-
     ###########################################################################
     # event and error handling
 
@@ -233,7 +238,7 @@ class Interpreter(object):
         """Handle a BASIC error through trapping."""
         if e.pos is None:
             if self.run_mode:
-                e.pos = self._program_code.tell()-1
+                e.pos = self._program_code.tell() - 1
             else:
                 e.pos = -1
         self.error_num = e.err
@@ -349,31 +354,31 @@ class Interpreter(object):
     ###########################################################################
     # branches
 
-    def if_(self, args):
+    async def if_(self, args):
         """IF: branching statement."""
         # get condition
         # avoid overflow: don't use bools.
-        then_branch = not values.to_single(next(args)).is_zero()
+        then_branch = not values.to_single(await anext(args)).is_zero()
         # cofunction only parses the branch we need
         # cofunction checks for line number
-        branch = args.send(then_branch)
+        branch = args.asend(then_branch)
         # and completes
-        list(args)
+        [_ async for _ in args]
         # we may have a line number immediately after THEN or ELSE
         if branch is not None:
             self.jump(branch)
         # note that any :ELSE block encountered will be ignored automatically
         # since standalone ELSE is a no-op to end of line
 
-    def on_jump_(self, args):
+    async def on_jump_(self, args):
         """ON GOTO/GOSUB: calculated jump."""
-        onvar = values.to_int(next(args))
+        onvar = values.to_int(await anext(args))
         error.range_check(0, 255, onvar)
-        jump_type = next(args)
+        jump_type = await anext(args)
         # only parse jumps (and errors!) up to our choice
-        i = -1
-        for i, jumpnum in enumerate(args):
-            if i == onvar-1:
+        i = 0
+        async for jumpnum in args:
+            if i == onvar - 1:
                 # we counted the right number of commas, then didn't find a line number
                 if jumpnum is None:
                     raise error.BASICError(error.STX)
@@ -383,23 +388,25 @@ class Interpreter(object):
                     self.jump_sub(jumpnum)
                 return
 
+            i += 1
+
     ###########################################################################
     # loops
 
-    def for_(self, args):
+    async def for_(self, args):
         """Initialise a FOR loop."""
         # read variable
-        varname = self._memory.complete_name(next(args))
+        varname = self._memory.complete_name(await anext(args))
         vartype = varname[-1:]
-        start = values.to_type(vartype, next(args)).clone()
+        start = values.to_type(vartype, await anext(args)).clone()
         # only raised after the TO has been parsed
         if vartype in (values.STR, values.DBL):
             raise error.BASICError(error.TYPE_MISMATCH)
-        stop = values.to_type(vartype, next(args)).clone()
-        step = next(args)
+        stop = values.to_type(vartype, await anext(args)).clone()
+        step = await anext(args)
         if step is not None:
             step = values.to_type(vartype, step).clone()
-        list(args)
+        [_ async for _ in args]
         if step is None:
             # convert 1 to vartype
             step = self._values.from_value(1, varname[-1:])
@@ -453,14 +460,14 @@ class Interpreter(object):
         # find the matching NEXT record
         num = len(self.for_stack)
         for depth in range(num):
-            varname2, stop, step, sgn, forpos, nextpos = self.for_stack[-depth-1]
+            varname2, stop, step, sgn, forpos, nextpos = self.for_stack[-depth - 1]
             if pos == nextpos:
                 if varname is not None and varname2 != self._memory.complete_name(varname):
                     # check once more for matches
                     # it has been checked at FOR, but DEFtypes may have changed.
                     raise error.BASICError(error.NEXT_WITHOUT_FOR)
                 # only drop NEXT record if we've found a matching one
-                self.for_stack = self.for_stack[:len(self.for_stack)-depth]
+                self.for_stack = self.for_stack[:len(self.for_stack) - depth]
                 break
         else:
             raise error.BASICError(error.NEXT_WITHOUT_FOR)
@@ -475,14 +482,14 @@ class Interpreter(object):
             ins.seek(forpos)
         return not loop_ends
 
-    def while_(self, args):
+    async def while_(self, args):
         """WHILE: enter while-loop."""
         list(args)
         ins = self.get_codestream()
         # find matching WEND
         whilepos, wendpos = self._find_wend(ins)
         self.while_stack.append((whilepos, wendpos))
-        self._check_while_condition(ins, whilepos)
+        await self._check_while_condition(ins, whilepos)
 
     def _find_wend(self, ins):
         """Helper function for WHILE: find matching WEND."""
@@ -498,20 +505,20 @@ class Interpreter(object):
         ins.seek(whilepos)
         return whilepos, wendpos
 
-    def _check_while_condition(self, ins, whilepos):
+    async def _check_while_condition(self, ins, whilepos):
         """Check condition of while-loop."""
         ins.seek(whilepos)
         # WHILE condition is zero?
-        if not values.pass_number(self.parser.parse_expression(ins)).is_zero():
+        if not values.pass_number(await self.parser.parse_expression(ins)).is_zero():
             # statement start is before WHILE token
-            self.current_statement = whilepos-2
+            self.current_statement = whilepos - 2
             ins.require_end()
         else:
             # ignore rest of line and jump to WEND
             _, wendpos = self.while_stack.pop()
             ins.seek(wendpos)
 
-    def wend_(self, args):
+    async def wend_(self, args):
         """WEND: iterate while-loop."""
         list(args)
         ins = self.get_codestream()
@@ -525,7 +532,7 @@ class Interpreter(object):
                 break
             # not the expected WEND, we must have jumped out
             self.while_stack.pop()
-        self._check_while_condition(ins, whilepos)
+        await self._check_while_condition(ins, whilepos)
 
     ###########################################################################
     # DATA utilities
@@ -542,16 +549,16 @@ class Interpreter(object):
                 raise error.BASICError(error.UNDEFINED_LINE_NUMBER)
         list(args)
 
-    def read_(self, args):
+    async def read_(self, args):
         """READ: read values from DATA statement."""
         data_error = False
-        for name, indices in args:
+        async for name, indices in args:
             name = self._memory.complete_name(name)
             current = self._program_code.tell()
             self._program_code.seek(self.data_pos)
             if self._program_code.peek() in tk.END_STATEMENT:
                 # initialise - find first DATA
-                self._program_code.skip_to_token(tk.DATA,)
+                self._program_code.skip_to_token(tk.DATA, )
             if self._program_code.read(1) not in (tk.DATA, b','):
                 self._program_code.seek(current)
                 raise error.BASICError(error.OUT_OF_DATA)
@@ -641,9 +648,9 @@ class Interpreter(object):
     ###########################################################################
     # callbacks
 
-    def error_(self, args):
+    async def error_(self, args):
         """ERROR: simulate an error condition."""
-        errn, = args
+        errn, = [_ async for _ in args]
         errn = values.to_int(errn)
         error.range_check(1, 255, errn)
         raise error.BASICError(errn)
@@ -730,7 +737,7 @@ class Interpreter(object):
         # arguments and expression are being read and parsed by UserFunctionManager
         self.parser.user_functions.define(fnname, self._program_code)
 
-    def llist_(self, args):
+    async def llist_(self, args):
         """LLIST: output program lines to LPT1: """
         line_range, = args
         for l in self._program.list_lines(*line_range):
@@ -738,13 +745,13 @@ class Interpreter(object):
         # return to direct mode
         self.set_pointer(False)
 
-    def renum_(self, args):
+    async def renum_(self, args):
         """RENUM: renumber program line numbers."""
         new, old, step = args
         new, old = self._program.explicit_lines(new, old)
         if step is not None and step < 1:
             raise error.BASICError(error.IFC)
-        old_to_new = self._program.renum(self._console, new, old, step)
+        old_to_new = await self._program.renum(self._console, new, old, step)
         # stop running if we were
         # reset loop stacks
         self._clear_stacks()

@@ -41,11 +41,12 @@ class DebugSession(api.Session):
         # initialise implementation
         if api.Session.start(self):
             # replace dummy debugging step
+            # todo: await self._debug_step
             self.set_hook(self._debug_step)
             self._do_trace = False
             self._watch_list = []
 
-    def _debug_step(self, token):
+    async def _debug_step(self, token):
         """Execute traces and watches on a program step."""
         outstr = u''
         if self._do_trace:
@@ -55,7 +56,7 @@ class DebugSession(api.Session):
             exprstr = self.convert(expr, to_type=text_type)
             outstr += u' %s = ' % (exprstr,)
             try:
-                val = self.evaluate(expr)
+                val = await self.evaluate(expr)
                 print(expr, val)
                 if isinstance(val, bytes):
                     outstr += u'"%s"' % self.convert(val, to_type=text_type)

@@ -5,18 +5,18 @@ Types, values and conversions
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import asyncio
 import math
-import struct
-import functools
+from typing import TYPE_CHECKING
 
-from ...compat import int2byte
-
-from ..base import error
-from ..base import tokens as tk
 from . import numbers
 from . import strings
+from ..base import error
+from ..base import tokens as tk
+from ...compat import int2byte
 
+if TYPE_CHECKING:
+    from ..console import Console
 
 # BASIC type sigils:
 # Integer (%) - stored as two's complement, little-endian
@@ -52,9 +52,11 @@ TYPE_TO_CLASS = {
 # this is close to what gw uses but not quite equivalent
 TRIG_MAX = 5e16
 
+
 def size_bytes(name):
     """Return the size of a value type, by variable name or type char."""
     return TYPE_TO_SIZE[name[-1:]]
+
 
 ###############################################################################
 # type checks
@@ -64,12 +66,14 @@ def check_value(inp):
     if not isinstance(inp, numbers.Value):
         raise TypeError('%s is not of class Value' % type(inp))
 
+
 def pass_string(inp, err=error.TYPE_MISMATCH):
     """Check if variable is String-valued."""
     if not isinstance(inp, strings.String):
         check_value(inp)
         raise error.BASICError(err)
     return inp
+
 
 def pass_number(inp, err=error.TYPE_MISMATCH):
     """Check if variable is numeric."""
@@ -78,10 +82,12 @@ def pass_number(inp, err=error.TYPE_MISMATCH):
         raise error.BASICError(err)
     return inp
 
-def next_string(args):
+
+async def next_string(args):
     """Retrieve a string from an iterator and return as Python value."""
-    expr = next(args)
+    expr = await anext(args)
     return to_string_or_none(expr)
+
 
 def to_string_or_none(expr):
     if isinstance(expr, strings.String):
@@ -113,13 +119,16 @@ def match_types(left, right):
 
 def float_safe(fn):
     """Decorator to handle floating point errors."""
+
     def wrapped_fn(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
         except (ValueError, ArithmeticError) as e:
             return args[0].error_handler.handle(e)
+
     wrapped_fn.__name__ = fn.__name__
     return wrapped_fn
+
 
 def _call_float_function(fn, *args):
     """Convert to IEEE 754, apply function, convert back."""
@@ -155,7 +164,7 @@ class FloatErrorHandler(object):
     # types of errors that do not always interrupt execution
     soft_types = (error.OVERFLOW, error.DIVISION_BY_ZERO)
 
-    def __init__(self, console):
+    def __init__(self, console: 'Console'):
         """Setup handler."""
         self._console = console
         self._do_raise = False
@@ -173,7 +182,7 @@ class FloatErrorHandler(object):
             math_error = error.OVERFLOW
         elif isinstance(e, ZeroDivisionError):
             math_error = error.DIVISION_BY_ZERO
-        else: # pragma: no cover
+        else:  # pragma: no cover
             # shouldn't happen, we're only called with ValueError/ArithmeticError
             raise e
         if (self._do_raise or self._console is None or math_error not in self.soft_types):
@@ -183,12 +192,14 @@ class FloatErrorHandler(object):
         else:
             # write a message & continue as normal
             # message should not include line number or trailing \xFF
-            self._console.write_line(error.BASICError(math_error).message)
+            # await self._console.write_line(error.BASICError(math_error).message)
+            # todo: fix this
+            pass
         # return max value for the appropriate float type
         # integer operations should just raise the BASICError directly, they are not handled
         if e.args and isinstance(e.args[0], numbers.Float):
             return e.args[0]
-        else: # pragma: no cover
+        else:  # pragma: no cover
             return numbers.Single(None, self).from_bytes(numbers.Single.pos_max)
 
 
@@ -298,7 +309,7 @@ class Values(object):
             # non-integer characters, try a float
             pass
         except error.BASICError as e:
-            if e.err != error.OVERFLOW: # pragma: no cover
+            if e.err != error.OVERFLOW:  # pragma: no cover
                 # shouldn't happen, from_str only raises Overflow
                 raise
         # if allow_nonnum == False, raises ValueError for non-numerical characters
@@ -317,12 +328,14 @@ def to_integer(inp, unsigned=False):
         raise error.BASICError(error.TYPE_MISMATCH)
     return inp.to_integer(unsigned)
 
+
 @float_safe
 def to_single(num):
     """Check if variable is numeric, convert to Single."""
     if isinstance(num, strings.String):
         raise error.BASICError(error.TYPE_MISMATCH)
     return num.to_single()
+
 
 @float_safe
 def to_double(num):
@@ -331,20 +344,24 @@ def to_double(num):
         raise error.BASICError(error.TYPE_MISMATCH)
     return num.to_double()
 
-def cint_(args):
+
+async def cint_(args):
     """CINT: convert to integer (by rounding, halves away from zero)."""
-    value, = args
+    value, = [_ async for _ in args]
     return to_integer(value)
 
-def csng_(args):
+
+async def csng_(args):
     """CSNG: convert to single (by Gaussian rounding)."""
-    value, = args
+    value, = [_ async for _ in args]
     return to_single(value)
 
-def cdbl_(args):
+
+async def cdbl_(args):
     """CDBL: convert to double."""
-    value, = args
+    value, = [_ async for _ in args]
     return to_double(value)
+
 
 def to_type(typechar, value):
     """Check if variable can be converted to the given type and convert if necessary."""
@@ -358,44 +375,51 @@ def to_type(typechar, value):
         return to_double(value)
     raise ValueError('%s is not a valid sigil.' % typechar)
 
+
 # NOTE that this function will overflow if outside the range of Integer
 # whereas Float.to_int will not
 def to_int(inp, unsigned=False):
     """Round numeric variable and convert to Python integer."""
     return to_integer(inp, unsigned).to_int(unsigned)
 
-def mki_(args):
+
+async def mki_(args):
     """MKI$: return the byte representation of an int."""
-    x, = args
+    x, = [_ async for _ in args]
     return x._values.new_string().from_str(bytes(to_integer(x).to_bytes()))
 
-def mks_(args):
+
+async def mks_(args):
     """MKS$: return the byte representation of a single."""
-    x, = args
+    x, = [_ async for _ in args]
     return x._values.new_string().from_str(bytes(to_single(x).to_bytes()))
 
-def mkd_(args):
+
+async def mkd_(args):
     """MKD$: return the byte representation of a double."""
-    x, = args
+    x, = [_ async for _ in args]
     return x._values.new_string().from_str(bytes(to_double(x).to_bytes()))
 
-def cvi_(args):
+
+async def cvi_(args):
     """CVI: return the int value of a byte representation."""
-    x, = args
+    x, = [_ async for _ in args]
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 2)
     return x._values.from_bytes(cstr[:2])
 
-def cvs_(args):
+
+async def cvs_(args):
     """CVS: return the single-precision value of a byte representation."""
-    x, = args
+    x, = [_ async for _ in args]
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 4)
     return x._values.from_bytes(cstr[:4])
 
-def cvd_(args):
+
+async def cvd_(args):
     """CVD: return the double-precision value of a byte representation."""
-    x, = args
+    x, = [_ async for _ in args]
     cstr = pass_string(x).to_str()
     error.throw_if(len(cstr) < 8)
     return x._values.from_bytes(cstr[:8])
@@ -409,30 +433,37 @@ def _bool_eq(left, right):
     left, right = match_types(left, right)
     return left.eq(right)
 
+
 def _bool_gt(left, right):
     """Ordering: return -1 if left > right, 0 otherwise."""
     left, right = match_types(left, right)
     return left.gt(right)
 
+
 def eq(left, right):
     """Return -1 if left == right, 0 otherwise."""
     return left._values.from_bool(_bool_eq(left, right))
+
 
 def neq(left, right):
     """Return -1 if left != right, 0 otherwise."""
     return left._values.from_bool(not _bool_eq(left, right))
 
+
 def gt(left, right):
     """Ordering: return -1 if left > right, 0 otherwise."""
     return left._values.from_bool(_bool_gt(left, right))
+
 
 def gte(left, right):
     """Ordering: return -1 if left >= right, 0 otherwise."""
     return left._values.from_bool(not _bool_gt(right, left))
 
+
 def lte(left, right):
     """Ordering: return -1 if left <= right, 0 otherwise."""
     return left._values.from_bool(not _bool_gt(left, right))
+
 
 def lt(left, right):
     """Ordering: return -1 if left < right, 0 otherwise."""
@@ -446,11 +477,13 @@ def not_(num):
     """Bitwise NOT, -x-1."""
     return num._values.new_integer().from_int(~to_integer(num).to_int())
 
+
 def and_(left, right):
     """Bitwise AND."""
     return left._values.new_integer().from_int(
         to_integer(left).to_int(unsigned=True) & to_integer(right).to_int(unsigned=True),
         unsigned=True)
+
 
 def or_(left, right):
     """Bitwise OR."""
@@ -458,17 +491,20 @@ def or_(left, right):
         to_integer(left).to_int(unsigned=True) | to_integer(right).to_int(unsigned=True),
         unsigned=True)
 
+
 def xor_(left, right):
     """Bitwise XOR."""
     return left._values.new_integer().from_int(
         to_integer(left).to_int(unsigned=True) ^ to_integer(right).to_int(unsigned=True),
         unsigned=True)
 
+
 def eqv_(left, right):
     """Bitwise equivalence."""
     return left._values.new_integer().from_int(
         ~(to_integer(left).to_int(unsigned=True) ^ to_integer(right).to_int(unsigned=True)),
         unsigned=True)
+
 
 def imp_(left, right):
     """Bitwise implication."""
@@ -480,14 +516,15 @@ def imp_(left, right):
 ##############################################################################
 # unary operations
 
-def abs_(args):
+async def abs_(args):
     """Return the absolute value of a number. No-op for strings."""
-    inp, = args
+    inp, = [_ async for _ in args]
     if isinstance(inp, strings.String):
         # strings pass unchanged
         return inp
     # promote Integer to Single to avoid integer overflow on -32768
     return inp.to_float().clone().iabs()
+
 
 def neg(inp):
     """Negation (unary -). No-op for strings."""
@@ -497,57 +534,67 @@ def neg(inp):
     # promote Integer to Single to avoid integer overflow on -32768
     return inp.to_float().clone().ineg()
 
-def sgn_(args):
+
+async def sgn_(args):
     """Sign."""
-    x, = args
+    x, = [_ async for _ in args]
     return numbers.Integer(None, x._values).from_int(pass_number(x).sign())
 
-def int_(args):
+
+async def int_(args):
     """Truncate towards negative infinity (INT)."""
-    inp, = args
+    inp, = [_ async for _ in args]
     if isinstance(inp, strings.String):
         # strings pass unchanged
         return inp
     return inp.clone().ifloor()
 
-def fix_(args):
+
+async def fix_(args):
     """Truncate towards zero."""
-    inp, = args
+    inp, = [_ async for _ in args]
     return pass_number(inp).clone().itrunc()
 
-def sqr_(args):
+
+async def sqr_(args):
     """Square root."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(math.sqrt, x)
 
-def exp_(args):
+
+async def exp_(args):
     """Exponential."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(math.exp, x)
 
-def sin_(args):
+
+async def sin_(args):
     """Sine."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(lambda _x: math.sin(_x) if abs(_x) < TRIG_MAX else 0., x)
 
-def cos_(args):
+
+async def cos_(args):
     """Cosine."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(lambda _x: math.cos(_x) if abs(_x) < TRIG_MAX else 1., x)
 
-def tan_(args):
+
+async def tan_(args):
     """Tangent."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(lambda _x: math.tan(_x) if abs(_x) < TRIG_MAX else 0., x)
 
-def atn_(args):
+
+async def atn_(args):
     """Inverse tangent."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(math.atan, x)
 
-def log_(args):
+
+async def log_(args):
     """Logarithm."""
-    x, = args
+    x, = [_ async for _ in args]
     return _call_float_function(math.log, x)
 
 
@@ -565,87 +612,98 @@ def to_repr(inp, leading_space, type_sign):
         raise error.BASICError(error.TYPE_MISMATCH)
     raise TypeError('%s is not of class Value' % type(inp))
 
-def str_(args):
+
+async def str_(args):
     """STR$: string representation of a number."""
-    x, = args
+    x, = [_ async for _ in args]
     return x._values.new_string().from_str(
         to_repr(pass_number(x), leading_space=True, type_sign=False)
     )
 
-def val_(args):
+
+async def val_(args):
     """VAL: number value of a string."""
-    x, = args
+    x, = [_ async for _ in args]
     return x._values.from_repr(pass_string(x).to_str(), allow_nonnum=True)
 
-def len_(args):
+
+async def len_(args):
     """LEN: length of string."""
-    s, = args
+    s, = [_ async for _ in args]
     return pass_string(s).len()
 
-def space_(args):
+
+async def space_(args):
     """SPACE$: repeat spaces."""
-    num, = args
+    num, = [_ async for _ in args]
     return num._values.new_string().space(pass_number(num))
 
-def asc_(args):
+
+async def asc_(args):
     """ASC: ordinal ASCII value of a character."""
-    s, = args
+    s, = [_ async for _ in args]
     return pass_string(s).asc()
 
-def chr_(args):
+
+async def chr_(args):
     """CHR$: character for ASCII value."""
-    x, = args
+    x, = [_ async for _ in args]
     val = pass_number(x).to_integer().to_int()
     error.range_check(0, 255, val)
     return x._values.new_string().from_str(int2byte(val))
 
-def oct_(args):
+
+async def oct_(args):
     """OCT$: octal representation of int."""
-    x, = args
+    x, = [_ async for _ in args]
     # allow range -32768 to 65535
     val = to_integer(x, unsigned=True)
     return x._values.new_string().from_str(val.to_oct())
 
-def hex_(args):
+
+async def hex_(args):
     """HEX$: hexadecimal representation of int."""
-    x, = args
+    x, = [_ async for _ in args]
     # allow range -32768 to 65535
     val = to_integer(x, unsigned=True)
     return x._values.new_string().from_str(val.to_hex())
 
+
 ##############################################################################
 # sring operations
 
-def left_(args):
+async def left_(args):
     """LEFT$: get substring of num characters at the start of string."""
-    s, num = next(args), next(args)
+    s, num = await anext(args), await anext(args)
     s, num = pass_string(s), to_integer(num)
-    list(args)
+    [_ async for _ in args]
     stop = num.to_integer().to_int()
     if stop == 0:
         return s.new()
     error.range_check(0, 255, stop)
     return s.new().from_str(s.to_str()[:stop])
 
-def right_(args):
+
+async def right_(args):
     """RIGHT$: get substring of num characters at the end of string."""
-    s, num = next(args), next(args)
+    s, num = await anext(args), await anext(args)
     s, num = pass_string(s), to_integer(num)
-    list(args)
+    [_ async for _ in args]
     stop = num.to_integer().to_int()
     if stop == 0:
         return s.new()
     error.range_check(0, 255, stop)
     return s.new().from_str(s.to_str()[-stop:])
 
-def mid_(args):
+
+async def mid_(args):
     """MID$: get substring."""
-    s, start = next(args), to_integer(next(args))
+    s, start = await anext(args), to_integer(await anext(args))
     p = pass_string(s)
-    num = next(args)
+    num = await anext(args)
     if num is not None:
         num = to_integer(num)
-    list(args)
+    [_ async for _ in args]
     length = s.length()
     start = start.to_integer().to_int()
     if num is None:
@@ -658,39 +716,41 @@ def mid_(args):
         return s.new()
     # BASIC's indexing starts at 1, Python's at 0
     start -= 1
-    return s.new().from_str(s.to_str()[start:start+num])
+    return s.new().from_str(s.to_str()[start:start + num])
 
-def instr_(args):
+
+async def instr_(args):
     """INSTR: find substring in string."""
-    arg0 = next(args)
+    arg0 = await anext(args)
     if isinstance(arg0, numbers.Number):
         start = to_int(arg0)
         error.range_check(1, 255, start)
-        big = pass_string(next(args))
+        big = pass_string(await anext(args))
     else:
         start = 1
         big = pass_string(arg0)
-    small = pass_string(next(args))
-    list(args)
+    small = pass_string(await anext(args))
+    [_ async for _ in args]
     new_int = numbers.Integer(None, big._values)
     big = big.to_str()
     small = small.to_str()
     if big == b'' or start > len(big):
         return new_int
     # BASIC counts string positions from 1
-    find = big[start-1:].find(small)
+    find = big[start - 1:].find(small)
     if find == -1:
         return new_int
     return new_int.from_int(start + find)
 
-def string_(args):
+
+async def string_(args):
     """STRING$: repeat a character num times."""
-    num = to_int(next(args))
+    num = to_int(await anext(args))
     error.range_check(0, 255, num)
-    asc_value_or_char = next(args)
+    asc_value_or_char = await anext(args)
     if isinstance(asc_value_or_char, numbers.Integer):
         error.range_check(0, 255, asc_value_or_char.to_int())
-    list(args)
+    [_ async for _ in args]
     if isinstance(asc_value_or_char, strings.String):
         char = asc_value_or_char.to_str()[:1]
     else:
@@ -699,6 +759,7 @@ def string_(args):
         error.range_check(0, 255, ascval)
         char = int2byte(ascval)
     return strings.String(None, asc_value_or_char._values).from_str(char * num)
+
 
 ##############################################################################
 # binary operations
@@ -710,12 +771,13 @@ def pow(left, right):
         raise error.BASICError(error.TYPE_MISMATCH)
     if left._values.double_math and (
             isinstance(left, numbers.Double) or isinstance(right, numbers.Double)
-        ):
-        return _call_float_function(lambda a, b: a**b, to_double(left), to_double(right))
+    ):
+        return _call_float_function(lambda a, b: a ** b, to_double(left), to_double(right))
     elif isinstance(right, numbers.Integer):
         return left.to_single().clone().ipow_int(right)
     else:
-        return _call_float_function(lambda a, b: a**b, to_single(left), to_single(right))
+        return _call_float_function(lambda a, b: a ** b, to_single(left), to_single(right))
+
 
 @float_safe
 def add(left, right):
@@ -728,6 +790,7 @@ def add(left, right):
     # since between copy and dereference the address may change due to garbage collection
     # it may be better to define non-in-place operators for everything
     return left.add(right)
+
 
 @float_safe
 def sub(left, right):
@@ -749,6 +812,7 @@ def mul(left, right):
     else:
         return left.to_single().clone().imul(right.to_single())
 
+
 @float_safe
 def div(left, right):
     """Left/right."""
@@ -759,10 +823,12 @@ def div(left, right):
     else:
         return left.to_single().clone().idiv(right.to_single())
 
+
 @float_safe
 def intdiv(left, right):
     """Left\\right."""
     return to_integer(left).clone().idiv_int(to_integer(right))
+
 
 @float_safe
 def mod_(left, right):

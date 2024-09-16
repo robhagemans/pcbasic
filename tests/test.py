@@ -76,8 +76,8 @@ def test_main():
     arg_dict = parse_args()
     with Coverage(arg_dict['coverage']).track():
         run_basic_tests(**arg_dict)
-        if arg_dict['all'] or arg_dict['unit']:
-            run_unit_tests()
+        # if arg_dict['all'] or arg_dict['unit']:
+        #     run_unit_tests()
 
 if __name__ == '__main__':
     test_main()

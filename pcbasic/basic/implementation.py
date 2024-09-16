@@ -5,20 +5,16 @@ Top-level implementation and main interpreter loop
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-import io
-import os
-import sys
+import asyncio
 import math
-import logging
 from functools import partial
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 
-from ..compat import queue, text_type
+from ..compat import queue, text_type, azip
 
 from .data import NAME, VERSION, COPYRIGHT
 from .base import error
 from .base import tokens as tk
-from .base import signals
 from .base import codestream
 from .devices import Files, InputTextFile
 from . import converter
@@ -39,7 +35,7 @@ from . import codepage as cp
 from . import values
 from . import parser
 from . import extensions
-
+from ..compat.asyncio import aiter_or_iter
 
 GREETING = (
     b'KEY ON:PRINT "%s %s":PRINT "%s":PRINT USING "##### Bytes free"; FRE(0)'
@@ -110,7 +106,7 @@ class Implementation(object):
         self.codepage = cp.Codepage(codepage, box_protect)
         # set up input event handler
         # no interface yet; use dummy queues
-        self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=queue.Queue())
+        self.queues = eventcycle.EventQueues(ctrl_c_is_break, inputs=asyncio.Queue())
         # prepare I/O streams
         self.io_streams = iostreams.IOStreams(self.queues, self.codepage)
         self.io_streams.add_pipes(input=input_streams)
@@ -245,21 +241,21 @@ class Implementation(object):
             # but an input queue should be operational for I/O streams
             self.queues.set(inputs=queue.Queue())
 
-    def execute(self, command):
+    async def execute(self, command):
         """Execute a BASIC statement."""
-        with self._handle_exceptions():
+        async with self._handle_exceptions():
             self._store_line(command)
-            self.interpreter.loop()
+            await self.interpreter.loop()
 
-    def evaluate(self, expression):
+    async def evaluate(self, expression):
         """Evaluate a BASIC expression."""
-        with self._handle_exceptions():
+        async with self._handle_exceptions():
             # prefix expression with a PRINT token
             # to avoid any number at the start to be taken as a line number
             tokens = self.tokeniser.tokenise_line(b'?' + expression)
             # skip : and ? tokens and parse expression
             tokens.read(2)
-            val =  self.parser.parse_expression(tokens)
+            val = await self.parser.parse_expression(tokens)
             return val.to_value()
         return None
 
@@ -310,17 +306,17 @@ class Implementation(object):
             convert = self.get_converter(type(value), as_type)
             return convert(value)
 
-    def interact(self):
+    async def interact(self):
         """Interactive interpreter session."""
         while True:
-            with self._handle_exceptions():
-                self.interpreter.loop()
+            async with self._handle_exceptions():
+                await self.interpreter.loop()
                 if self._auto_mode:
-                    self._auto_step()
+                    await self._auto_step()
                 else:
-                    self._show_prompt()
+                    await self._show_prompt()
                     # input loop, checks events
-                    line = self.console.read_line(is_input=False)
+                    line = await self.console.read_line(is_input=False)
                     self._prompt = not self._store_line(line)
 
     def close(self):
@@ -331,16 +327,16 @@ class Implementation(object):
         # kill the iostreams threads so windows doesn't run out
         self.io_streams.close()
 
-    def _show_prompt(self):
+    async def _show_prompt(self):
         """Show the Ok or EDIT prompt, unless suppressed."""
         if self._prompt:
             self.console.start_line()
-            self.console.write_line(b'Ok\xff')
+            await self.console.write_line(b'Ok\xff')
         if self._edit_prompt:
             linenum, tell = self._edit_prompt
             # unset edit prompt first, in case program.edit throws
             self._edit_prompt = False
-            self.program.edit(self.console, linenum, tell)
+            await self.program.edit(self.console, linenum, tell)
 
     def _store_line(self, line):
         """Store a program line or schedule a command line for execution."""
@@ -364,7 +360,7 @@ class Implementation(object):
             self.interpreter.set_parse_mode(True)
             return False
 
-    def _auto_step(self):
+    async def _auto_step(self):
         """Generate an AUTO line number and wait for input."""
         try:
             numstr = b'%d' % (self._auto_linenum,)
@@ -372,7 +368,7 @@ class Implementation(object):
                 prompt = numstr + b'*'
             else:
                 prompt = numstr + b' '
-            line = self.console.read_line(prompt, is_input=False)
+            line = await self.console.read_line(prompt, is_input=False)
             # remove *, if present
             if line[:len(numstr)+1] == b'%s*' % (numstr,):
                 line = b'%s %s' % (numstr, line[len(numstr)+1:])
@@ -400,8 +396,8 @@ class Implementation(object):
     ##############################################################################
     # error handling
 
-    @contextmanager
-    def _handle_exceptions(self):
+    @asynccontextmanager
+    async def _handle_exceptions(self):
         """Context guard to handle BASIC exceptions."""
         try:
             yield
@@ -413,23 +409,23 @@ class Implementation(object):
             else:
                 self.interpreter.set_pointer(False)
                 # call _handle_error to write a message, etc.
-                self._handle_error(e)
+                await self._handle_error(e)
                 # override position of syntax error
                 if e.trapped_error_num == error.STX:
                     self._syntax_error_edit_prompt(e.trapped_error_pos)
         except error.BASICError as e:
-            self._handle_error(e)
+            await self._handle_error(e)
         except error.Exit:
             raise
 
-    def _handle_error(self, e):
+    async def _handle_error(self, e):
         """Handle a BASIC error through error message."""
         # not handled by ON ERROR, stop execution
         self.console.start_line()
-        self.console.write(e.get_message(self.program.get_line_number(e.pos)))
+        await self.console.write(e.get_message(self.program.get_line_number(e.pos)))
         if not self.interpreter.input_mode:
-            self.console.write(b'\xFF')
-        self.console.write(b'\r')
+            await self.console.write(b'\xFF')
+        await self.console.write(b'\r')
         self.interpreter.set_parse_mode(False)
         self.interpreter.input_mode = False
         self._prompt = True
@@ -453,33 +449,33 @@ class Implementation(object):
         list(args)
         raise error.Exit()
 
-    def clear_(self, args):
+    async def clear_(self, args):
         """CLEAR: clear memory and redefine memory limits."""
         try:
             # positive integer expression allowed but not used
-            intexp = next(args)
+            intexp = await anext(args)
             if intexp is not None:
                 expr = values.to_int(intexp)
                 error.throw_if(expr < 0)
             # set size of BASIC memory
-            mem_size = next(args)
+            mem_size = await anext(args)
             if mem_size is not None:
                 mem_size = values.to_int(mem_size, unsigned=True)
                 self.memory.set_basic_memory_size(mem_size)
             # set aside stack space for GW-BASIC.
             # default is the previous stack space size.
-            stack_size = next(args)
+            stack_size = await anext(args)
             if stack_size is not None:
                 stack_size = values.to_int(stack_size, unsigned=True)
                 self.memory.set_stack_size(stack_size)
             # select video memory size (Tandy/PCjr only)
-            video_size = next(args)
+            video_size = await anext(args)
             if video_size is not None:
                 video_size = round(video_size.to_value())
                 self.display.set_video_memory_size(video_size)
             # execute any remaining parsing steps
-            next(args)
-        except StopIteration:
+            await anext(args)
+        except (StopIteration, StopAsyncIteration):
             pass
         self._clear_all()
 
@@ -508,20 +504,20 @@ class Implementation(object):
         # reset stacks & pointers
         self.interpreter.clear()
 
-    def shell_(self, args):
+    async def shell_(self, args):
         """SHELL: open OS shell and optionally execute command."""
-        cmd = values.next_string(args)
-        list(args)
+        cmd = await values.next_string(args)
+        [_ async for _ in args]
         # force cursor visible
         self.display.cursor.set_override(True)
         # sound stops playing and is forgotten
         self.sound.stop_all_sound()
         # run the os-specific shell
-        self.shell.launch(cmd)
+        await self.shell.launch(cmd)
         # reset cursor visibility to its previous state
         self.display.cursor.set_override(False)
 
-    def term_(self, args):
+    async def term_(self, args):
         """TERM: terminal emulator."""
         list(args)
         self._clear_all()
@@ -532,8 +528,8 @@ class Implementation(object):
             raise error.BASICError(error.INTERNAL_ERROR)
         # terminal program for TERM command
         prog = self.files.get_device(b'@:').bind(self._term_program)
-        with self.files.open(0, prog, filetype=b'ABP', mode=b'I') as progfile:
-            self.program.load(progfile)
+        with await self.files.open(0, prog, filetype=b'ABP', mode=b'I') as progfile:
+            await self.program.load(progfile)
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()
         self.interpreter.set_pointer(True, 0)
@@ -548,13 +544,13 @@ class Implementation(object):
         # clear all variables
         self._clear_all()
 
-    def list_(self, args):
+    async def list_(self, args):
         """LIST: output program lines."""
-        line_range = next(args)
-        out = values.next_string(args)
+        line_range = await anext(args)
+        out = await values.next_string(args)
         if out is not None:
-            out = self.files.open(0, out, filetype=b'A', mode=b'O')
-        list(args)
+            out = await self.files.open(0, out, filetype=b'A', mode=b'O')
+        [_ async for _ in args]
         lines = self.program.list_lines(*line_range)
         if out:
             with out:
@@ -564,9 +560,9 @@ class Implementation(object):
             for l in lines:
                 # flow of listing is visible on screen
                 # and interruptible
-                self.queues.wait()
+                await self.queues.wait()
                 # LIST on screen is slightly different from just writing
-                self.console.list_line(l, newline=True)
+                await self.console.list_line(l, newline=True)
         # return to direct mode
         self.interpreter.set_pointer(False)
 
@@ -597,14 +593,14 @@ class Implementation(object):
         # continue input in AUTO mode
         self._auto_mode = True
 
-    def load_(self, args):
+    async def load_(self, args):
         """LOAD: load program from file."""
-        name = values.next_string(args)
-        comma_r, = args
+        name = await values.next_string(args)
+        comma_r = await anext(args)
         # clear variables, stacks & pointers
         self._clear_all()
-        with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
-            self.program.load(f)
+        with await self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
+            await self.program.load(f)
         # reset stacks
         self.interpreter.clear_stacks_and_pointers()
         if comma_r:
@@ -614,18 +610,18 @@ class Implementation(object):
             self.files.close_all()
         self.interpreter.tron = False
 
-    def chain_(self, args):
+    async def chain_(self, args):
         """CHAIN: load program and chain execution."""
-        merge = next(args)
-        name = values.next_string(args)
-        jumpnum = next(args)
+        merge = await anext(args)
+        name = await values.next_string(args)
+        jumpnum = await anext(args)
         if jumpnum is not None:
             jumpnum = values.to_int(jumpnum, unsigned=True)
-        preserve_all, delete_lines = next(args), next(args)
+        preserve_all, delete_lines = await anext(args), await anext(args)
         from_line, to_line = delete_lines if delete_lines else (None, None)
         if to_line is not None and to_line not in self.program.line_numbers:
             raise error.BASICError(error.IFC)
-        list(args)
+        [_ async for _ in args]
         if self.program.protected and merge:
             raise error.BASICError(error.IFC)
         # gather COMMON declarations
@@ -639,15 +635,15 @@ class Implementation(object):
                     preserve_base=(common_scalars or common_arrays or preserve_all),
                     preserve_deftype=merge)
             # load new program
-            with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
+            with await self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
                 if delete_lines:
                     # delete lines from existing code before merge
                     # (without MERGE, this is pointless)
                     self.program.delete(*delete_lines)
                 if merge:
-                    self.program.merge(f)
+                    await self.program.merge(f)
                 else:
-                    self.program.load(f)
+                    await self.program.load(f)
                 # clear all program stacks
                 self.interpreter.clear_stacks_and_pointers()
                 # don't close files!
@@ -657,34 +653,33 @@ class Implementation(object):
         # e.g. code strings in the old program become allocated strings in the new
         self.strings.fix_temporaries()
 
-    def save_(self, args):
+    async def save_(self, args):
         """SAVE: save program to a file."""
-        name = values.next_string(args)
-        mode = (next(args) or b'B').upper()
-        list(args)
-        with self.files.open(
+        name = await values.next_string(args)
+        mode = (await anext(args) or b'B').upper()
+        [_ async for _ in args]
+        with await self.files.open(
                 0, name, filetype=mode, mode=b'O',
                 seg=self.memory.data_segment, offset=self.memory.code_start,
                 length=len(self.program.bytecode.getvalue())-1
             ) as f:
-            self.program.save(f)
+            await self.program.save(f)
         if mode == b'A':
             # return to direct mode
             self.interpreter.set_pointer(False)
 
-    def merge_(self, args):
+    async def merge_(self, args):
         """MERGE: merge lines from file into current program."""
-        name = values.next_string(args)
-        list(args)
+        name = await values.next_string(args)
+        [_ async for _ in args]
         # check if file exists, make some guesses (all uppercase, +.BAS) if not
-        with self.files.open(0, name, filetype=b'A', mode=b'I') as f:
-            self.program.merge(f)
+        with await self.files.open(0, name, filetype=b'A', mode=b'I') as f:
+            await self.program.merge(f)
         # clear all program stacks
         self.interpreter.clear_stacks_and_pointers()
 
     def new_(self, args):
         """NEW: clear program from memory."""
-        list(args)
         self.interpreter.tron = False
         # deletes the program currently in memory
         self.program.erase()
@@ -694,19 +689,19 @@ class Implementation(object):
         self._clear_all()
         self.interpreter.set_pointer(False)
 
-    def run_(self, args):
+    async def run_(self, args):
         """RUN: start program execution."""
-        jumpnum = next(args)
+        jumpnum = await anext(args)
         comma_r = False
         if jumpnum is None:
             try:
-                name = values.next_string(args)
-                comma_r = next(args)
-                with self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
-                    self.program.load(f)
-            except StopIteration:
+                name = await values.next_string(args)
+                comma_r = await anext(args)
+                with await self.files.open(0, name, filetype=b'ABP', mode=b'I') as f:
+                    await self.program.load(f)
+            except StopAsyncIteration:
                 pass
-        list(args)
+        [_ async for _ in args]
         self.interpreter.on_error = 0
         self.interpreter.error_handle_mode = False
         self.interpreter.clear_stacks_and_pointers()
@@ -731,19 +726,19 @@ class Implementation(object):
         self.interpreter.error_resume = None
         self.files.close_all()
 
-    def input_(self, args):
+    async def input_(self, args):
         """INPUT: request input from user or read from file."""
-        file_number = next(args)
+        file_number = await anext(args)
         if file_number is not None:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
             finp = self.files.get(file_number, mode=b'IR')
-            self._input_file(finp, args)
+            await self._input_file(finp, args)
         else:
-            newline, prompt, following = next(args)
-            self._input_console(newline, prompt, following, args)
+            newline, prompt, following = await anext(args)
+            await self._input_console(newline, prompt, following, args)
 
-    def _input_console(self, newline, prompt, following, readvar):
+    async def _input_console(self, newline, prompt, following, readvar):
         """INPUT: request input from user."""
         if following == b';':
             prompt += b'? '
@@ -754,13 +749,13 @@ class Implementation(object):
             # readvar is a list of (name, indices) tuples
             # we return a list of (name, indices, values) tuples
             while True:
-                line = self.console.read_line(prompt, write_endl=newline, is_input=True)
+                line = await self.console.read_line(prompt, write_endl=newline, is_input=True)
                 inputstream = InputTextFile(line)
                 # read the values and group them and the separators
                 var, values, seps = [], [], []
-                for name, indices in readvar:
+                async for name, indices in readvar:
                     name = self.memory.complete_name(name)
-                    word, sep = inputstream.input_entry(
+                    word, sep = await inputstream.input_entry(
                         name[-1:], allow_past_end=True, suppress_unquoted_linefeed=False
                     )
                     try:
@@ -778,8 +773,8 @@ class Implementation(object):
                 # None means a conversion error occurred
                 if (seps[-1] or b'' in seps[:-1] or None in values):
                     # good old Redo!
-                    self.console.write_line(b'?Redo from start')
-                    readvar = var
+                    await self.console.write_line(b'?Redo from start')
+                    readvar = aiter_or_iter(var)
                 else:
                     varlist = [r + [v] for r, v in zip(var, values)]
                     break
@@ -788,21 +783,21 @@ class Implementation(object):
             for v in varlist:
                 self.memory.set_variable(*v)
 
-    def _input_file(self, finp, readvar):
+    async def _input_file(self, finp, readvar):
         """INPUT: retrieve input from file."""
-        for v in readvar:
+        async for v in readvar:
             name, indices = v
             typechar = self.memory.complete_name(name)[-1:]
-            word, _ = finp.input_entry(typechar, allow_past_end=False)
+            word, _ = await finp.input_entry(typechar, allow_past_end=False)
             value = self.values.from_repr(word, allow_nonnum=True, typechar=typechar)
             self.memory.set_variable(name, indices, value)
 
-    def line_input_(self, args):
+    async def line_input_(self, args):
         """LINE INPUT: request line of input from user."""
-        file_number = next(args)
+        file_number = await anext(args)
         if file_number is None:
             # get prompt
-            newline, prompt, _ = next(args)
+            newline, prompt, _ = await anext(args)
             finp = None
         else:
             prompt, newline = None, None
@@ -810,8 +805,8 @@ class Implementation(object):
             error.range_check(0, 255, file_number)
             finp = self.files.get(file_number, mode=b'IR')
         # get string variable
-        readvar, indices = next(args)
-        list(args)
+        readvar, indices = await anext(args)
+        [_ async for _ in args]
         readvar = self.memory.complete_name(readvar)
         if readvar[-1:] != values.STR:
             raise error.BASICError(error.TYPE_MISMATCH)
@@ -823,21 +818,21 @@ class Implementation(object):
         else:
             self.interpreter.input_mode = True
             self.parser.redo_on_break = True
-            line = self.console.read_line(prompt, write_endl=newline, is_input=True)
+            line = await self.console.read_line(prompt, write_endl=newline, is_input=True)
             self.parser.redo_on_break = False
             self.interpreter.input_mode = False
         self.memory.set_variable(readvar, indices, self.values.from_value(line, values.STR))
 
-    def randomize_(self, args):
+    async def randomize_(self, args):
         """RANDOMIZE: set random number generator seed."""
-        val, = args
+        val, = [_ async for _ in args]
         if val is not None:
             # don't convert to int if provided in the code
             val = values.pass_number(val, err=error.IFC)
         else:
             # prompt for random seed if not specified
             while True:
-                seed = self.console.read_line(
+                seed = await self.console.read_line(
                     b'Random number seed (-32768 to 32767)? ', is_input=True
                 )
                 try:
@@ -851,12 +846,11 @@ class Implementation(object):
             val = values.to_integer(val)
         self.randomiser.reseed(val)
 
-    def key_(self, args):
+    async def key_(self, args):
         """KEY: macro or event trigger definition."""
-        keynum = values.to_int(next(args))
+        keynum = values.to_int(await anext(args))
         error.range_check(1, 255, keynum)
-        text = values.next_string(args)
-        list(args)
+        text = await values.next_string(args)
         try:
             self.console.set_macro(keynum, text)
             return
@@ -871,8 +865,8 @@ class Implementation(object):
             if len(text) != 2:
                 raise error.BASICError(error.IFC)
 
-    def pen_fn_(self, args):
+    async def pen_fn_(self, args):
         """PEN: poll the light pen."""
-        fn, = args
+        fn, = [_ async for _ in args]
         result = self.pen.poll(fn, self.basic_events.pen in self.basic_events.enabled, self.display.apage)
         return self.values.new_integer().from_int(result)

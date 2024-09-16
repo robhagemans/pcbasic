@@ -79,15 +79,15 @@ class Cursor(object):
 
     def rebuild(self):
         """Rebuild the cursor on resume."""
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line)
         ))
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
         ))
         # set visibility and blink state
         # cursor blinks if and only if in text mode
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SHOW_CURSOR, (self._visible, self._mode.is_text_mode)
         ))
 
@@ -117,7 +117,7 @@ class Cursor(object):
         # only submit move signal if visible (so that we see it in the right place)
         # or if the row changes (so that row-based cli interface can keep up with current row
         if self._visible or new_row != self._row:
-            self._queues.video.put(signals.Event(
+            self._queues.video.put_nowait(signals.Event(
                 signals.VIDEO_MOVE_CURSOR, (new_row, new_column, fore, new_width)
             ))
         self._row, self._col = new_row, new_column
@@ -157,11 +157,11 @@ class Cursor(object):
             self._visible = visible
             if visible:
                 # update position, attribute and shape
-                self._queues.video.put(signals.Event(
+                self._queues.video.put_nowait(signals.Event(
                     signals.VIDEO_MOVE_CURSOR, (self._row, self._col, self._fore_attr, self._width)
                 ))
             # show or hide the cursor and set blink
-            self._queues.video.put(signals.Event(
+            self._queues.video.put_nowait(signals.Event(
                 signals.VIDEO_SHOW_CURSOR, (visible, self._mode.is_text_mode)
             ))
 
@@ -202,7 +202,7 @@ class Cursor(object):
                                 to_line -= 1
         self._from_line = max(0, min(from_line, self._height-1))
         self._to_line = max(0, min(to_line, self._height-1))
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_CURSOR_SHAPE, (self._from_line, self._to_line))
         )
 

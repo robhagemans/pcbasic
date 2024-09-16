@@ -191,7 +191,7 @@ class VideoCurses(VideoPlugin):
             else:
                 if inp == curses.KEY_BREAK:
                     # this is fickle, on many terminals doesn't work
-                    self._input_queue.put(signals.Event(
+                   self._input_queue.put_nowait(signals.Event(
                         signals.KEYB_DOWN, (u'', scancode.BREAK, [scancode.CTRL])
                     ))
                 # scancode, insert here and now
@@ -204,7 +204,7 @@ class VideoCurses(VideoPlugin):
                 scan = CURSES_TO_SCAN.get(inp, None)
                 char = CURSES_TO_EASCII.get(inp, u'')
                 if scan or char:
-                    self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, scan, [])))
+                    self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, scan, [])))
                     if inp == curses.KEY_F12:
                         self.f12_active = True
                     else:
@@ -213,13 +213,13 @@ class VideoCurses(VideoPlugin):
             # could be more than one code point, handle these one by one
             for char in inp:
                 #check_full=False to allow pasting chunks of text
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (char, None, [])))
+                self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (char, None, [])))
                 self._unset_f12()
 
     def _unset_f12(self):
         """Deactivate F12 """
         if self.f12_active:
-            self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
+            self._input_queue.put_nowait(signals.Event(signals.KEYB_UP, (scancode.F12,)))
             self.f12_active = False
 
     def _resize(self, height, width):

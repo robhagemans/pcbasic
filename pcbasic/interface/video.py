@@ -5,7 +5,7 @@ Base class for video plugins
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
+import asyncio
 import time
 
 from ..compat import queue
@@ -37,26 +37,26 @@ class VideoPlugin(object):
 
     # called by Interface
 
-    def cycle(self):
+    async def cycle(self):
         """Video/input event cycle."""
         if self.alive:
-            self._drain_queue()
+            await self._drain_queue()
         if self.alive:
             self._work()
             self._check_input()
 
     def sleep(self, ms):
         """Sleep a tick"""
-        time.sleep(ms/1000.)
+        asyncio.sleep(ms)
 
     # private methods
 
-    def _drain_queue(self):
+    async def _drain_queue(self):
         """Drain signal queue."""
         while True:
             try:
-                signal = self._video_queue.get(False)
-            except queue.Empty:
+                signal = self._video_queue.get_nowait()
+            except (queue.Empty, asyncio.QueueEmpty):
                 return True
             # putting task_done before the execution avoids hanging on join() after an exception
             self._video_queue.task_done()

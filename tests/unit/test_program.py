@@ -17,7 +17,7 @@ from pcbasic import Session
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-class DiskTest(unittest.TestCase):
+class DiskTest(unittest.IsolatedAsyncioTestCase):
     """Disk tests."""
 
     def setUp(self):
@@ -38,7 +38,7 @@ class DiskTest(unittest.TestCase):
         """Test output file name."""
         return os.path.join(self._test_dir, *name)
 
-    def test_unprotect(self):
+    async def test_unprotect(self):
         """Save in protected format to a file, load in plaintext."""
         plaintext = b'60 SAVE "test.bin"\r\n70 SAVE "test.asc",A\r\n80 LIST,"test.lst"\r\n'
         tokenised = (
@@ -51,12 +51,12 @@ class DiskTest(unittest.TestCase):
             b'\x1a'
         )
         with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
-            s.execute(plaintext)
-            s.execute('save "prog",P')
+            await s.execute(plaintext)
+            await s.execute('save "prog",P')
         with Session(devices={b'A': self._test_dir}, current_device='A:') as s:
             # the program saves itself as plaintext and tokenised
             # in gw-basic, illegal funcion call.
-            s.execute('run "prog"')
+            await s.execute('run "prog"')
         with open(self._output_path('PROG.BAS'), 'rb') as f:
             assert f.read() == protected
         with open(self._output_path('TEST.BIN'), 'rb') as f:
@@ -67,10 +67,10 @@ class DiskTest(unittest.TestCase):
         assert not os.path.isfile(self._output_path('TEST.LST'))
 
 
-    def test_program_repr(self):
+    async def test_program_repr(self):
         """Test Program.__repr__."""
         with Session() as s:
-            s.execute("""
+            await s.execute("""
                 10 ' test
                 20 print "test"
             """)
@@ -81,13 +81,13 @@ class DiskTest(unittest.TestCase):
             ), repr(repr(s._impl.program))
 
 
-    def test_load_non_program(self):
+    async def test_load_non_program(self):
         """Exercise code for loading from files that are not program files."""
         class MockNonProgramFile:
             filetype = 'M'
         with Session() as s:
-            s.execute("'")
-            s._impl.program.load(MockNonProgramFile())
+            await s.execute("'")
+            await s._impl.program.load(MockNonProgramFile())
         # we're not testing anything, just exercising the code path
 
 

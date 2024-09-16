@@ -8,7 +8,7 @@ This file is released under the GNU GPL version 3 or later.
 
 import struct
 
-from ...compat import int2byte, zip
+from ...compat import int2byte, zip, azip
 
 from ..base import error
 from ..base import codestream
@@ -34,11 +34,11 @@ class UserFunction(object):
         """Retrieve number of arguments."""
         return len(self._varnames)
 
-    def evaluate(self, iargs):
+    async def evaluate(self, iargs):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
         conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1:]] for name in self._varnames)
-        args = [conv(arg) for arg, conv in zip(iargs, conversions)]
+        args = [conv(arg) async for arg, conv in azip(iargs, conversions)]
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
             raise error.BASICError(error.OUT_OF_MEMORY)
@@ -62,7 +62,7 @@ class UserFunction(object):
         save_loc = self._codestream.tell()
         try:
             self._codestream.seek(self._start_loc)
-            value = self._expression_parser.parse(self._codestream)
+            value = await self._expression_parser.parse(self._codestream)
             return values.to_type(self._sigil, value)
         finally:
             self._codestream.seek(save_loc)

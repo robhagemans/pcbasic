@@ -5,45 +5,51 @@ Formatted output handling
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
+import inspect
+from typing import TYPE_CHECKING
+from typing import Union
 
+from .. import values
 from ..base import codestream
 from ..base import error
 from ..base import tokens as tk
-from .. import values
+
+if TYPE_CHECKING:
+    from ..console import Console
 
 
 class Formatter(object):
     """Output string formatter."""
 
-    def __init__(self, output, console=None):
+    def __init__(self, output, console: Union[None, 'Console'] = None):
         """Initialise."""
         self._console = console
         self._output = output
 
-    def format(self, args):
+    async def format(self, args):
         """PRINT: Write expressions to console or file."""
         newline = True
-        for sep, value in args:
+        async for sep, value in args:
             if sep == tk.USING:
-                newline = self._print_using(args)
+                newline = await self._print_using(args)
                 break
             elif sep == b',':
-                self._print_comma()
+                await self._print_comma()
             elif sep == b';':
                 pass
             elif sep == tk.SPC:
-                self._print_spc(values.to_int(value, unsigned=True))
+                await self._print_spc(values.to_int(value, unsigned=True))
             elif sep == tk.TAB:
                 self._print_tab(values.to_int(value, unsigned=True))
             else:
-                self._print_value(next(args))
+                await self._print_value(await anext(args))
             newline = sep not in (tk.TAB, tk.SPC, b',', b';')
         if newline:
             if self._console and self._console.overflow:
-                self._output.write_line()
-            self._output.write_line()
+                await self._output.write_line()
+            await self._output.write_line()
 
-    def _print_value(self, expr):
+    async def _print_value(self, expr):
         """Print a value."""
         # numbers always followed by a space
         if isinstance(expr, values.Number):
@@ -52,21 +58,21 @@ class Formatter(object):
             word = expr.to_str()
         # output file (devices) takes care of width management;
         # we must send a whole string at a time for this to be correct.
-        self._output.write(word)
+        await self._output.write(word)
 
-    def _print_comma(self):
+    async def _print_comma(self):
         """Skip to next output zone."""
         number_zones = max(1, int(self._output.width // 14))
         next_zone = int((self._output.col-1) // 14) + 1
         if next_zone >= number_zones and self._output.width >= 14 and self._output.width != 255:
-            self._output.write_line()
+            await self._output.write_line()
         else:
-            self._output.write(b' ' * (1 + 14*next_zone-self._output.col), can_break=False)
+            await self._output.write(b' ' * (1 + 14*next_zone-self._output.col), can_break=False)
 
-    def _print_spc(self, num):
+    async def _print_spc(self, num):
         """Print SPC separator."""
         numspaces = max(0, num) % self._output.width
-        self._output.write(b' ' * numspaces, can_break=False)
+        await self._output.write(b' ' * numspaces, can_break=False)
 
     def _print_tab(self, num):
         """Print TAB separator."""
@@ -77,9 +83,9 @@ class Formatter(object):
         else:
             self._output.write(b' ' * (pos-self._output.col), can_break=False)
 
-    def _print_using(self, args):
+    async def _print_using(self, args):
         """PRINT USING clause: Write expressions to console or file using a formatting string."""
-        format_expr = values.next_string(args)
+        format_expr = await values.next_string(args)
         if format_expr == b'':
             raise error.BASICError(error.IFC)
         fors = codestream.CodeStream(format_expr)
@@ -102,7 +108,7 @@ class Formatter(object):
                     if start_cycle:
                         initial_literal += fors.read(2)[-1:]
                     else:
-                        self._output.write(fors.read(2)[-1:])
+                        await self._output.write(fors.read(2)[-1:])
                 else:
                     try:
                         format_field = StringField(fors)
@@ -113,23 +119,24 @@ class Formatter(object):
                             if start_cycle:
                                 initial_literal += fors.read(1)
                             else:
-                                self._output.write(fors.read(1))
+                                await self._output.write(fors.read(1))
                             continue
                     format_chars = True
-                    value = next(args)
+                    value = await anext(args)
                     if value is None:
                         newline = False
                         break
                     if start_cycle:
-                        self._output.write(initial_literal)
+                        await self._output.write(initial_literal)
                         start_cycle = False
-                    self._output.write(format_field.format(value))
+                    await self._output.write(format_field.format(value))
             # consume any remaining arguments / finish parser
-            list(args)
-        except StopIteration:
+            # noinspection PyStatementEffect
+            (_ async for _ in args)
+        except (StopIteration, StopAsyncIteration):
             pass
         if not format_chars:
-            self._output.write(initial_literal)
+            await self._output.write(initial_literal)
             # there were no format chars in the string, illegal fn call
             raise error.BASICError(error.IFC)
         return newline

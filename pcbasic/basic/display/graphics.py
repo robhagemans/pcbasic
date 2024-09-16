@@ -11,7 +11,7 @@ import operator
 
 from itertools import islice
 
-from ...compat import int2byte
+from ...compat import int2byte, azip
 from ..base import error
 from ..base import tokens as tk
 from ..base import bytematrix
@@ -231,15 +231,15 @@ class Graphics(object):
 
     ## VIEW graphics viewport
 
-    def view_(self, args):
+    async def view_(self, args):
         """VIEW: Set/unset the graphics viewport and optionally draw a box."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
         # VIEW SCREEN
-        absolute = next(args)
+        absolute = await anext(args)
         bounds = [
             values.to_int(_arg)
-            for _arg in islice(args, 4)
+            async for _, _arg in azip(range(4), args)
         ]
         if not bounds:
             # VIEW SCREEN is a syntax error; just VIEW is OK
@@ -249,15 +249,15 @@ class Graphics(object):
         error.range_check(0, self._mode.pixel_width-1, x0, x1)
         error.range_check(0, self._mode.pixel_height-1, y0, y1)
         error.throw_if(x0==x1 or y0 == y1)
-        fill = next(args)
+        fill = await anext(args)
         if fill is not None:
             fill = values.to_int(fill)
-        border = next(args)
+        border = await anext(args)
         if border is not None:
             border = values.to_int(border)
         error.range_check(0, 255, fill)
         error.range_check(0, 255, border)
-        list(args)
+        [_ async for _ in args]
         self._set_view(x0, y0, x1, y1, absolute, fill, border)
 
     def _set_view(self, x0, y0, x1, y1, absolute, fill, border):
@@ -288,14 +288,14 @@ class Graphics(object):
 
     ### WINDOW logical coords
 
-    def window_(self, args):
+    async def window_(self, args):
         """WINDOW: Set/unset the logical coordinate window."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        cartesian = not next(args)
+        cartesian = not await anext(args)
         try:
-            coords = [values.to_single(_arg).to_value() for _arg in islice(args, 4)]
-        except StopIteration:
+            coords = [values.to_single(_arg).to_value() async for _, _arg in azip(range(4), args)]
+        except (StopIteration, StopAsyncIteration):
             coords = []
         if not coords:
             self._unset_window()
@@ -303,7 +303,7 @@ class Graphics(object):
             x0, y0, x1, y1 = coords
             if x0 == x1 or y0 == y1:
                 raise error.BASICError(error.IFC)
-            list(args)
+            [_ async for _ in args]
             self._set_window(x0, y0, x1, y1, cartesian)
 
     def _set_window(self, fx0, fy0, fx1, fy1, cartesian=True):
@@ -369,27 +369,27 @@ class Graphics(object):
 
     ### PSET, POINT
 
-    def pset_(self, args):
+    async def pset_(self, args):
         """PSET: set a pixel to a given attribute, or foreground."""
-        self._pset_preset(args, -1)
+        await self._pset_preset(args, -1)
 
-    def preset_(self, args):
+    async def preset_(self, args):
         """PRESET: set a pixel to a given attribute, or background."""
-        self._pset_preset(args, 0)
+        await self._pset_preset(args, 0)
 
-    def _pset_preset(self, args, default):
+    async def _pset_preset(self, args, default):
         """Set a pixel to a given attribute."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        step = next(args)
-        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        attr_index = next(args)
+        step = await anext(args)
+        x, y = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
+        attr_index = await anext(args)
         if attr_index is None:
             attr_index = default
         else:
             attr_index = values.to_int(attr_index)
             error.range_check(0, 255, attr_index)
-        list(args)
+        [_ async for _ in args]
         x, y = self._get_window_physical(x, y, step)
         attr = self._get_attr_index(attr_index)
         # record viewpoint-relative physical coordinates
@@ -400,24 +400,26 @@ class Graphics(object):
 
     ### LINE
 
-    def line_(self, args):
+    async def line_(self, args):
         """LINE: Draw a patterned line or box."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        step0 = next(args)
-        x0, y0 = (
+        step0 = await anext(args)
+        x0, y0 = [
             None if arg is None else values.to_single(arg).to_value()
-            for _, arg in zip(range(2), args)
-        )
-        step1 = next(args)
-        x1, y1 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
+            async for _, arg in azip(range(2), args)
+        ]
+        step1 = await anext(args)
+        x1, y1 = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
         coord0 = x0, y0, step0
         coord1 = x1, y1, step1
-        attr_index = next(args)
+        attr_index = await anext(args, None)
         if attr_index:
             attr_index = values.to_int(attr_index)
             error.range_check(0, 255, attr_index)
-        shape, pattern = args
+
+        shape = await anext(args, None)
+        pattern = await anext(args, None)
         if attr_index is None:
             attr_index = -1
         if pattern is None:
@@ -555,7 +557,7 @@ class Graphics(object):
     #
     # break yinc loop if one step no longer suffices
 
-    def circle_(self, args):
+    async def circle_(self, args):
         """CIRCLE: Draw a circle, ellipse, arc or sector."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
@@ -564,29 +566,30 @@ class Graphics(object):
             self._mode.pixel_height * self._screen_aspect[0],
             self._mode.pixel_width * self._screen_aspect[1]
         )
-        step = next(args)
-        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        r = values.to_single(next(args)).to_value()
+        step = await anext(args)
+        x, y = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
+        r = values.to_single(await anext(args)).to_value()
+        print("r", r)
         error.throw_if(r < 0)
-        attr_index = next(args)
+        attr_index = await anext(args, None)
         if attr_index is not None:
             attr_index = values.to_int(attr_index)
         # the check is against a single precision rounded 2*pi
         check_2pi = 6.283186
-        start = next(args)
+        start = await anext(args, None)
         if start is not None:
             start = values.to_single(start).to_value()
             if abs(start) > check_2pi:
                 raise error.BASICError(error.IFC)
-        stop = next(args)
+        stop = await anext(args, None)
         if stop is not None:
             stop = values.to_single(stop).to_value()
             if abs(stop) > check_2pi:
                 raise error.BASICError(error.IFC)
-        aspect = next(args)
+        aspect = await anext(args, None)
         if aspect is not None:
             aspect = values.to_single(aspect).to_value()
-        list(args)
+        [_ async for _ in args]
         x0, y0 = self._get_window_physical(x, y, step)
         if attr_index is None:
             attr_index = -1
@@ -759,15 +762,15 @@ class Graphics(object):
 
     ### PAINT: Flood fill
 
-    def paint_(self, args):
+    async def paint_(self, args):
         """PAINT: Fill an area defined by a border attribute with a tiled pattern."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        step = next(args)
-        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
+        step = await anext(args)
+        x, y = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
         coord = x, y, step
         fill_attr_index, pattern = -1, None
-        cval = next(args)
+        cval = await anext(args, None)
         if isinstance(cval, values.String):
             # pattern given; copy
             pattern = cval.to_str()
@@ -777,24 +780,24 @@ class Graphics(object):
         elif cval is not None:
             fill_attr_index = values.to_int(cval)
             error.range_check(0, 255, fill_attr_index)
-        border_index = next(args)
+        border_index = await anext(args, None)
         if border_index is not None:
             border_index = values.to_int(border_index)
             error.range_check(0, 255, border_index)
-        bg_pattern = next(args)
+        bg_pattern = await anext(args, None)
         if bg_pattern is not None:
             bg_pattern = values.pass_string(bg_pattern, err=error.IFC).to_str()
-        list(args)
+        [_ async for _ in args]
         # if paint *colour* specified, border default = paint colour
         # if paint *attribute* specified, border default = current foreground
         if border_index is None:
             border_index = fill_attr_index
         fill_attr = self._get_attr_index(fill_attr_index)
         border_attr = self._get_attr_index(border_index)
-        self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
+        await self._flood_fill(coord, fill_attr, pattern, border_attr, bg_pattern)
         self._draw_current = None
 
-    def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
+    async def _flood_fill(self, lcoord, fill_attr, pattern, border_attr, bg_pattern):
         """Fill an area defined by a border attribute with a tiled pattern."""
         # 4-way scanline flood fill: http://en.wikipedia.org/wiki/Flood_fill
         # flood fill stops on border colour in all directions;
@@ -875,7 +878,7 @@ class Graphics(object):
                 self.graph_view[y, x_left:x_right+1] = interval
             # allow interrupting the paint
             if y % 4 == 0:
-                self._input_methods.wait()
+                await self._input_methods.wait()
         self._last_attr = fill_attr
 
     def _scanline_until(self, element, y, x0, x1):
@@ -944,12 +947,12 @@ class Graphics(object):
 
     ### PUT and GET: Sprite operations
 
-    def put_(self, args):
+    async def put_(self, args):
         """PUT: Put a sprite on the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        array_name, operation_token = args
+        x0, y0 = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
+        array_name, operation_token = [_ async for _ in args]
         array_name = self._memory.complete_name(array_name)
         operation_token = operation_token or tk.XOR
         if array_name not in self._memory.arrays:
@@ -979,14 +982,14 @@ class Graphics(object):
         self.graph_view[y0:y1+1, x0:x1+1] = rect
         self._draw_current = None
 
-    def get_(self, args):
+    async def get_(self, args):
         """GET: Read a sprite from the screen."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        x0, y0 = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        step = next(args)
-        x, y = (values.to_single(_arg).to_value() for _arg in islice(args, 2))
-        array_name, = args
+        x0, y0 = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
+        step = await anext(args)
+        x, y = [values.to_single(_arg).to_value() async for _, _arg in azip(range(2), args)]
+        array_name, = [_ async for _ in args]
         array_name = self._memory.complete_name(array_name)
         if array_name not in self._memory.arrays:
             raise error.BASICError(error.IFC)
@@ -1018,15 +1021,15 @@ class Graphics(object):
 
     ### DRAW statement
 
-    def draw_(self, args):
+    async def draw_(self, args):
         """DRAW: Execute a Graphics Macro Language string."""
         if self._mode.is_text_mode:
             raise error.BASICError(error.IFC)
-        gml = values.next_string(args)
-        self._draw(gml)
-        list(args)
+        gml = await values.next_string(args)
+        await self._draw(gml)
+        [_ async for _ in args]
 
-    def _draw(self, gml):
+    async def _draw(self, gml):
         """Execute a Graphics Macro Language string."""
         # don't convert to uppercase as VARPTR$ elements are case sensitive
         gmls = mlparser.MLParser(gml, self._memory, self._values)
@@ -1048,7 +1051,7 @@ class Graphics(object):
             elif c == b'X':
                 # execute substring
                 sub = gmls.parse_string()
-                self._draw(sub)
+                await self._draw(sub)
             elif c == b'C':
                 # set foreground colour
                 # allow empty spec (default 0), but only if followed by a semicolon
@@ -1135,7 +1138,7 @@ class Graphics(object):
                 x, y = self._get_window_logical(*self._draw_current)
                 fill_attr = self._get_attr_index(fill_idx)
                 border_attr = self._get_attr_index(border_idx)
-                self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
+                await self._flood_fill((x, y, False), fill_attr, None, border_attr, None)
             else:
                 raise error.BASICError(error.IFC)
         # if WINDOW is set, the current position for non-DRAW commands does not track
@@ -1181,18 +1184,18 @@ class Graphics(object):
 
     ### POINT and PMAP
 
-    def point_(self, args):
+    async def point_(self, args):
         """
         POINT (1 argument): Return current coordinate
         (2 arguments): Return the attribute of a pixel.
         """
-        arg0 = next(args)
-        arg1 = next(args)
+        arg0 = await anext(args)
+        arg1 = await anext(args)
         if arg1 is None:
             arg0 = values.to_integer(arg0)
             fn = values.to_int(arg0)
             error.range_check(0, 3, fn)
-            list(args)
+            [_ async for _ in args]
             if self._mode.is_text_mode:
                 return self._values.new_single()
             # if DRAW and other commands are out of sync, POINT is adjusted to the latest
@@ -1207,7 +1210,7 @@ class Graphics(object):
             if self._mode.is_text_mode:
                 raise error.BASICError(error.IFC)
             arg1 = values.pass_number(arg1)
-            list(args)
+            [_ async for _ in args]
             x, y = values.to_single(arg0).to_value(), values.to_single(arg1).to_value()
             x, y = self._get_window_physical(x, y)
             if x < 0 or x >= self._mode.pixel_width or y < 0 or y >= self._mode.pixel_height:
@@ -1216,12 +1219,12 @@ class Graphics(object):
                 point = self.graph_view[y, x]
             return self._values.new_integer().from_int(point)
 
-    def pmap_(self, args):
+    async def pmap_(self, args):
         """PMAP: convert between logical and physical coordinates."""
         # create a new Single for the return value
-        coord = values.to_single(next(args))
-        mode = values.to_integer(next(args))
-        list(args)
+        coord = values.to_single(await anext(args))
+        mode = values.to_integer(await anext(args))
+        [_ async for _ in args]
         mode = mode.to_int()
         error.range_check(0, 3, mode)
         if self._mode.is_text_mode:

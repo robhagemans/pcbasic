@@ -5,26 +5,27 @@ Devices, Files and I/O operations
 (c) 2013--2023 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
-
-import os
-import sys
+import inspect
 import logging
-import io
+import os
+from typing import TYPE_CHECKING
 
-from ...compat import xrange, int2byte, text_type
-from ...compat import iterchar, iteritems, getcwdu
-from ...compat import split_quoted
-
+from . import cassette
+from . import devicebase
+from . import disk
+from . import formatter
+from . import parports
+from . import ports
+from .. import values
 from ..base import error
 from ..base import tokens as tk
-from .. import values
-from . import formatter
-from . import devicebase
-from . import cassette
-from . import disk
-from . import ports
-from . import parports
+from ...compat import iterchar, iteritems, getcwdu
+from ...compat import split_quoted
+from ...compat import xrange, text_type
 
+if TYPE_CHECKING:
+    from ..console import Console
+    from ..inputs import Keyboard
 
 # MS-DOS device files
 DOS_DEVICE_FILES = (b'AUX', b'CON', b'NUL', b'PRN')
@@ -76,7 +77,7 @@ class Files(object):
             f.close()
         self.files = {}
 
-    def open(
+    async def open(
             self, number, description, filetype, mode=b'I', access=b'', lock=b'',
             reclen=128, seg=0, offset=0, length=0
         ):
@@ -95,6 +96,9 @@ class Files(object):
             number, dev_param, filetype, mode, access, lock,
             reclen, seg, offset, length, field
         )
+        if inspect.isawaitable(new_file):
+            new_file = await new_file
+
         logging.debug(
             'Opened file %r as #%d (type %s, mode %s)', dev_param, number, filetype, mode
         )
@@ -124,7 +128,7 @@ class Files(object):
     # device management
 
     def _init_devices(
-            self, values, queues, display, console, keyboard,
+            self, values, queues, display, console: 'Console', keyboard: 'Keyboard',
             device_params, current_device,
             serial_in_size, codepage, text_mode, soft_linefeed
         ):
@@ -277,10 +281,10 @@ class Files(object):
         list(args)
         self.close_all()
 
-    def close_(self, args):
+    async def close_(self, args):
         """CLOSE: close a file, or all files."""
         at_least_one = False
-        for number in args:
+        async for number in args:
             number = values.to_int(number)
             error.range_check(0, 255, number)
             at_least_one = True
@@ -290,26 +294,27 @@ class Files(object):
         if not at_least_one:
             self.close_all()
 
-    def open_(self, args):
+    async def open_(self, args):
         """OPEN: open a data file."""
-        first_expr = values.next_string(args)
-        if next(args):
+        first_expr = await values.next_string(args)
+        if await anext(args):
             # old syntax
             mode = first_expr[:1].upper()
             if mode not in (b'I', b'O', b'A', b'R'):
                 raise error.BASICError(error.BAD_FILE_MODE)
-            number = values.to_int(next(args))
+            number = values.to_int(await anext(args))
             error.range_check(0, 255, number)
-            name = values.next_string(args)
+            name = await values.next_string(args)
             access, lock = None, None
         else:
             # new syntax
             name = first_expr
-            mode, access, lock = next(args), next(args), next(args)
+            mode, access, lock = await anext(args), await anext(args), await anext(args)
             # AS file number clause
-            number = values.to_int(next(args))
+            number = values.to_int(await anext(args))
             error.range_check(0, 255, number)
-        reclen, = args
+        reclen = await anext(args)
+
         mode = mode or b'R'
         if reclen is None:
             reclen = 128
@@ -322,31 +327,31 @@ class Files(object):
             if mode == b'A' and access == b'W':
                 raise error.BASICError(error.PATH_FILE_ACCESS_ERROR)
             elif ((mode == b'I' and access != b'R') or (mode == b'O' and access != b'W') or
-                    (mode == b'A' and access != b'RW')):
+                  (mode == b'A' and access != b'RW')):
                 raise error.BASICError(error.STX)
         error.range_check(1, self.max_reclen, reclen)
         # can't open file 0, or beyond max_files
         error.range_check_err(1, self.max_files, number, error.BAD_FILE_NUMBER)
-        self.open(number, name, b'D', mode=mode, access=access, lock=lock, reclen=reclen)
+        await self.open(number, name, b'D', mode=mode, access=access, lock=lock, reclen=reclen)
 
     ###########################################################################
 
-    def field_(self, args):
+    async def field_(self, args):
         """FIELD: attach a variable to the record buffer."""
-        number = values.to_int(next(args))
+        number = values.to_int(await anext(args))
         error.range_check(0, 255, number)
         # check if file is open
         self.get(number, b'R')
         offset = 0
         try:
             while True:
-                width = values.to_int(next(args))
+                width = values.to_int(await anext(args))
                 error.range_check(0, 255, width)
-                name, index = next(args)
+                name, index = await anext(args)
                 name = self._memory.complete_name(name)
                 self._memory.fields[number].attach_var(name, index, offset, width)
                 offset += width
-        except StopIteration:
+        except (StopIteration, StopAsyncIteration):
             pass
 
     def _check_pos(self, pos):
@@ -359,24 +364,24 @@ class Files(object):
         pos = int(round(values.to_single(pos).to_value()))
         # not 2^32-1 as the manual boasts!
         # pos-1 needs to fit in a single-precision mantissa
-        error.range_check_err(1, 2**25, pos, err=error.BAD_RECORD_NUMBER)
+        error.range_check_err(1, 2 ** 25, pos, err=error.BAD_RECORD_NUMBER)
         return pos
 
-    def put_(self, args):
+    async def put_(self, args):
         """PUT: write record to file."""
-        number = values.to_int(next(args))
+        number = values.to_int(await anext(args))
         error.range_check(0, 255, number)
         the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
-        pos, = args
+        pos = await anext(args)
         pos = self._check_pos(pos)
         the_file.put(pos)
 
-    def get_(self, args):
+    async def get_(self, args):
         """GET: read record from file."""
-        number = values.to_int(next(args))
+        number = values.to_int(await anext(args))
         error.range_check(0, 255, number)
         the_file = self.get(number, b'R', not_open=error.BAD_FILE_MODE)
-        pos, = args
+        pos = await anext(args)
         pos = self._check_pos(pos)
         the_file.get(pos)
 
@@ -394,28 +399,28 @@ class Files(object):
             lock_stop_rec = lock_start_rec
         else:
             lock_stop_rec = round(values.to_single(lock_stop_rec).to_value())
-        if lock_start_rec < 1 or lock_start_rec > 2**25-2 or lock_stop_rec < 1 or lock_stop_rec > 2**25-2:
+        if lock_start_rec < 1 or lock_start_rec > 2 ** 25 - 2 or lock_stop_rec < 1 or lock_stop_rec > 2 ** 25 - 2:
             raise error.BASICError(error.BAD_RECORD_NUMBER)
         return lock_start_rec, lock_stop_rec
 
-    def lock_(self, args):
+    async def lock_(self, args):
         """LOCK: set file or record locks."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(0, 255, num)
         thefile = self.get(num)
-        lock_start_rec, lock_stop_rec = args
+        lock_start_rec, lock_stop_rec = await anext(args), await anext(args)
         try:
             thefile.lock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
             # not a disk file
             raise error.BASICError(error.PERMISSION_DENIED)
 
-    def unlock_(self, args):
+    async def unlock_(self, args):
         """UNLOCK: set file or record locks."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(0, 255, num)
         thefile = self.get(num)
-        lock_start_rec, lock_stop_rec = args
+        lock_start_rec, lock_stop_rec = await anext(args), await anext(args)
         try:
             thefile.unlock(*self._get_lock_limits(lock_start_rec, lock_stop_rec))
         except AttributeError:
@@ -424,9 +429,9 @@ class Files(object):
 
     ###########################################################################
 
-    def write_(self, args):
+    async def write_(self, args):
         """WRITE: Output machine-readable expressions to the screen or a file."""
-        file_number = next(args)
+        file_number = await anext(args)
         if file_number is None:
             output = self.scrn_file
         else:
@@ -436,36 +441,36 @@ class Files(object):
         outstrs = []
         try:
             while True:
-                expr = next(args)
+                expr = await anext(args)
                 if isinstance(expr, values.String):
                     outstrs.append(b'"%s"' % expr.to_str())
                 else:
                     outstrs.append(values.to_repr(expr, leading_space=False, type_sign=False))
-        except StopIteration:
+        except (StopIteration, StopAsyncIteration):
             # write the whole thing as one thing (this affects line breaks)
-            output.write_line(b','.join(outstrs))
+            await output.write_line(b','.join(outstrs))
         except error.BASICError:
             if outstrs:
-                output.write(b','.join(outstrs) + b',')
+                await output.write(b','.join(outstrs) + b',')
             raise
 
-    def width_(self, args):
+    async def width_(self, args):
         """WIDTH: set width of screen or device."""
-        file_or_device = next(args)
+        file_or_device = await anext(args)
         num_rows_dummy = None
         if file_or_device == tk.LPRINT:
             dev = self.lpt1_file
-            w = values.to_int(next(args))
+            w = values.to_int(await anext(args))
         elif isinstance(file_or_device, values.Number):
             file_or_device = values.to_int(file_or_device)
             error.range_check(0, 255, file_or_device)
             dev = self.get(file_or_device, mode=b'IOAR')
-            w = values.to_int(next(args))
+            w = values.to_int(await anext(args))
         else:
-            expr = next(args)
+            expr = await anext(args)
             if isinstance(expr, values.String):
                 devname = expr.to_str().upper()
-                w = values.to_int(next(args))
+                w = values.to_int(await anext(args))
                 try:
                     dev = self._devices[devname].device_file
                 except (KeyError, AttributeError):
@@ -473,20 +478,20 @@ class Files(object):
                     raise error.BASICError(error.BAD_FILE_NAME)
             else:
                 w = values.to_int(expr)
-                num_rows_dummy = next(args)
+                num_rows_dummy = await anext(args)
                 if num_rows_dummy is not None:
                     num_rows_dummy = values.to_int(num_rows_dummy)
                 dev = self.scrn_file
         error.range_check(0, 255, w)
-        list(args)
+        [_ async for _ in args]
         if num_rows_dummy is not None:
             self.scrn_file._display.set_height(num_rows_dummy)
         dev.set_width(w)
 
-    def print_(self, args):
+    async def print_(self, args):
         """PRINT: Write expressions to the screen or a file."""
         # check for a file number
-        file_number = next(args)
+        file_number = await anext(args)
         if file_number is not None:
             file_number = values.to_int(file_number)
             error.range_check(0, 255, file_number)
@@ -496,69 +501,71 @@ class Files(object):
             # neither LPRINT not a file number: print to screen
             output = self.scrn_file
             console = self.scrn_file.console
-        formatter.Formatter(output, console).format(args)
+        await formatter.Formatter(output, console).format(args)
 
-    def lprint_(self, args):
+    async def lprint_(self, args):
         """LPRINT: Write expressions to printer LPT1."""
-        formatter.Formatter(self.lpt1_file).format(args)
+        await formatter.Formatter(self.lpt1_file).format(args)
 
     ###########################################################################
 
-    def ioctl_statement_(self, args):
+    async def ioctl_statement_(self, args):
         """IOCTL: send control string to I/O device. Not implemented."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(0, 255, num)
         thefile = self.get(num)
-        control_string = values.next_string(args)
-        list(args)
+        control_string = await values.next_string(args)
+        [_ async for _ in args]
         logging.warning('IOCTL statement not implemented.')
         raise error.BASICError(error.IFC)
 
-    def motor_(self, args):
+    async def motor_(self, args):
         """MOTOR: drive cassette motor; not implemented."""
         logging.warning('MOTOR statement not implemented.')
-        val = next(args)
+        val = await anext(args)
         if val is not None:
             error.range_check(0, 255, values.to_int(val))
-        list(args)
+        # noinspection PyStatementEffect
+        (e async for e in args)
 
-    def lcopy_(self, args):
+    async def lcopy_(self, args):
         """LCOPY: screen copy / no-op in later GW-BASIC."""
         # See e.g. http://shadowsshot.ho.ua/docs001.htm#LCOPY
-        val = next(args)
+        val = await anext(args)
         if val is not None:
             error.range_check(0, 255, values.to_int(val))
-        list(args)
+        # noinspection PyStatementEffect
+        (e async for e in args)
 
     ###########################################################################
     # function callbacks
 
-    def loc_(self, args):
+    async def loc_(self, args):
         """LOC: get file pointer."""
-        num, = args
+        num = await anext(args)
         num = values.to_integer(num)
         loc = self._get_from_integer(num).loc()
         return self._values.new_single().from_int(loc)
 
-    def eof_(self, args):
+    async def eof_(self, args):
         """EOF: get end-of-file."""
-        num, = args
+        num = await anext(args)
         num = values.to_integer(num)
         eof = self._values.new_integer()
         if not num.is_zero() and self._get_from_integer(num, b'IR').eof():
             eof = eof.from_int(-1)
         return eof
 
-    def lof_(self, args):
+    async def lof_(self, args):
         """LOF: get length of file."""
-        num, = args
+        num = await anext(args)
         num = values.to_integer(num)
         lof = self._get_from_integer(num).lof()
         return self._values.new_single().from_int(lof)
 
-    def lpos_(self, args):
+    async def lpos_(self, args):
         """LPOS: get the current printer column."""
-        num, = args
+        num = await anext(args)
         num = values.to_int(num)
         error.range_check(0, 3, num)
         printer = self._devices[b'LPT%d:' % max(1, num)]
@@ -570,11 +577,11 @@ class Files(object):
             col = 1
         return self._values.new_integer().from_int(col % 256)
 
-    def input_(self, args):
+    async def input_(self, args):
         """INPUT$: read num chars from file or keyboard."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(1, 255, num)
-        filenum = next(args)
+        filenum = await anext(args)
         if filenum is not None:
             filenum = values.to_int(filenum)
             error.range_check(0, 255, filenum)
@@ -582,24 +589,28 @@ class Files(object):
             read = self.get(filenum, mode=b'IR', not_open=error.BAD_FILE_MODE).read
         else:
             read = self._keyboard.read_bytes_block
-        list(args)
+        [_ async for _ in args]
         # read the chars
         word = read(num)
+
+        if inspect.isawaitable(word):
+            word = await word
+
         if len(word) < num:
             # input past end
             raise error.BASICError(error.INPUT_PAST_END)
         return self._values.new_string().from_str(word)
 
-
     ###########################################################################
 
-    def ioctl_(self, args):
+    async def ioctl_(self, args):
         """IOCTL$: read device control string response; not implemented."""
-        num = values.to_int(next(args))
+        num = values.to_int(await anext(args))
         error.range_check(0, 255, num)
         # raise BAD FILE NUMBER if the file is not open
         infile = self.get(num)
-        list(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         logging.warning('IOCTL$ function not implemented.')
         raise error.BASICError(error.IFC)
 
@@ -615,13 +626,12 @@ class Files(object):
         logging.warning('ERDEV$ function not implemented.')
         return self._values.new_string()
 
-    def exterr_(self, args):
+    async def exterr_(self, args):
         """EXTERR: device error information; not implemented."""
-        val, = args
+        val = await anext(args)
         logging.warning('EXTERR function not implemented.')
         error.range_check(0, 3, values.to_int(val))
         return self._values.new_integer()
-
 
     ###########################################################################
     # disk devices
@@ -629,7 +639,7 @@ class Files(object):
     def _init_disk_devices(
             self, device_params, current_device,
             codepage, text_mode, soft_linefeed
-        ):
+    ):
         """Initialise disk devices."""
         # if Z not specified, mount to cwd by default (override by specifying 'Z': None)
         if b'Z' not in device_params:
@@ -683,61 +693,67 @@ class Files(object):
             raise error.BASICError(error.IFC)
         return self._devices[self._current_device + b':'].get_native_cwd()
 
-    def chdir_(self, args):
+    async def chdir_(self, args):
         """CHDIR: change working directory."""
-        name = values.next_string(args)
-        list(args)
+        name = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self._get_diskdevice_and_path(name)
         dev.chdir(path)
 
-    def mkdir_(self, args):
+    async def mkdir_(self, args):
         """MKDIR: create directory."""
-        name = values.next_string(args)
-        list(args)
+        name = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self._get_diskdevice_and_path(name)
         dev.mkdir(path)
 
-    def rmdir_(self, args):
+    async def rmdir_(self, args):
         """RMDIR: remove directory."""
-        name = values.next_string(args)
-        list(args)
+        name = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self._get_diskdevice_and_path(name)
         dev.rmdir(path)
 
-    def name_(self, args):
+    async def name_(self, args):
         """NAME: rename file or directory."""
-        dev, oldpath = self._get_diskdevice_and_path(values.next_string(args))
+        dev, oldpath = self._get_diskdevice_and_path(await values.next_string(args))
         # don't rename open files
         # NOTE: we need to check file exists before parsing the next name
         # to get the same error sequencing as GW-BASIC
         dev.require_file_exists(oldpath)
         dev.require_file_not_open(oldpath)
-        newdev, newpath = self._get_diskdevice_and_path(values.next_string(args))
+        newdev, newpath = self._get_diskdevice_and_path(await values.next_string(args))
         dev.require_file_not_open(newpath)
-        list(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         if dev != newdev:
             raise error.BASICError(error.RENAME_ACROSS_DISKS)
         dev.rename(oldpath, newpath)
 
-    def kill_(self, args):
+    async def kill_(self, args):
         """KILL: remove file."""
-        name = values.next_string(args)
-        list(args)
+        name = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         if not name:
             raise error.BASICError(error.BAD_FILE_NAME)
         dev, path = self._get_diskdevice_and_path(name)
         dev.kill(path)
 
-    def files_(self, args):
+    async def files_(self, args):
         """FILES: output directory listing to screen."""
-        pathmask = values.next_string(args)
-        list(args)
+        pathmask = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [_ async for _ in args]
         # pathmask may be left unspecified, but not empty
         if pathmask == b'':
             raise error.BASICError(error.BAD_FILE_NAME)
@@ -749,14 +765,14 @@ class Files(object):
         num_cols = self._console.width // 20
         # output working dir in DOS format
         # NOTE: this is always the current dir, not the one being listed
-        self._console.write_line(dev.get_cwd())
+        await self._console.write_line(dev.get_cwd())
         if not output:
             raise error.BASICError(error.FILE_NOT_FOUND)
         # output files
-        for i, cols in enumerate(output[j:j+num_cols] for j in xrange(0, len(output), num_cols)):
-            self._console.write_line(b' '.join(cols))
+        for i, cols in enumerate(output[j:j + num_cols] for j in xrange(0, len(output), num_cols)):
+            await self._console.write_line(b' '.join(cols))
             if not (i % 4):
                 # allow to break during dir listing & show names flowing on screen
-                self._queues.wait()
+                await self._queues.wait()
             i += 1
-        self._console.write_line(b' %d Bytes free\n' % dev.get_free())
+        await self._console.write_line(b' %d Bytes free\n' % dev.get_free())

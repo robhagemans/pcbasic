@@ -318,20 +318,20 @@ class InputHandlerCLI(object):
                 break
             if uc == EOF and self.quit_on_eof:
                 # ctrl-D (unix) / ctrl-Z (windows)
-                self._input_queue.put(signals.Event(signals.QUIT))
+                self._input_queue.put_nowait(signals.Event(signals.QUIT))
             elif uc == u'\x7f':
                 # backspace
-                self._input_queue.put(
+                self._input_queue.put_nowait(
                     signals.Event(signals.KEYB_DOWN, (uea.BACKSPACE, scancode.BACKSPACE, []))
                 )
             elif sc or uc:
                 # check_full=False to allow pasting chunks of text
-                self._input_queue.put(signals.Event(signals.KEYB_DOWN, (uc, sc, mods)))
+                self._input_queue.put_nowait(signals.Event(signals.KEYB_DOWN, (uc, sc, mods)))
                 # this is needed since we don't send key-up events at all otherwise
                 if sc == scancode.F12:
                     self._f12_active = True
                 elif self._f12_active:
-                    self._input_queue.put(signals.Event(signals.KEYB_UP, (scancode.F12,)))
+                    self._input_queue.put_nowait(signals.Event(signals.KEYB_UP, (scancode.F12,)))
                     self._f12_active = False
 
     def _get_key(self):

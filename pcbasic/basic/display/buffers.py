@@ -344,7 +344,7 @@ class VideoBuffer(object):
             attrs = [_row.attrs[left-1:right] for _row in self._rows[top-1:bottom]]
             x0, y0 = self.text_to_pixel_pos(top, left)
             x1, y1 = self.text_to_pixel_pos(bottom+1, right+1)
-            self._queues.video.put(signals.Event(
+            self._queues.video.put_nowait(signals.Event(
                 signals.VIDEO_UPDATE, (top, left, text, attrs, y0, x0, self._pixels[y0:y1, x0:x1])
             ))
 
@@ -429,7 +429,7 @@ class VideoBuffer(object):
         self.force_submit()
         # this should only be called on the active page
         if self._visible:
-            self._queues.video.put(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
+            self._queues.video.put_nowait(signals.Event(signals.VIDEO_CLEAR_ROWS, (back, start, stop)))
 
     def clear_row_from(self, row, col, attr):
         """Clear from given position to end of row."""
@@ -475,7 +475,7 @@ class VideoBuffer(object):
         self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)
         if self._visible:
-            self._queues.video.put(signals.Event(
+            self._queues.video.put_nowait(signals.Event(
                 signals.VIDEO_SCROLL, (-1, from_row, to_row, back)
             ))
         # update text buffer
@@ -502,7 +502,7 @@ class VideoBuffer(object):
         self.force_submit()
         _, back, _, _ = self._colourmap.split_attr(attr)
         if self._visible:
-            self._queues.video.put(signals.Event(
+            self._queues.video.put_nowait(signals.Event(
                 signals.VIDEO_SCROLL, (1, from_row, to_row, back)
             ))
         # update text buffer

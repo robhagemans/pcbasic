@@ -55,7 +55,7 @@ class COMDevice(Device):
         # only one file open at a time
         self._file = None
 
-    def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
+    async def open(self, number, param, filetype, mode, access, lock, reclen, seg, offset, length, field):
         """Open a file on COMn: """
         if not self._serial:
             raise error.BASICError(error.DEVICE_UNAVAILABLE)
@@ -65,7 +65,7 @@ class COMDevice(Device):
         if self._file and self._file.is_open:
             raise error.BASICError(error.FILE_ALREADY_OPEN)
         else:
-            self._open_serial(rs, cs, ds, cd)
+            await self._open_serial(rs, cs, ds, cd)
         try:
             self.set_params(speed, parity, bytesize, stop)
         except Exception:
@@ -214,7 +214,7 @@ class COMDevice(Device):
             logging.debug('Opening serial port %s.', self._serial.port)
             self._serial.open()
 
-    def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
+    async def _open_serial(self, rs=False, cs=1000, ds=1000, cd=0):
         """Open the serial connection."""
         with safe_io(error.DEVICE_TIMEOUT):
             self._check_open()
@@ -240,7 +240,7 @@ class COMDevice(Device):
                 have_dsr = have_dsr and self._serial.dsr
                 have_cts = have_cd and self._serial.cd
             # give CPU some time off
-            self._queues.wait()
+            await self._queues.wait()
         # only check for status if timeouts are set > 0
         # http://www.electro-tech-online.com/threads/qbasic-serial-port-control.19286/
         # https://measurementsensors.honeywell.com/ProductDocuments/Instruments/008-0385-00.pdf
@@ -330,12 +330,12 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         """Return only readahead buffer, no blocking peek."""
         return b''.join(self._readahead[:num])
 
-    def read(self, num):
+    async def read(self, num):
         """Read a number of characters."""
         # take at most num chars out of readahead buffer (holds just one on COM but anyway)
         s, self._readahead = self._readahead[:num], self._readahead[num:]
         while len(s) < num:
-            self._queues.wait()
+            await self._queues.wait()
             with safe_io():
                 # non-blocking read
                 self._current, self._previous = self._fhandle.read(1), self._current
@@ -344,20 +344,20 @@ class COMFile(TextFileBase, RealTimeInputMixin):
         logging.debug('Reading from serial port %s: %r', self._fhandle.port, b''.join(s))
         return b''.join(s)
 
-    def read_one(self):
+    async def read_one(self):
         """Read a character, replacing CR LF with CR."""
         c = self.read(1)
         # report CRLF as CR
         # are we correct to ignore self._linefeed on input?
         if (c == b'\n' and self._previous == b'\r'):
-            c = self.read(1)
+            c = await self.read(1)
         return c
 
-    def read_line(self):
+    async def read_line(self):
         """Blocking read line from the port (not the FIELD buffer!)."""
         out = []
         while len(out) < 255:
-            c = self.read_one()
+            c = await self.read_one()
             if c == b'\r':
                 break
             if c:

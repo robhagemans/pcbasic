@@ -120,14 +120,14 @@ class TextFile(TextFileBase, InputMixin):
                 break
         return b''.join(s), c
 
-    def write(self, s, can_break=True):
+    async def write(self, s, can_break=True):
         """Write string to file."""
         self._locks.try_access(self._number, b'W')
         TextFileBase.write(self, s, can_break)
 
-    def write_line(self, s=b''):
+    async def write_line(self, s=b''):
         """Write string and newline to file."""
-        self.write(s + b'\r\n')
+        await self.write(s + b'\r\n')
 
     def loc(self):
         """Get file pointer (LOC)."""
@@ -221,10 +221,10 @@ class FieldFile(TextFile):
         """Get a copy of the contents of the buffer."""
         return bytearray(self._field.view_buffer()[:self._reclen])
 
-    def write(self, bytestr, can_break=True):
+    async def write(self, bytestr, can_break=True):
         """Write bytes to buffer."""
         try:
-            TextFile.write(self, bytestr, can_break)
+            await TextFile.write(self, bytestr, can_break)
         except ValueError:
             # can't modify size of memoryview
             raise error.BASICError(error.FIELD_OVERFLOW)
@@ -277,15 +277,15 @@ class RandomFile(RawFile):
         with self._field_file.use_mode(b'I'):
             return self._field_file.read_line()
 
-    def write(self, s, can_break=True):
+    async def write(self, s, can_break=True):
         """Write the string s to the field."""
         with self._field_file.use_mode(b'O'):
-            self._field_file.write(s, can_break)
+            await self._field_file.write(s, can_break)
 
-    def write_line(self, s=b''):
+    async def write_line(self, s=b''):
         """Write string and newline to the field buffer."""
         with self._field_file.use_mode(b'O'):
-            self._field_file.write_line(s)
+            await self._field_file.write_line(s)
 
     @property
     def width(self):

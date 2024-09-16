@@ -18,38 +18,38 @@ class StatementTest(TestCase):
 
     tag = u'statements'
 
-    def test_llist(self):
+    async def test_llist(self):
         """Test LLIST to stream."""
         with NamedTemporaryFile(delete=False) as output:
             with Session(devices={'lpt1': 'FILE:'+output.name}) as s:
-                s.execute("""
+                await s.execute("""
                     10 rem program
                     20?1
                 """)
-                s.execute('LLIST')
+                await s.execute('LLIST')
             outstr = output.read()
             assert outstr == b'10 REM program\r\n20 PRINT 1\r\n', outstr
 
-    def test_cls_pcjr(self):
+    async def test_cls_pcjr(self):
         """Test CLS syntax on pcjr."""
         with Session(syntax='pcjr') as s:
-            s.execute('CLS')
+            await s.execute('CLS')
             assert self.get_text_stripped(s)[0] == b''
-            s.execute('CLS 0')
+            await s.execute('CLS 0')
             assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
-            s.execute('CLS 0,')
+            await s.execute('CLS 0,')
             assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
-            s.execute('CLS ,')
+            await s.execute('CLS ,')
             assert self.get_text_stripped(s)[0] == b'Syntax error\xFF'
 
-    def test_wait(self):
+    async def test_wait(self):
         """Test WAIT syntax."""
         with Session(syntax='pcjr') as s:
-            s.execute('')
+            await s.execute('')
             s._impl.keyboard.last_scancode = 255
-            s.execute('wait &h60, 255')
+            await s.execute('wait &h60, 255')
             s._impl.keyboard.last_scancode = 0
-            s.execute('wait &h60, 255, 255')
+            await s.execute('wait &h60, 255, 255')
             assert self.get_text_stripped(s)[0] == b''
 
 if __name__ == '__main__':

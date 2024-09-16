@@ -95,9 +95,9 @@ class Arrays(object):
         """Return the dimensions of an array."""
         return self._dims[name]
 
-    def dim_(self, args):
+    async def dim_(self, args):
         """DIM: dimension arrays."""
-        for a in args:
+        async for a in args:
             name, indices = a
             self.allocate(self._memory.complete_name(name), indices)
 

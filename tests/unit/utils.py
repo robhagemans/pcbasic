@@ -12,18 +12,19 @@ import shutil
 from unittest import main as run_tests
 
 
-class TestCase(unittest.TestCase):
+class TestCase(unittest.IsolatedAsyncioTestCase):
     """Base class for test cases."""
 
     tag = None
 
     def __init__(self, *args, **kwargs):
         """Define output dir name."""
-        unittest.TestCase.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         here = os.path.dirname(os.path.abspath(__file__))
         self._dir = os.path.join(here, u'output', self.tag)
         # does not need to exist
         self._model_dir = os.path.join(here, u'model', self.tag)
+
 
     def setUp(self):
         """Ensure output directory exists and is empty."""

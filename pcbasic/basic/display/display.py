@@ -9,7 +9,7 @@ This file is released under the GNU GPL version 3 or later.
 import struct
 import logging
 
-from ...compat import iteritems
+from ...compat import iteritems, azip
 from ..base import signals
 from ..base import error
 from .. import values
@@ -224,7 +224,7 @@ class Display(object):
             for _pagenum in range(self.mode.num_pages)
         ]
         # submit the mode change to the interface
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_MODE, (
                 new_mode.pixel_height, new_mode.pixel_width,
                 new_mode.height, new_mode.width
@@ -284,7 +284,7 @@ class Display(object):
     def rebuild(self):
         """Completely resubmit the screen to the interface."""
         # set the screen mode
-        self._queues.video.put(signals.Event(
+        self._queues.video.put_nowait(signals.Event(
             signals.VIDEO_SET_MODE, (
                 self.mode.pixel_height, self.mode.pixel_width,
                 self.mode.height, self.mode.width
@@ -293,7 +293,7 @@ class Display(object):
         # rebuild palette
         self.colourmap.submit()
         # set the border
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
+        self._queues.video.put_nowait(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (self._border_attr,)))
         # redraw the text screen and submit to interface
         for page in self.pages:
             page.resubmit()
@@ -372,7 +372,7 @@ class Display(object):
         """Set the border attribute."""
         fore, _, _, _ = self.colourmap.split_attr(attr)
         self._border_attr = fore
-        self._queues.video.put(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
+        self._queues.video.put_nowait(signals.Event(signals.VIDEO_SET_BORDER_ATTR, (fore,)))
 
     def get_border_attr(self):
         """Get the border attribute, in range 0 <= attr < 16."""
@@ -403,14 +403,14 @@ class Display(object):
     #   2: erase all video memory if screen or width changes
     #   -> we're not distinguishing between 1 and 2 here
 
-    def screen_(self, args):
+    async def screen_(self, args):
         """SCREEN: change the video mode, colourburst, visible or active page."""
         # in GW, screen 0,0,0,0,0,0 raises error after changing the palette
         # this raises error before
-        mode, colorswitch, apagenum, vpagenum = (
+        mode, colorswitch, apagenum, vpagenum = [
             None if arg is None else values.to_int(arg)
-            for _, arg in zip(range(4), args)
-        )
+            async for _, arg in azip(range(4), args)
+        ]
         # if any parameter not in [0,255], error 5 without doing anything
         # if the parameters are outside narrow ranges
         # (e.g. not implemented screen mode, pagenum beyond max)
@@ -418,11 +418,12 @@ class Display(object):
         error.range_check(0, 255, mode, colorswitch, apagenum, vpagenum)
         if self._adapter == 'tandy':
             error.range_check(0, 1, colorswitch)
-        erase = next(args)
+        erase = await anext(args, None)
         if erase is not None:
             erase = values.to_int(erase)
             error.range_check(0, 2, erase)
-        list(args)
+        # noinspection PyStatementEffect
+        (e async for e in args)
         if erase is not None:
             # erase can only be set on pcjr/tandy 5-argument syntax
             if self._adapter not in ('pcjr', 'tandy'):
@@ -431,18 +432,19 @@ class Display(object):
             erase = 1
         self.screen(mode, colorswitch, apagenum, vpagenum, erase)
 
-    def pcopy_(self, args):
+    async def pcopy_(self, args):
         """Copy source to destination page."""
-        src = values.to_int(next(args))
+        src = values.to_int(await anext(args))
         error.range_check(0, self.mode.num_pages-1, src)
-        dst = values.to_int(next(args))
-        list(args)
+        dst = values.to_int(await anext(args))
+        # noinspection PyStatementEffect
+        (e async for e in args)
         error.range_check(0, self.mode.num_pages-1, dst)
         self.pages[dst].copy_from(self.pages[src])
 
-    def color_(self, args):
+    async def color_(self, args):
         """COLOR: set colour attributes."""
-        args = list(args)
+        args = [e async for e in args]
         error.throw_if(len(args) > 3)
         args += [None] * (3 - len(args))
         arg0, arg1, arg2 = args
@@ -455,17 +457,17 @@ class Display(object):
         if border is not None:
             self.set_border(border)
 
-    def palette_(self, args):
+    async def palette_(self, args):
         """PALETTE: assign colour to attribute."""
-        attrib = next(args)
+        attrib = await anext(args)
         if attrib is not None:
             attrib = values.to_int(attrib)
-        colour = next(args)
+        colour = await anext(args)
         if colour is not None:
             colour = values.to_int(colour)
-        list(args)
+        [_ async for _ in args]
         # wait a tick to make colour cycling loops work
-        self._queues.wait()
+        await self._queues.wait()
         if attrib is None and colour is None:
             self.colourmap.set_all(self.colourmap.default_palette)
         else:
@@ -477,11 +479,11 @@ class Display(object):
             if colour != -1:
                 self.colourmap.set_entry(attrib, colour)
 
-    def palette_using_(self, args):
+    async def palette_using_(self, args):
         """PALETTE USING: set palette from array buffer."""
-        array_name, start_indices = next(args)
+        array_name, start_indices = await anext(args)
         array_name = self._memory.complete_name(array_name)
-        list(args)
+        [_ async for _ in args]
         try:
             dimensions = self._memory.arrays.dimensions(array_name)
         except KeyError:
@@ -500,15 +502,17 @@ class Display(object):
             new_palette.append(val if val > -1 else self.colourmap.get_entry(i))
         self.colourmap.set_all(new_palette)
 
-    def cls_(self, args):
+    async def cls_(self, args):
         """CLS: clear the screen."""
-        val = next(args)
+        val = await anext(args)
         if val is not None:
             val = values.to_int(val)
             # tandy gives illegal function call on CLS number
             error.throw_if(self._adapter == 'tandy')
             error.range_check(0, 2, val)
-        list(args)
+
+
+        [e async for e in args]
         # CLS is only executed if no errors have occurred
         if not self.mode.is_text_mode and (
                 val == 1 or (val is None and self.graphics.graph_view.active)

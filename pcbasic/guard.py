@@ -40,12 +40,12 @@ class ExceptionGuard(object):
         self._session = session
         return self
 
-    def __enter__(self):
+    async def __aenter__(self):
         """Enter context guard."""
         self.exception_handled = None
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    async def __aexit__(self, exc_type, exc_value, exc_traceback):
         """Handle exceptions."""
         success = False
         if not exc_type or exc_type == error.Reset:
@@ -55,7 +55,7 @@ class ExceptionGuard(object):
             # see docs.python.org/3/library/signal.html#note-on-sigpipe
             return success
         try:
-            success = _bluescreen(
+            success = await _bluescreen(
                 self._session, self._interface,
                 self._uargv, self._log_dir,
                 exc_type, exc_value, exc_traceback
@@ -113,10 +113,10 @@ REPORT_TEMPLATE="""
 1200 DATA 7,1,"",255
 """
 
-def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
+async def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_traceback):
     """Process crash information and write reports."""
     # retrieve information from the defunct session
-    session_info = _debrief_session(session)
+    session_info = await _debrief_session(session)
     # interface information
     if iface:
         iface_name = u'%s, %s' % (type(iface._video).__name__, type(iface._audio).__name__)
@@ -150,7 +150,7 @@ def _bluescreen(session, iface, argv, log_dir, exc_type, exc_value, exc_tracebac
     return do_resume
 
 
-def _debrief_session(session):
+async def _debrief_session(session):
     # hide further output from defunct session
     session.attach(None)
     info = dict(
@@ -163,7 +163,7 @@ def _debrief_session(session):
         # obtain statement being executed
         code_line=session.info.get_current_code(as_type=text_type),
         # get code listing
-        listing=session.execute('LIST', as_type=text_type),
+        listing=await session.execute('LIST', as_type=text_type),
     )
     return info
 
@@ -232,7 +232,7 @@ def _write_crashlog(
     return logfile.name
 
 
-def _show_report(iface, iface_name, python_version, code_line, traceback_lines, exc_type, exc_value, log_file_name):
+async def _show_report(iface, iface_name, python_version, code_line, traceback_lines, exc_type, exc_value, log_file_name):
     """Show a crash report on the interface."""
     resume = False
     with Session(output_streams='stdio' if not iface else ()) as session:
@@ -253,8 +253,8 @@ def _show_report(iface, iface_name, python_version, code_line, traceback_lines, 
             bug_url=u'https://github.com/robhagemans/pcbasic/issues',
             crashlog=log_file_name,
         )
-        session.execute(message)
-        session.execute('RUN')
+        await session.execute(message)
+        await session.execute('RUN')
         session.attach(iface)
     if not iface:
         return False

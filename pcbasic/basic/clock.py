@@ -33,15 +33,15 @@ class Clock(object):
 
     def timer_(self, args):
         """TIMER: get clock ticks since midnight."""
-        list(args)
         # precision of GWBASIC TIMER is about 1/20 of a second
         timer = float(self.get_time_ms()//50) / 20.
         return self._values.new_single().from_value(timer)
 
-    def time_(self, args):
+    async def time_(self, args):
         """TIME: Set the system time offset."""
-        timestr = values.next_string(args)
-        list(args)
+        timestr = await values.next_string(args)
+        # noinspection PyStatementEffect
+        [e async for e in args]
         # allowed formats:  hh   hh:mm   hh:mm:ss  where hh 0-23, mm 0-59, ss 0-59
         now = datetime.datetime.now() + self.time_offset
         strlist = timestr.replace(b'.', b':').split(b':')
@@ -60,9 +60,9 @@ class Clock(object):
                     timelist[0], timelist[1], timelist[2], now.microsecond)
         self.time_offset += newtime - now
 
-    def date_(self, args):
+    async def date_(self, args):
         """DATE: Set the system date offset."""
-        datestr = values.next_string(args)
+        datestr = await values.next_string(args)
         # allowed formats:
         # mm/dd/yy  or mm-dd-yy  mm 0--12 dd 0--31 yy 80--00--77
         # mm/dd/yyyy  or mm-dd-yyyy  yyyy 1980--2099
@@ -91,7 +91,7 @@ class Clock(object):
             )
         except ValueError:
             raise error.BASICError(error.IFC)
-        list(args)
+        [e async for e in args]
         self.time_offset += newtime - now
 
     def time_fn_(self, args):

@@ -21,63 +21,63 @@ class DebugTest(TestCase):
         info = debug.get_platform_info()
         assert isinstance(info, type(u''))
 
-    def test_debug(self):
+    async def test_debug(self):
         """Exercise debug statements."""
         with debug.DebugSession() as s:
-            s.execute('_dir')
-            s.execute('_logprint "test"')
-            s.execute('_logwrite "test"')
-            s.execute('_showvariables')
-            s.execute('_showscreen')
-            s.execute('_showprogram')
-            s.execute('_showplatform')
-            s.execute('_python "print(\'--test--\')"')
+            await s.execute('_dir')
+            await s.execute('_logprint "test"')
+            await s.execute('_logwrite "test"')
+            await s.execute('_showvariables')
+            await s.execute('_showscreen')
+            await s.execute('_showprogram')
+            await s.execute('_showplatform')
+            await s.execute('_python "print(\'--test--\')"')
 
-    def test_trace_watch(self):
+    async def test_trace_watch(self):
         """Exercise _trace and _watch."""
         with debug.DebugSession() as s:
-            s.execute('_trace')
+            await s.execute('_trace')
             # string
-            s.execute('_watch "a$"')
+            await s.execute('_watch "a$"')
             # single
-            s.execute('_watch "a!"')
+            await s.execute('_watch "a!"')
             # error
-            s.execute('_watch "log(-1)"')
-            s.execute('10 a=1:? a')
-            s.execute('20 a$="test"')
-            s.execute('run')
-            s.execute('_trace 0')
-            s.execute('run')
+            await s.execute('_watch "log(-1)"')
+            await s.execute('10 a=1:? a')
+            await s.execute('20 a$="test"')
+            await s.execute('run')
+            await s.execute('_trace 0')
+            await s.execute('run')
 
-    def test_crash(self):
+    async def test_crash(self):
         """Test _crash."""
         with self.assertRaises(debug.DebugException):
             with debug.DebugSession() as s:
-                s.execute('_crash')
+                await s.execute('_crash')
 
-    def test_debugexception_repr(self):
+    async def test_debugexception_repr(self):
         """Test DebugException.__repr__."""
         assert isinstance(repr(debug.DebugException()), str)
 
-    def test_restart(self):
+    async def test_restart(self):
         """Test _restart."""
         # Restart exception is not absorbed
         with self.assertRaises(error.Reset):
             with debug.DebugSession() as s:
-                s.execute('_restart')
+                await s.execute('_restart')
 
-    def test_exit(self):
+    async def test_exit(self):
         """Test _exit."""
         with debug.DebugSession() as s:
             # Exit exception would be absorbed by the Session context
             with self.assertRaises(error.Exit):
-                s.execute('_exit')
+                await s.execute('_exit')
 
-    def test_exception(self):
+    async def test_exception(self):
         """Test exception in debug statement."""
         with debug.DebugSession() as s:
             # no exception raised
-            s.execute('_python "blah"')
+            await s.execute('_python "blah"')
 
 
 if __name__ == '__main__':

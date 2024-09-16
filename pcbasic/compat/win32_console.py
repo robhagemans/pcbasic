@@ -13,51 +13,52 @@ Borrows code from colorama, which is Copyright Jonathan Hartley 2013. BSD 3-Clau
 
 # pylint: disable=no-name-in-module, no-member
 
+import ctypes
+import msvcrt
 import os
 import sys
 import time
-import msvcrt
-import ctypes
-from contextlib import contextmanager
 from collections import deque
 from ctypes import windll, wintypes, POINTER, byref, Structure, cast
+from typing import TYPE_CHECKING
 
 from .base import PY2
 from .streams import StdIOBase, StreamWrapper
 
-if PY2: # pragma: no cover
+if TYPE_CHECKING:
+    from ..basic.console import Console
+
+if PY2:  # pragma: no cover
     from .python2 import SimpleNamespace
 else:
     from types import SimpleNamespace
 
-
-
 # Windows virtual key codes, mapped to standard key names
 KEYS = SimpleNamespace(
-    PAGEUP = 0x21, # VK_PRIOR
-    PAGEDOWN = 0x22, # VK_NEXT
-    END = 0x23,
-    HOME = 0x24,
-    LEFT = 0x25,
-    UP = 0x26,
-    RIGHT = 0x27,
-    DOWN = 0x28,
-    INSERT = 0x2d,
-    DELETE = 0x2e,
-    F1 = 0x70,
-    F2 = 0x71,
-    F3 = 0x72,
-    F4 = 0x73,
-    F5 = 0x74,
-    F6 = 0x75,
-    F7 = 0x76,
-    F8 = 0x77,
-    F9 = 0x78,
-    F10 = 0x79,
-    F11 = 0x7a,
-    F12 = 0x7b,
+    PAGEUP=0x21,  # VK_PRIOR
+    PAGEDOWN=0x22,  # VK_NEXT
+    END=0x23,
+    HOME=0x24,
+    LEFT=0x25,
+    UP=0x26,
+    RIGHT=0x27,
+    DOWN=0x28,
+    INSERT=0x2d,
+    DELETE=0x2e,
+    F1=0x70,
+    F2=0x71,
+    F3=0x72,
+    F4=0x73,
+    F5=0x74,
+    F6=0x75,
+    F7=0x76,
+    F8=0x77,
+    F9=0x78,
+    F10=0x79,
+    F11=0x7a,
+    F12=0x7b,
     #
-    ALT = 0x12, # VK_MENU
+    ALT=0x12,  # VK_MENU
 )
 VK_TO_KEY = {value: key for key, value in KEYS.__dict__.items()}
 # alpha key codes
@@ -76,9 +77,9 @@ VK_TO_KEY.update({
 # SCROLLLOCK_ON = 0x0040,
 # SHIFT_PRESSED = 0x0010,
 MODS = dict(
-    CTRL = 0x0c,
-    ALT = 0x03,
-    SHIFT = 0x10,
+    CTRL=0x0c,
+    ALT=0x03,
+    SHIFT=0x10,
 )
 
 # character attributes, from wincon.h
@@ -91,16 +92,17 @@ BRIGHT = 0x08
 
 class KEY_EVENT_RECORD(Structure):
     _fields_ = (
-        ('bKeyDown', wintypes.BOOL), #32 bit?
-        ('wRepeatCount', wintypes.WORD), #16
-        ('wVirtualKeyCode', wintypes.WORD),#16
-        ('wVirtualScanCode', wintypes.WORD), #16
+        ('bKeyDown', wintypes.BOOL),  # 32 bit?
+        ('wRepeatCount', wintypes.WORD),  # 16
+        ('wVirtualKeyCode', wintypes.WORD),  # 16
+        ('wVirtualScanCode', wintypes.WORD),  # 16
         # union with CHAR AsciiChar
-        ('UnicodeChar', wintypes.WCHAR), #32
-        ('dwControlKeyState', wintypes.DWORD), #32
+        ('UnicodeChar', wintypes.WCHAR),  # 32
+        ('dwControlKeyState', wintypes.DWORD),  # 32
         # note that structure is in a union with other event records
         # but it is the largest type. mouseeventrecord is 128 bytes
     )
+
 
 class INPUT_RECORD(Structure):
     _fields_ = (
@@ -110,11 +112,13 @@ class INPUT_RECORD(Structure):
         ('KeyEvent', KEY_EVENT_RECORD),
     )
 
+
 class CHAR_INFO(Structure):
     _fields_ = (
         ('UnicodeChar', wintypes.WCHAR),
         ('Attributes', wintypes.WORD),
     )
+
 
 class CONSOLE_SCREEN_BUFFER_INFO(Structure):
     _fields_ = (
@@ -125,11 +129,13 @@ class CONSOLE_SCREEN_BUFFER_INFO(Structure):
         ('dwMaximumWindowSize', wintypes._COORD),
     )
 
+
 class CONSOLE_CURSOR_INFO(Structure):
     _fields_ = (
         ("dwSize", wintypes.DWORD),
         ("bVisible", wintypes.BOOL),
     )
+
 
 class CONSOLE_SCREEN_BUFFER_INFOEX(Structure):
     _fields_ = (
@@ -141,8 +147,9 @@ class CONSOLE_SCREEN_BUFFER_INFOEX(Structure):
         ('dwMaximumWindowSize', wintypes._COORD),
         ('wPopupAttributes', wintypes.WORD),
         ('bFullscreenSupported', wintypes.BOOL),
-        ('ColorTable', wintypes.DWORD*16),
+        ('ColorTable', wintypes.DWORD * 16),
     )
+
 
 class SECURITY_ATTRIBUTES(Structure):
     _fields_ = (
@@ -150,6 +157,7 @@ class SECURITY_ATTRIBUTES(Structure):
         ('lpSecurityDescriptor', wintypes.LPVOID),
         ('bInheritHandle', wintypes.BOOL),
     )
+
 
 _GetStdHandle = windll.kernel32.GetStdHandle
 _GetStdHandle.argtypes = (wintypes.DWORD,)
@@ -240,7 +248,6 @@ _SetConsoleActiveScreenBuffer = windll.kernel32.SetConsoleActiveScreenBuffer
 _SetConsoleActiveScreenBuffer.argtypes = (wintypes.HANDLE,)
 _SetConsoleActiveScreenBuffer.restype = wintypes.BOOL
 
-
 _SetConsoleTextAttribute = windll.kernel32.SetConsoleTextAttribute
 _SetConsoleTextAttribute.argtypes = (wintypes.HANDLE, wintypes.WORD)
 _SetConsoleTextAttribute.restype = wintypes.BOOL
@@ -268,7 +275,6 @@ _GetConsoleMode.argtypes = (
 )
 _GetConsoleMode.restype = wintypes.BOOL
 
-
 PHANDLER_ROUTINE = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.DWORD)
 _SetConsoleCtrlHandler = windll.kernel32.SetConsoleCtrlHandler
 _SetConsoleCtrlHandler.argtypes = (
@@ -283,6 +289,7 @@ def GetConsoleScreenBufferInfo(handle):
     _GetConsoleScreenBufferInfo(handle, byref(csbi))
     return csbi
 
+
 def GetConsoleScreenBufferInfoEx(handle):
     csbie = CONSOLE_SCREEN_BUFFER_INFOEX()
     csbie.cbSize = wintypes.ULONG(ctypes.sizeof(csbie))
@@ -293,30 +300,36 @@ def GetConsoleScreenBufferInfoEx(handle):
     csbie.srWindow.Right += 1
     return csbie
 
+
 def FillConsoleOutputCharacter(handle, char, length, start):
     length = wintypes.DWORD(length)
     num_written = wintypes.DWORD(0)
     _FillConsoleOutputCharacterW(handle, char, length, start, byref(num_written))
     return num_written.value
 
+
 def FillConsoleOutputAttribute(handle, attr, length, start):
     attribute = wintypes.WORD(attr)
     length = wintypes.DWORD(length)
     return _FillConsoleOutputAttribute(handle, attribute, length, start, byref(wintypes.DWORD()))
+
 
 def GetConsoleCursorInfo(handle):
     cci = CONSOLE_CURSOR_INFO()
     _GetConsoleCursorInfo(handle, byref(cci))
     return cci
 
+
 def SetConsoleCursorInfo(handle, cci):
     _SetConsoleCursorInfo(handle, byref(cci))
+
 
 def ScrollConsoleScreenBuffer(handle, scroll_rect, clip_rect, new_position, char, attr):
     char_info = CHAR_INFO(char, attr)
     _ScrollConsoleScreenBuffer(
         handle, byref(scroll_rect), byref(clip_rect), new_position, byref(char_info)
     )
+
 
 def GetConsoleMode(handle):
     mode = wintypes.DWORD()
@@ -371,10 +384,10 @@ class _ConsoleWriter:
                 col = 0
                 cls._overflow = False
             elif ch == u'\b':
-                col = max(col-1, 0)
+                col = max(col - 1, 0)
                 cls._overflow = False
             else:
-                col = min(col+1, width-1)
+                col = min(col + 1, width - 1)
 
 
 ##############################################################################
@@ -422,10 +435,10 @@ class Win32Console(object):
         """Enter full-screen/application mode."""
         # https://docs.microsoft.com/en-us/windows/console/reading-and-writing-blocks-of-characters-and-attributes
         new_buffer = _CreateConsoleScreenBuffer(
-            wintypes.DWORD(0xc0000000), # GENERIC_READ | GENERIC_WRITE
-            wintypes.DWORD(0x3), # FILE_SHARE_READ | FILE_SHARE_WRITE
+            wintypes.DWORD(0xc0000000),  # GENERIC_READ | GENERIC_WRITE
+            wintypes.DWORD(0x3),  # FILE_SHARE_READ | FILE_SHARE_WRITE
             None,
-            wintypes.DWORD(1), # CONSOLE_TEXTMODE_BUFFER
+            wintypes.DWORD(1),  # CONSOLE_TEXTMODE_BUFFER
             None
         )
         _SetConsoleActiveScreenBuffer(new_buffer)
@@ -455,12 +468,12 @@ class Win32Console(object):
         # allow for both shrinking and growing by calling one of them twice,
         # for each direction separately
         new_size = wintypes._COORD(width, csbi.dwSize.Y)
-        new_window = wintypes.SMALL_RECT(0, 0, width-1, csbi.dwSize.Y-1)
+        new_window = wintypes.SMALL_RECT(0, 0, width - 1, csbi.dwSize.Y - 1)
         _SetConsoleScreenBufferSize(self._hstdout, new_size)
         _SetConsoleWindowInfo(self._hstdout, True, new_window)
         _SetConsoleScreenBufferSize(self._hstdout, new_size)
         new_size = wintypes._COORD(width, height)
-        new_window = wintypes.SMALL_RECT(0, 0, width-1, height-1)
+        new_window = wintypes.SMALL_RECT(0, 0, width - 1, height - 1)
         _SetConsoleScreenBufferSize(self._hstdout, new_size)
         _SetConsoleWindowInfo(self._hstdout, True, new_window)
         _SetConsoleScreenBufferSize(self._hstdout, new_size)
@@ -515,7 +528,7 @@ class Win32Console(object):
     def move_cursor_to(self, row, col):
         """Move cursor to a new position (1,1 is top left)."""
         csbi = GetConsoleScreenBufferInfo(self._hstdout)
-        row, col = row-1, col-1
+        row, col = row - 1, col - 1
         while col >= csbi.dwSize.X:
             col -= csbi.dwSize.X
             row += 1
@@ -531,7 +544,7 @@ class Win32Console(object):
         if not rows:
             return
         # use zero-based indexing
-        start, stop = top-1, bottom-1
+        start, stop = top - 1, bottom - 1
         # we're using opposuite sign conventions
         csbi = GetConsoleScreenBufferInfo(self._hstdout)
         # absolute position of window in screen buffer
@@ -550,17 +563,17 @@ class Win32Console(object):
             new_pos = wintypes._COORD(window.Left, window.Top + rows)
         # workaround: in this particular case, Windows doesn't seem to respect the clip area.
         if (
-                clip_rect.Bottom == window.Bottom-1 and
-                region.Bottom >= window.Bottom-1 and
+                clip_rect.Bottom == window.Bottom - 1 and
+                region.Bottom >= window.Bottom - 1 and
                 new_pos.Y < region.Top
-            ):
+        ):
             # first scroll everything up
             clip_rect.Bottom = window.Bottom
             bottom, region.Bottom = region.Bottom, window.Bottom
             ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
             # and then scroll the bottom back down
             new_pos.Y = window.Bottom
-            region.Top = bottom-1
+            region.Top = bottom - 1
             ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
         else:
             ScrollConsoleScreenBuffer(self._hstdout, region, clip_rect, new_pos, u' ', self._attrs)
@@ -580,7 +593,7 @@ class Win32Console(object):
         """Set palette entry for attribute (0--16)."""
         csbie = GetConsoleScreenBufferInfoEx(self._hstdout)
         csbie.ColorTable[attr] = (
-            0x00010000 * blue + 0x00000100 * green + 0x00000001 * red
+                0x00010000 * blue + 0x00000100 * green + 0x00000001 * red
         )
         _SetConsoleScreenBufferInfoEx(self._hstdout, byref(csbie))
 
@@ -632,7 +645,7 @@ class Win32Console(object):
                     nevents.value, byref(nread)
                 )
                 for event in input_buffer:
-                    if event.EventType != 1: # KEY_EVENT
+                    if event.EventType != 1:  # KEY_EVENT
                         continue
                     char, key, mods = self._translate_event(event)
                     if char or key:
@@ -673,11 +686,10 @@ def _has_console():
 
 IS_CONSOLE_APP = _has_console()
 
-
 ##############################################################################
 # standard i/o
 
-if PY2: # pragma: no cover
+if PY2:  # pragma: no cover
 
     class _ConsoleOutput(StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdout."""
@@ -697,7 +709,7 @@ if PY2: # pragma: no cover
     class _ConsoleInput(StreamWrapper):
         """Bytes stream wrapper using Unicode API, to replace Python2 sys.stdin."""
 
-        def __init__(self, console, encoding='utf-8'):
+        def __init__(self, console: 'Console', encoding='utf-8'):
             StreamWrapper.__init__(self, sys.stdin)
             self._handle = HSTDIN
             self._console = console
@@ -716,11 +728,11 @@ if PY2: # pragma: no cover
 class StdIO(StdIOBase):
     """Holds standard unicode streams."""
 
-    def __init__(self, console):
+    def __init__(self, console: 'Console'):
         self._console = console
         StdIOBase.__init__(self)
 
-    if PY2: # pragma: no cover
+    if PY2:  # pragma: no cover
 
         def _attach_stdin(self):
             if sys.stdin.isatty():
