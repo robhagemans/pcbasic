@@ -11,13 +11,13 @@ import io
 import math
 import struct
 import logging
-from ..vendored.chunk import Chunk
 
 from ...compat import int2byte, iterchar, zip
 
 from ..base import error
 from ..base import tokens as tk
 from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
+from .chunk import Chunk
 
 
 # file types (data, bsaved memory, protected, ascii, tokenised)
