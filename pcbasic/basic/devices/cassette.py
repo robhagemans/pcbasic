@@ -11,7 +11,7 @@ import io
 import math
 import struct
 import logging
-from chunk import Chunk
+from ..vendored.chunk import Chunk
 
 from ...compat import int2byte, iterchar, zip
 
