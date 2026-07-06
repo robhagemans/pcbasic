@@ -122,7 +122,9 @@ class Display(object):
         ):
         """Change the video mode, colourburst, visible or active page."""
         # reset palette happens even if the SCREEN call fails
-        self.colourmap.reset()
+        # except on PCjr where palette is preserved if the mode doesn't change
+        if self._adapter != 'pcjr':
+            self.colourmap.reset()
         # find the new mode we're trying to get into
         if new_mode_nr is None:
             # keep current mode if graphics but maybe change width if text
@@ -168,6 +170,9 @@ class Display(object):
         # if mode or colorswitch changed, do a full reset
         # otherwise only change pages
         if force_reset or new_mode != self.mode or new_colorswitch != self.colorswitch:
+            # PCjr's palette does not reset on page changes, only on mode changes
+            if self._adapter == 'pcjr':
+                self.colourmap.reset()
             self._set_mode(new_mode, new_colorswitch, new_apagenum, new_vpagenum, erase)
         else:
             self.set_page(new_vpagenum, new_apagenum)
