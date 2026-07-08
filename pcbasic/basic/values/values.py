@@ -614,91 +614,117 @@ def hex_(args):
     return x._values.new_string().from_str(val.to_hex())
 
 ##############################################################################
-# sring operations
+# string operations
 
-def left_(args):
-    """LEFT$: get substring of num characters at the start of string."""
-    s, num = next(args), next(args)
-    s, num = pass_string(s), to_integer(num)
-    list(args)
-    stop = num.to_integer().to_int()
-    if stop == 0:
-        return s.new()
-    error.range_check(0, 255, stop)
-    return s.new().from_str(s.to_str()[:stop])
+class StringFunctions:
 
-def right_(args):
-    """RIGHT$: get substring of num characters at the end of string."""
-    s, num = next(args), next(args)
-    s, num = pass_string(s), to_integer(num)
-    list(args)
-    stop = num.to_integer().to_int()
-    if stop == 0:
-        return s.new()
-    error.range_check(0, 255, stop)
-    return s.new().from_str(s.to_str()[-stop:])
+    def __init__(self, temp_values):
+        self._temp_values = temp_values
 
-def mid_(args):
-    """MID$: get substring."""
-    s, start = next(args), to_integer(next(args))
-    p = pass_string(s)
-    num = next(args)
-    if num is not None:
-        num = to_integer(num)
-    list(args)
-    length = s.length()
-    start = start.to_integer().to_int()
-    if num is None:
-        num = length
-    else:
-        num = num.to_integer().to_int()
-    error.range_check(1, 255, start)
-    error.range_check(0, 255, num)
-    if num == 0 or start > length:
-        return s.new()
-    # BASIC's indexing starts at 1, Python's at 0
-    start -= 1
-    return s.new().from_str(s.to_str()[start:start+num])
+    def left_(self, args):
+        """LEFT$: get substring of num characters at the start of string."""
+        s = next(args)
+        self._temp_values.add(s)
+        num = next(args)
+        s, num = pass_string(s), to_integer(num)
+        list(args)
+        stop = num.to_integer().to_int()
+        if stop == 0:
+            return s.new()
+        error.range_check(0, 255, stop)
+        result = s.new().from_str(s.to_str()[:stop])
+        self._temp_values.remove(s)
+        return result
 
-def instr_(args):
-    """INSTR: find substring in string."""
-    arg0 = next(args)
-    if isinstance(arg0, numbers.Number):
-        start = to_int(arg0)
+    def right_(self, args):
+        """RIGHT$: get substring of num characters at the end of string."""
+        s = next(args)
+        self._temp_values.add(s)
+        num = next(args)
+        s, num = pass_string(s), to_integer(num)
+        list(args)
+        stop = num.to_integer().to_int()
+        if stop == 0:
+            return s.new()
+        error.range_check(0, 255, stop)
+        result = s.new().from_str(s.to_str()[-stop:])
+        self._temp_values.remove(s)
+        return result
+
+    def mid_(self, args):
+        """MID$: get substring."""
+        s = next(args)
+        self._temp_values.add(s)
+        start = to_integer(next(args))
+        s = pass_string(s)
+        num = next(args)
+        if num is not None:
+            num = to_integer(num)
+        list(args)
+        length = s.length()
+        start = start.to_integer().to_int()
+        if num is None:
+            num = length
+        else:
+            num = num.to_integer().to_int()
         error.range_check(1, 255, start)
-        big = pass_string(next(args))
-    else:
-        start = 1
-        big = pass_string(arg0)
-    small = pass_string(next(args))
-    list(args)
-    new_int = numbers.Integer(None, big._values)
-    big = big.to_str()
-    small = small.to_str()
-    if big == b'' or start > len(big):
-        return new_int
-    # BASIC counts string positions from 1
-    find = big[start-1:].find(small)
-    if find == -1:
-        return new_int
-    return new_int.from_int(start + find)
+        error.range_check(0, 255, num)
+        if num == 0 or start > length:
+            return s.new()
+        # BASIC's indexing starts at 1, Python's at 0
+        start -= 1
+        result = s.new().from_str(s.to_str()[start:start+num])
+        self._temp_values.remove(s)
+        return result
 
-def string_(args):
-    """STRING$: repeat a character num times."""
-    num = to_int(next(args))
-    error.range_check(0, 255, num)
-    asc_value_or_char = next(args)
-    if isinstance(asc_value_or_char, numbers.Integer):
-        error.range_check(0, 255, asc_value_or_char.to_int())
-    list(args)
-    if isinstance(asc_value_or_char, strings.String):
-        char = asc_value_or_char.to_str()[:1]
-    else:
-        # overflow if outside Integer range
-        ascval = asc_value_or_char.to_integer().to_int()
-        error.range_check(0, 255, ascval)
-        char = int2byte(ascval)
-    return strings.String(None, asc_value_or_char._values).from_str(char * num)
+    def instr_(self, args):
+        """INSTR: find substring in string."""
+        arg0 = next(args)
+        if isinstance(arg0, numbers.Number):
+            start = to_int(arg0)
+            error.range_check(1, 255, start)
+            big_in = pass_string(next(args))
+        else:
+            start = 1
+            big_in = pass_string(arg0)
+        self._temp_values.add(big_in)
+        small_in = pass_string(next(args))
+        self._temp_values.add(small_in)
+        list(args)
+        new_int = numbers.Integer(None, big._values)
+        big = big_in.to_str()
+        small = small_in.to_str()
+        if big == b'' or start > len(big):
+            return new_int
+        # BASIC counts string positions from 1
+        find = big[start-1:].find(small)
+        if find == -1:
+            return new_int
+        result = new_int.from_int(start + find)
+        self._temp_values.remove(small_in)
+        self._temp_values.remove(big_in)
+        return result
+
+    def string_(self, args):
+        """STRING$: repeat a character num times."""
+        num = to_int(next(args))
+        error.range_check(0, 255, num)
+        asc_value_or_char = next(args)
+        if isinstance(asc_value_or_char, numbers.Integer):
+            error.range_check(0, 255, asc_value_or_char.to_int())
+        list(args)
+        if isinstance(asc_value_or_char, strings.String):
+            char = asc_value_or_char.to_str()[:1]
+        else:
+            # overflow if outside Integer range
+            ascval = asc_value_or_char.to_integer().to_int()
+            error.range_check(0, 255, ascval)
+            char = int2byte(ascval)
+        self._temp_values.add(char)
+        result = strings.String(None, asc_value_or_char._values).from_str(char * num)
+        self._temp_values.remove(char)
+        return result
+
 
 ##############################################################################
 # binary operations
