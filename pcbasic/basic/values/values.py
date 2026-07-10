@@ -691,7 +691,7 @@ class StringFunctions:
         small_in = pass_string(next(args))
         self._temp_values.add(small_in)
         list(args)
-        new_int = numbers.Integer(None, big._values)
+        new_int = numbers.Integer(None, big_in._values)
         big = big_in.to_str()
         small = small_in.to_str()
         if big == b'' or start > len(big):
