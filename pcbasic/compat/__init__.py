@@ -155,7 +155,7 @@ def _build_split_regexp(split_by, quote, as_type):
     quote = re.escape(quote)
     if split_by is None:
         # by default, split on whitespace
-        split_by = u'\s'
+        split_by = u'\\s'
     else:
         split_by = re.escape(split_by)
     # https://stackoverflow.com/questions/16710076/python-split-a-string-respect-and-preserve-quotes

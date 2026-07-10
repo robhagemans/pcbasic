@@ -38,7 +38,11 @@ class UserFunction(object):
         """Evaluate user-defined function."""
         # parse/evaluate arguments
         conversions = (values.TYPE_TO_CONV[self._memory.complete_name(name)[-1:]] for name in self._varnames)
-        args = [conv(arg) for arg, conv in zip(iargs, conversions)]
+        args = []
+        for arg, conv in zip(iargs, conversions):
+            value = conv(arg)
+            self._memory.temp_values.add(value)
+            args.append(value)
         # recursion is not allowed as there's no way to terminate it
         if self._is_parsing:
             raise error.BASICError(error.OUT_OF_MEMORY)
@@ -72,6 +76,8 @@ class UserFunction(object):
             for name in varsave:
                 # re-assign the stored value
                 self._memory.scalars.view(name).copy_from(varsave[name])
+            for arg in args:
+                self._memory.temp_values.remove(arg)
 
 
 
