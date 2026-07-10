@@ -24,13 +24,16 @@ from . import userfunctions
 class ExpressionParser(object):
     """Expression parser."""
 
-    def __init__(self, values, memory):
+    def __init__(self, values_obj, memory):
         """Initialise empty expression."""
-        self._values = values
+        self._values = values_obj
         # for variable retrieval
         self._memory = memory
         # user-defined functions
-        self.user_functions = userfunctions.UserFunctionManager(memory, values, self)
+        self.user_functions = userfunctions.UserFunctionManager(memory, values_obj, self)
+        # functions with string arguments requiring temp value management
+        # we need this because we don't keep a real stack
+        self.string_functions = values.StringFunctions(memory.temp_values)
         # initialise syntax tables
         self._init_syntax()
         # callbacks must be initilised later
@@ -159,8 +162,8 @@ class ExpressionParser(object):
             tk.FN: None,
             tk.ERL: session.interpreter.erl_,
             tk.ERR: session.interpreter.err_,
-            tk.STRING: values.string_,
-            tk.INSTR: values.instr_,
+            tk.STRING: self.string_functions.string_,
+            tk.INSTR: self.string_functions.instr_,
             tk.CSRLIN: session.text_screen.csrlin_,
             tk.POINT: session.graphics.point_,
             tk.INKEY: session.keyboard.inkey_,
@@ -176,9 +179,9 @@ class ExpressionParser(object):
             tk.PLAY: session.sound.play_fn_,
             tk.TIMER: session.clock.timer_,
             tk.PMAP: session.graphics.pmap_,
-            tk.LEFT: values.left_,
-            tk.RIGHT: values.right_,
-            tk.MID: values.mid_,
+            tk.LEFT: self.string_functions.left_,
+            tk.RIGHT: self.string_functions.right_,
+            tk.MID: self.string_functions.mid_,
             tk.SGN: values.sgn_,
             tk.INT: values.int_,
             tk.ABS: values.abs_,

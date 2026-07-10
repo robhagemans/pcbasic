@@ -121,6 +121,7 @@ class DataSegment(object):
         self.arrays = arrays.Arrays(self, self.values)
         # temporary values
         self._stack = []
+        self.temp_values = set()
         # FIELD buffers
         self.max_files = max_files
         self.max_reclen = max_reclen
@@ -277,7 +278,8 @@ class DataSegment(object):
             return
         # find all strings that are actually referenced
         stack_strings = [value.view() for stack in self._stack for value in stack if isinstance(value, values.String)]
-        string_ptrs = self.scalars.get_strings() + self.arrays.get_strings() + stack_strings
+        temp_strings = [value.view() for value in self.temp_values if isinstance(value, values.String)]
+        string_ptrs = self.scalars.get_strings() + self.arrays.get_strings() + stack_strings + temp_strings
         self.strings.collect_garbage(string_ptrs)
 
     def check_free(self, size, err):
