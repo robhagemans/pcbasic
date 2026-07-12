@@ -12,12 +12,15 @@ import math
 import struct
 import logging
 
-from ...compat import int2byte, iterchar, zip
+from ...compat import int2byte, iterchar, zip, PY2
 
 from ..base import error
 from ..base import tokens as tk
 from .devicebase import RawFile, TextFileBase, InputMixin, DeviceSettings, parse_protocol_string
-from .chunk import Chunk
+if PY2: # pragma: no cover
+    from chunk import Chunk
+else:
+    from .chunkclass import Chunk
 
 
 # file types (data, bsaved memory, protected, ascii, tokenised)
