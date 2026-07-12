@@ -2,7 +2,7 @@
 PC-BASIC - data.programs
 Bundled BASIC programs
 
-(c) 2013--2023 Rob Hagemans
+(c) 2013--2026 Rob Hagemans
 This file is released under the GNU GPL version 3 or later.
 """
 
