@@ -204,7 +204,7 @@ class SessionInfo(object):
 
     def repr_arrays(self):
         """Get a representation of all arrays."""
-        return repr(self._impl.scalars)
+        return repr(self._impl.arrays)
 
     def repr_strings(self):
         """Get a representation of string space."""
