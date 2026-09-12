@@ -625,57 +625,63 @@ class StringFunctions:
         """LEFT$: get substring of num characters at the start of string."""
         s = next(args)
         self._temp_values.add(s)
-        num = next(args)
-        s, num = pass_string(s), to_integer(num)
-        list(args)
-        stop = num.to_integer().to_int()
-        if stop == 0:
-            return s.new()
-        error.range_check(0, 255, stop)
-        result = s.new().from_str(s.to_str()[:stop])
-        self._temp_values.remove(s)
-        return result
+        try:
+            num = next(args)
+            s, num = pass_string(s), to_integer(num)
+            list(args)
+            stop = num.to_integer().to_int()
+            if stop == 0:
+                return s.new()
+            error.range_check(0, 255, stop)
+            result = s.new().from_str(s.to_str()[:stop])
+            return result
+        finally:
+            self._temp_values.remove(s)
 
     def right_(self, args):
         """RIGHT$: get substring of num characters at the end of string."""
         s = next(args)
         self._temp_values.add(s)
-        num = next(args)
-        s, num = pass_string(s), to_integer(num)
-        list(args)
-        stop = num.to_integer().to_int()
-        if stop == 0:
-            return s.new()
-        error.range_check(0, 255, stop)
-        result = s.new().from_str(s.to_str()[-stop:])
-        self._temp_values.remove(s)
-        return result
+        try:
+            num = next(args)
+            s, num = pass_string(s), to_integer(num)
+            list(args)
+            stop = num.to_integer().to_int()
+            if stop == 0:
+                return s.new()
+            error.range_check(0, 255, stop)
+            result = s.new().from_str(s.to_str()[-stop:])
+            return result
+        finally:
+            self._temp_values.remove(s)
 
     def mid_(self, args):
         """MID$: get substring."""
         s = next(args)
         self._temp_values.add(s)
-        start = to_integer(next(args))
-        s = pass_string(s)
-        num = next(args)
-        if num is not None:
-            num = to_integer(num)
-        list(args)
-        length = s.length()
-        start = start.to_integer().to_int()
-        if num is None:
-            num = length
-        else:
-            num = num.to_integer().to_int()
-        error.range_check(1, 255, start)
-        error.range_check(0, 255, num)
-        if num == 0 or start > length:
-            return s.new()
-        # BASIC's indexing starts at 1, Python's at 0
-        start -= 1
-        result = s.new().from_str(s.to_str()[start:start+num])
-        self._temp_values.remove(s)
-        return result
+        try:
+            start = to_integer(next(args))
+            s = pass_string(s)
+            num = next(args)
+            if num is not None:
+                num = to_integer(num)
+            list(args)
+            length = s.length()
+            start = start.to_integer().to_int()
+            if num is None:
+                num = length
+            else:
+                num = num.to_integer().to_int()
+            error.range_check(1, 255, start)
+            error.range_check(0, 255, num)
+            if num == 0 or start > length:
+                return s.new()
+            # BASIC's indexing starts at 1, Python's at 0
+            start -= 1
+            result = s.new().from_str(s.to_str()[start:start+num])
+            return result
+        finally:
+            self._temp_values.remove(s)
 
     def instr_(self, args):
         """INSTR: find substring in string."""
@@ -688,22 +694,26 @@ class StringFunctions:
             start = 1
             big_in = pass_string(arg0)
         self._temp_values.add(big_in)
-        small_in = pass_string(next(args))
-        self._temp_values.add(small_in)
-        list(args)
-        new_int = numbers.Integer(None, big_in._values)
-        big = big_in.to_str()
-        small = small_in.to_str()
-        if big == b'' or start > len(big):
-            return new_int
-        # BASIC counts string positions from 1
-        find = big[start-1:].find(small)
-        if find == -1:
-            return new_int
-        result = new_int.from_int(start + find)
-        self._temp_values.remove(small_in)
-        self._temp_values.remove(big_in)
-        return result
+        try:
+            small_in = pass_string(next(args))
+            self._temp_values.add(small_in)
+            try:
+                list(args)
+                new_int = numbers.Integer(None, big_in._values)
+                big = big_in.to_str()
+                small = small_in.to_str()
+                if big == b'' or start > len(big):
+                    return new_int
+                # BASIC counts string positions from 1
+                find = big[start-1:].find(small)
+                if find == -1:
+                    return new_int
+                result = new_int.from_int(start + find)
+                return result
+            finally:
+                self._temp_values.remove(small_in)
+        finally:
+            self._temp_values.remove(big_in)
 
     def string_(self, args):
         """STRING$: repeat a character num times."""
